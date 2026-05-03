@@ -27,4 +27,5 @@ Thumbs.db
 *.temp
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/settings.json

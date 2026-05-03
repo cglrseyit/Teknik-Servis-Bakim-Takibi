@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "Set-Location 'C:\\Users\\seyit\\Desktop\\Teknik-Servis-Bakim-Takibi-main'; $status = git status --porcelain; if ($status) { git add -A; git commit -m 'auto: sync changes'; git push }",
+            "statusMessage": "GitHub'a push ediliyor..."
+          }
+        ]
+      }
+    ]
+  }
+}
