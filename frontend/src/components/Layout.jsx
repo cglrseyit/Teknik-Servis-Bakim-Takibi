@@ -81,11 +81,11 @@ export default function Layout({ children }) {
       <aside className="w-64 h-screen bg-white border-r border-amber-100/80 flex flex-col flex-shrink-0 shadow-[1px_0_3px_rgba(184,146,74,0.04)]">
 
         {/* Logo */}
-        <div className="px-5 py-6 border-b border-amber-100/70 flex-shrink-0 flex items-center justify-center bg-gradient-to-b from-amber-50/40 to-transparent">
+        <div className="px-3 py-4 border-b border-amber-100/70 flex-shrink-0 flex items-center justify-center bg-gradient-to-b from-amber-50/40 to-transparent">
           <img
             src="/bellis-logo-dark.png"
             alt="Bellis Deluxe Hotel"
-            className="h-12 w-auto object-contain"
+            className="h-20 w-auto max-w-full object-contain"
             onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
           />
           <div style={{ display: 'none' }} className="text-center">
