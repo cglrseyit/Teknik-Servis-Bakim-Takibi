@@ -7,6 +7,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import SlidePanel from '../components/SlidePanel';
 import TaskDetailPanel from '../components/TaskDetailPanel';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
 // PDF renk kodlarına uygun:
@@ -170,6 +171,7 @@ function MonthPicker({ value, onChange }) {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -234,7 +236,7 @@ export default function DashboardPage() {
       const { data } = await api.put(`/tasks/${id}/status`, { status: 'in_progress' });
       setTasks(t => t.map(x => x.id === id ? { ...x, ...data } : x));
     } catch (err) {
-      alert(err.response?.data?.error || 'Hata oluştu');
+      toast?.error(err.response?.data?.error || 'Hata oluştu');
     } finally { setUpdating(null); }
   }
 

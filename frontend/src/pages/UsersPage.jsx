@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, X, User, Mail, Lock, Shield, Trash2, AlertCircle } from 'lucide-react';
 import Layout from '../components/Layout';
+import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 
 const ROLES = [
@@ -31,6 +32,7 @@ export default function UsersPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'order_taker' });
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     api.get('/users').then(r => setUsers(r.data)).catch(() => {});
@@ -51,8 +53,10 @@ export default function UsersPage() {
     }
   }
 
-  async function handleDelete(id) {
-    if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
     await api.delete(`/users/${id}`);
     setUsers(u => u.filter(x => x.id !== id));
   }
@@ -163,7 +167,7 @@ export default function UsersPage() {
                   </td>
                   <td className="px-5 py-3.5">
                     <button
-                      onClick={() => handleDelete(u.id)}
+                      onClick={() => setDeleteTarget(u)}
                       className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <Trash2 size={13} />
@@ -175,6 +179,16 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        open={Boolean(deleteTarget)}
+        title="Kullanıcıyı silmek istiyor musunuz?"
+        message={deleteTarget ? `"${deleteTarget.name}" kalıcı olarak silinecek.` : ''}
+        confirmLabel="Evet, Sil"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Layout>
   );
 }

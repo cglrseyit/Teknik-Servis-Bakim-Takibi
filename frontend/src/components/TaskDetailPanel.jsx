@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import ConfirmModal from './ConfirmModal';
 
 function fmt(dateStr) {
   if (!dateStr) return '—';
@@ -32,6 +33,7 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPostponeConfirm, setShowPostponeConfirm] = useState(false);
 
   useEffect(() => {
     if (!taskId) return;
@@ -86,8 +88,8 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
     }
   }
 
-  async function handlePostpone() {
-    if (!confirm('Bu görevi ertelemek istediğinize emin misiniz?')) return;
+  async function doPostpone() {
+    setShowPostponeConfirm(false);
     setLoading(true);
     try {
       await api.put(`/tasks/${taskId}/status`, { status: 'postponed' });
@@ -267,7 +269,7 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
             </button>
             <button
               type="button"
-              onClick={handlePostpone}
+              onClick={() => setShowPostponeConfirm(true)}
               disabled={loading}
               className="px-4 py-3 bg-amber-50 text-amber-600 font-semibold rounded-xl hover:bg-amber-100 border border-amber-200 transition-colors disabled:opacity-60 text-sm"
             >
@@ -276,6 +278,16 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
           </div>
         </form>
       )}
+
+      <ConfirmModal
+        open={showPostponeConfirm}
+        title="Görevi ertelemek istiyor musunuz?"
+        message="Görev 'Ertelendi' durumuna geçecek ve daha sonra tamamlanabilecek."
+        confirmLabel="Evet, Ertele"
+        variant="warning"
+        onConfirm={doPostpone}
+        onCancel={() => setShowPostponeConfirm(false)}
+      />
     </div>
   );
 }

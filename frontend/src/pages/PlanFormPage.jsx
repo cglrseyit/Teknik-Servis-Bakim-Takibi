@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { RefreshCw, Zap } from 'lucide-react';
 import Layout from '../components/Layout';
+import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 
@@ -27,6 +28,7 @@ export default function PlanFormPage() {
   const [equipment, setEquipment] = useState([]);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isOneTime, setIsOneTime] = useState(false);
   const [form, setForm] = useState({
     equipment_id: searchParams.get('equipment_id') || '',
@@ -62,7 +64,7 @@ export default function PlanFormPage() {
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
   async function handleDelete() {
-    if (!confirm('Bu planı ve tüm bekleyen görevlerini silmek istediğinize emin misiniz?')) return;
+    setShowDeleteConfirm(false);
     setDeleting(true);
     try {
       await api.delete(`/plans/${id}`);
@@ -262,7 +264,7 @@ export default function PlanFormPage() {
             <div className="pt-4 border-t border-gray-100">
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={deleting}
                 className="px-4 py-2 text-red-600 text-sm font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
               >
@@ -272,6 +274,16 @@ export default function PlanFormPage() {
           )}
         </form>
       </div>
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Planı silmek istiyor musunuz?"
+        message="Bu plan ve bağlı tüm bekleyen görevler kalıcı olarak silinecek."
+        confirmLabel="Evet, Sil"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </Layout>
   );
 }

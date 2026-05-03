@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import TaskDetailPanel from '../components/TaskDetailPanel';
+import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
 const STATUS_LABELS = { pending: 'Bekliyor', in_progress: 'Devam Ediyor', completed: 'Tamamlandı', skipped: 'Atlandı', overdue: 'Gecikmiş' };
 const STATUS_COLORS = { pending: 'bg-gray-100 text-gray-600', in_progress: 'bg-yellow-100 text-yellow-700', completed: 'bg-green-100 text-green-700', skipped: 'bg-gray-100 text-gray-400', overdue: 'bg-red-100 text-red-700' };
 
 export default function MyTasksPage() {
+  const toast = useToast();
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   const [updating, setUpdating] = useState(null);
@@ -25,7 +27,7 @@ export default function MyTasksPage() {
       const { data } = await api.put(`/tasks/${id}/status`, { status: 'in_progress' });
       setTasks(t => t.map(x => x.id === id ? { ...x, ...data } : x));
     } catch (err) {
-      alert(err.response?.data?.error || 'Hata oluştu');
+      toast?.error(err.response?.data?.error || 'Hata oluştu');
     } finally {
       setUpdating(null);
     }
