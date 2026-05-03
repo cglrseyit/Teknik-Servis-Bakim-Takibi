@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { History, Wrench, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import { useAuth } from '../context/AuthContext';
@@ -114,16 +114,7 @@ export default function ReportsPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard
-          title="Toplam Ekipman"
-          subtitle="Sistemde kayıtlı"
-          value={stats?.total_equipment ?? '—'}
-          valueColor="text-slate-900"
-          accentBg="bg-amber-50"
-          accentText="text-amber-600"
-          Icon={Wrench}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <KpiCard
           title="Aktif Bakım Planı"
           subtitle="Periyodik takipte"
@@ -156,20 +147,20 @@ export default function ReportsPage() {
       </div>
 
       {/* Donut Chart */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-sm font-semibold text-slate-800">Görev Durum Dağılımı</p>
             <p className="text-xs text-slate-400 mt-0.5">Toplam {pieData.reduce((s, d) => s + d.value, 0)} görev</p>
           </div>
         </div>
         {pieData.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-10">Veri yok</p>
+          <p className="text-sm text-slate-400 text-center py-8">Veri yok</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <ResponsiveContainer width="100%" height={260}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={2}>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}>
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
                   ))}
@@ -179,19 +170,19 @@ export default function ReportsPage() {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {pieData.map(d => {
                 const total = pieData.reduce((s, x) => s + x.value, 0);
                 const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
                 return (
-                  <div key={d.name} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div key={d.name} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
                       <span className="text-sm text-slate-700">{d.name}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-slate-400">{pct}%</span>
-                      <span className="text-sm font-semibold text-slate-800 min-w-[28px] text-right">{d.value}</span>
+                      <span className="text-sm font-semibold text-slate-800 min-w-[24px] text-right">{d.value}</span>
                     </div>
                   </div>
                 );
