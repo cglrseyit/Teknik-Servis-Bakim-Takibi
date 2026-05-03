@@ -28,6 +28,11 @@ async function migrate() {
       ALTER TABLE maintenance_plans
         ADD COLUMN IF NOT EXISTS start_date DATE;
     `);
+
+    // Departments temizligi (idempotent) — artik kullanilmiyor
+    await client.query(`ALTER TABLE users DROP COLUMN IF EXISTS department_id`);
+    await client.query(`ALTER TABLE equipment DROP COLUMN IF EXISTS department_id`);
+    await client.query(`DROP TABLE IF EXISTS departments`);
     await client.query(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id         SERIAL PRIMARY KEY,

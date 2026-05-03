@@ -1,21 +1,12 @@
--- Departmanlar
-CREATE TABLE IF NOT EXISTS departments (
-  id          SERIAL PRIMARY KEY,
-  name        VARCHAR(100) NOT NULL,
-  description TEXT,
-  created_at  TIMESTAMP DEFAULT NOW()
-);
-
 -- Kullanicilar
 CREATE TABLE IF NOT EXISTS users (
-  id            SERIAL PRIMARY KEY,
-  name          VARCHAR(100) NOT NULL,
-  email         VARCHAR(150) UNIQUE NOT NULL,
-  password      TEXT NOT NULL,
-  role          VARCHAR(20) NOT NULL CHECK (role IN ('admin','teknik_muduru','order_taker')),
-  department_id INT REFERENCES departments(id) ON DELETE SET NULL,
-  is_active     BOOLEAN DEFAULT true,
-  created_at    TIMESTAMP DEFAULT NOW()
+  id         SERIAL PRIMARY KEY,
+  name       VARCHAR(100) NOT NULL,
+  email      VARCHAR(150) UNIQUE NOT NULL,
+  password   TEXT NOT NULL,
+  role       VARCHAR(20) NOT NULL CHECK (role IN ('admin','teknik_muduru','order_taker')),
+  is_active  BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Cihazlar / Ekipmanlar

@@ -4,9 +4,7 @@ const pool = require('../config/db');
 async function getAll(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at, d.name AS department_name
-       FROM users u LEFT JOIN departments d ON d.id = u.department_id
-       ORDER BY u.name`
+      `SELECT id, name, email, role, is_active, created_at FROM users ORDER BY name`
     );
     res.json(rows);
   } catch (err) {
@@ -16,16 +14,16 @@ async function getAll(req, res) {
 }
 
 async function create(req, res) {
-  const { name, email, password, role, department_id } = req.body;
+  const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: 'Ad, e-posta, şifre ve rol zorunlu' });
   }
   try {
     const hashed = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
-      `INSERT INTO users (name, email, password, role, department_id)
-       VALUES ($1,$2,$3,$4,$5) RETURNING id, name, email, role, department_id, is_active, created_at`,
-      [name, email, hashed, role, department_id || null]
+      `INSERT INTO users (name, email, password, role)
+       VALUES ($1,$2,$3,$4) RETURNING id, name, email, role, is_active, created_at`,
+      [name, email, hashed, role]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -37,18 +35,18 @@ async function create(req, res) {
 
 async function update(req, res) {
   const { id } = req.params;
-  const { name, email, role, department_id, is_active, password } = req.body;
+  const { name, email, role, is_active, password } = req.body;
   try {
     let query, params;
     if (password) {
       const hashed = await bcrypt.hash(password, 10);
-      query = `UPDATE users SET name=$1,email=$2,role=$3,department_id=$4,is_active=$5,password=$6 WHERE id=$7
-               RETURNING id,name,email,role,department_id,is_active,created_at`;
-      params = [name, email, role, department_id || null, is_active !== false, hashed, id];
+      query = `UPDATE users SET name=$1,email=$2,role=$3,is_active=$4,password=$5 WHERE id=$6
+               RETURNING id,name,email,role,is_active,created_at`;
+      params = [name, email, role, is_active !== false, hashed, id];
     } else {
-      query = `UPDATE users SET name=$1,email=$2,role=$3,department_id=$4,is_active=$5 WHERE id=$6
-               RETURNING id,name,email,role,department_id,is_active,created_at`;
-      params = [name, email, role, department_id || null, is_active !== false, id];
+      query = `UPDATE users SET name=$1,email=$2,role=$3,is_active=$4 WHERE id=$5
+               RETURNING id,name,email,role,is_active,created_at`;
+      params = [name, email, role, is_active !== false, id];
     }
     const { rows } = await pool.query(query, params);
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });

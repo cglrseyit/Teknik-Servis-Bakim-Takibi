@@ -292,7 +292,6 @@ export default function ReportsPage() {
                   <Field label="Seri No" value={logDetail.equipment.serial_number} />
                   <Field label="Durum" value={EQUIP_STATUS_LABELS[logDetail.equipment.status] || logDetail.equipment.status} />
                   <Field label="Konum" value={logDetail.equipment.location} />
-                  <Field label="Departman" value={logDetail.equipment.department_name} />
                   {logDetail.equipment.install_date && (
                     <Field label="Kurulum Tarihi" value={fmtDate(logDetail.equipment.install_date)} />
                   )}

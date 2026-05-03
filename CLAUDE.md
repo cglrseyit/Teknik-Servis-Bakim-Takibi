@@ -62,7 +62,7 @@ VITE_API_URL=http://localhost:5000/api
 
 ### Data model relationships
 ```
-departments → users → (assigned_to / completed_by in maintenance_tasks)
+users → (assigned_to / completed_by in maintenance_tasks)
 equipment → maintenance_plans → maintenance_tasks
 maintenance_tasks → notifications
 all entities → audit_logs

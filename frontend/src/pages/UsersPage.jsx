@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, X, User, Mail, Lock, Shield, Building2, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, X, User, Mail, Lock, Shield, Trash2, AlertCircle } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 
@@ -28,14 +28,12 @@ function FieldWrap({ icon: Icon, children }) {
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'order_taker', department_id: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'order_taker' });
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.get('/users').then(r => setUsers(r.data)).catch(() => {});
-    api.get('/departments').then(r => setDepartments(r.data)).catch(() => {});
   }, []);
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
@@ -46,7 +44,7 @@ export default function UsersPage() {
     try {
       const { data } = await api.post('/users', form);
       setUsers(u => [...u, data]);
-      setForm({ name: '', email: '', password: '', role: 'order_taker', department_id: '' });
+      setForm({ name: '', email: '', password: '', role: 'order_taker' });
       setShowForm(false);
     } catch (err) {
       setError(err.response?.data?.error || 'Hata oluştu');
@@ -116,15 +114,6 @@ export default function UsersPage() {
                   </select>
                 </FieldWrap>
               </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-slate-600 mb-1.5">Departman</label>
-                <FieldWrap icon={Building2}>
-                  <select value={form.department_id} onChange={set('department_id')} className={SELECT_CLS}>
-                    <option value="">Seçin</option>
-                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </FieldWrap>
-              </div>
             </div>
             <div className="flex justify-end mt-5 pt-4 border-t border-slate-100">
               <button type="submit" className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20">
@@ -140,7 +129,7 @@ export default function UsersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80">
-              {['Kullanıcı', 'E-posta', 'Rol', 'Departman', 'Durum', ''].map(h => (
+              {['Kullanıcı', 'E-posta', 'Rol', 'Durum', ''].map(h => (
                 <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">{h}</th>
               ))}
             </tr>
@@ -165,14 +154,6 @@ export default function UsersPage() {
                       <span className={`w-1.5 h-1.5 rounded-full ${rc.dot}`} />
                       {ROLES.find(r => r.value === u.role)?.label}
                     </span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {u.department_name ? (
-                      <span className="flex items-center gap-1.5 text-slate-500">
-                        <Building2 size={12} className="text-slate-400" />
-                        {u.department_name}
-                      </span>
-                    ) : '—'}
                   </td>
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>

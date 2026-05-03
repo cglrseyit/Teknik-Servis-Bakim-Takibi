@@ -11,10 +11,7 @@ async function login(req, res) {
 
   try {
     const { rows } = await pool.query(
-      `SELECT u.*, d.name AS department_name
-       FROM users u
-       LEFT JOIN departments d ON d.id = u.department_id
-       WHERE u.email = $1 AND u.is_active = true`,
+      `SELECT * FROM users WHERE email = $1 AND is_active = true`,
       [email.toLowerCase().trim()]
     );
 
@@ -29,7 +26,7 @@ async function login(req, res) {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, department_id: user.department_id },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -45,11 +42,7 @@ async function login(req, res) {
 async function me(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.name, u.email, u.role, u.department_id, u.is_active, u.created_at,
-              d.name AS department_name
-       FROM users u
-       LEFT JOIN departments d ON d.id = u.department_id
-       WHERE u.id = $1`,
+      `SELECT id, name, email, role, is_active, created_at FROM users WHERE id = $1`,
       [req.user.id]
     );
 

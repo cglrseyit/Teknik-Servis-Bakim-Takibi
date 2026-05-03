@@ -97,11 +97,9 @@ async function getAuditLogDetail(req, res) {
     if (log.entity_id) {
       if (log.entity === 'task') {
         const r = await pool.query(
-          `SELECT e.*, d.name AS department_name,
-                  t.maintained_by, t.responsible_person
+          `SELECT e.*, t.maintained_by, t.responsible_person
            FROM maintenance_tasks t
            JOIN equipment e ON e.id = t.equipment_id
-           LEFT JOIN departments d ON d.id = e.department_id
            WHERE t.id = $1`, [log.entity_id]
         );
         if (r.rows[0]) {
@@ -111,16 +109,13 @@ async function getAuditLogDetail(req, res) {
         }
       } else if (log.entity === 'equipment') {
         const r = await pool.query(
-          `SELECT e.*, d.name AS department_name FROM equipment e
-           LEFT JOIN departments d ON d.id = e.department_id
-           WHERE e.id = $1`, [log.entity_id]
+          `SELECT * FROM equipment WHERE id = $1`, [log.entity_id]
         );
         equipment = r.rows[0] || null;
       } else if (log.entity === 'plan') {
         const r = await pool.query(
-          `SELECT e.*, d.name AS department_name FROM maintenance_plans p
+          `SELECT e.* FROM maintenance_plans p
            JOIN equipment e ON e.id = p.equipment_id
-           LEFT JOIN departments d ON d.id = e.department_id
            WHERE p.id = $1`, [log.entity_id]
         );
         equipment = r.rows[0] || null;
