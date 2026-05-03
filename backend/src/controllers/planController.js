@@ -50,13 +50,19 @@ async function getOne(req, res) {
       [id]
     );
 
-    // Sonraki bekleyen görev (sadece bugün ve sonrası)
+    // Sonraki bekleyen görev — opsiyonel "after" parametresi ile mevcut görevden sonrasını getir
+    const after = req.query.after;
     const { rows: nextRows } = await pool.query(
-      `SELECT scheduled_date FROM maintenance_tasks
-       WHERE plan_id = $1 AND status IN ('pending','in_progress')
-         AND scheduled_date >= CURRENT_DATE
-       ORDER BY scheduled_date ASC LIMIT 1`,
-      [id]
+      after
+        ? `SELECT scheduled_date FROM maintenance_tasks
+           WHERE plan_id = $1 AND status IN ('pending','in_progress')
+             AND scheduled_date > $2::date
+           ORDER BY scheduled_date ASC LIMIT 1`
+        : `SELECT scheduled_date FROM maintenance_tasks
+           WHERE plan_id = $1 AND status IN ('pending','in_progress')
+             AND scheduled_date >= CURRENT_DATE
+           ORDER BY scheduled_date ASC LIMIT 1`,
+      after ? [id, after] : [id]
     );
 
     res.json({

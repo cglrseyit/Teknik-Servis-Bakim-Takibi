@@ -48,7 +48,11 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
       setTask(r.data);
       if (r.data.plan_id) {
         try {
-          const plan = await api.get(`/plans/${r.data.plan_id}`);
+          const after = r.data.scheduled_date?.split('T')[0];
+          const url = after
+            ? `/plans/${r.data.plan_id}?after=${after}`
+            : `/plans/${r.data.plan_id}`;
+          const plan = await api.get(url);
           setNextDate(plan.data.next_scheduled_date);
         } catch {}
       }
