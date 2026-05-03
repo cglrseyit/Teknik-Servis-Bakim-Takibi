@@ -26,7 +26,11 @@ async function getAll(req, res) {
          (SELECT p.frequency_type
           FROM maintenance_plans p
           WHERE p.equipment_id = e.id AND p.is_active = true
-          ORDER BY p.created_at DESC LIMIT 1) AS maintenance_frequency
+          ORDER BY p.created_at DESC LIMIT 1) AS maintenance_frequency,
+         EXISTS (
+           SELECT 1 FROM maintenance_plans p
+           WHERE p.equipment_id = e.id AND p.is_active = true AND p.is_one_time = false
+         ) AS has_periodic_plan
        FROM equipment e ${where} ORDER BY e.name`,
       params
     );

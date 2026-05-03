@@ -164,8 +164,19 @@ export default function PlanFormPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Ekipman *</label>
             <select required value={form.equipment_id} onChange={set('equipment_id')} className={fieldCls}>
               <option value="">Seçin</option>
-              {equipment.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {equipment.map(e => {
+                // Yeni periyodik plan olusturulurken, periyodik plani olan ekipmanlar secilemez
+                const blocked = !isEdit && !isOneTime && e.has_periodic_plan;
+                return (
+                  <option key={e.id} value={e.id} disabled={blocked}>
+                    {e.name}{blocked ? ' (zaten bakım planı var)' : ''}
+                  </option>
+                );
+              })}
             </select>
+            {!isEdit && !isOneTime && (
+              <p className="text-xs text-gray-400 mt-1">Bir ekipman aynı anda yalnızca bir periyodik bakım planına sahip olabilir</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

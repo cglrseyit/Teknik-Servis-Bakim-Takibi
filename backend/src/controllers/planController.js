@@ -88,6 +88,21 @@ async function create(req, res) {
     return res.status(400).json({ error: 'Tarih zorunlu' });
   }
   try {
+    // Periyodik plan icin: ekipmanin baska aktif periyodik plani olmamali
+    if (!is_one_time) {
+      const { rows: dup } = await pool.query(
+        `SELECT id FROM maintenance_plans
+         WHERE equipment_id = $1 AND is_one_time = false AND is_active = true
+         LIMIT 1`,
+        [equipment_id]
+      );
+      if (dup[0]) {
+        return res.status(400).json({
+          error: 'Bu ekipmanın zaten aktif bir bakım planı var. Yeni plan oluşturmak için mevcut planı silin veya pasifleştirin.'
+        });
+      }
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
