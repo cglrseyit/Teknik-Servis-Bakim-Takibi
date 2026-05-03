@@ -8,7 +8,12 @@ async function getAll(req, res) {
       `SELECT p.*, e.name AS equipment_name,
               COUNT(t.id)::int AS task_count,
               MAX(CASE WHEN t.status = 'completed' THEN t.completed_at END) AS last_completed_at,
-              (SELECT status FROM maintenance_tasks WHERE plan_id = p.id ORDER BY scheduled_date DESC LIMIT 1) AS latest_task_status
+              MAX(CASE WHEN t.status = 'completed'
+                       AND DATE_TRUNC('month', t.completed_at) = DATE_TRUNC('month', NOW() AT TIME ZONE 'Europe/Istanbul')
+                  THEN t.completed_at END) AS this_month_completed_at,
+              BOOL_OR(t.status IN ('pending','in_progress','overdue')
+                      AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
+              ) AS this_month_has_pending
        FROM maintenance_plans p
        LEFT JOIN equipment e ON e.id = p.equipment_id
        LEFT JOIN maintenance_tasks t ON t.plan_id = p.id
