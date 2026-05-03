@@ -10,9 +10,12 @@ const FREQ_OPTIONS = [
   { value: 'weekly', label: 'Haftalık' },
   { value: 'monthly', label: 'Aylık' },
   { value: 'quarterly', label: '3 Aylık' },
+  { value: 'semiannual', label: '6 Aylık' },
   { value: 'yearly', label: 'Yıllık' },
   { value: 'custom', label: 'Özel (gün sayısı gir)' },
 ];
+
+const MONTH_BASED_FREQS = ['quarterly', 'semiannual', 'yearly'];
 
 export default function PlanFormPage() {
   const navigate = useNavigate();
@@ -80,10 +83,11 @@ export default function PlanFormPage() {
       if (form.start_date && form.start_date.length === 7) {
         payload.start_date = form.start_date + '-01';
       }
-      payload.target_month = (form.frequency_type === 'yearly' && form.target_month)
+      const usesTargetMonth = !isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type);
+      payload.target_month = (usesTargetMonth && form.target_month)
         ? Number(form.target_month) : null;
-      // Yıllık planlarda start_date'i target_month'tan otomatik türet
-      if (!isOneTime && form.frequency_type === 'yearly' && form.target_month) {
+      // Ay-bazli periyotlarda (3/6 aylik, yillik) start_date'i target_month'tan otomatik turet
+      if (usesTargetMonth && form.target_month) {
         const tm = Number(form.target_month);
         const now = new Date();
         const year = tm > now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
@@ -201,7 +205,7 @@ export default function PlanFormPage() {
             </div>
           )}
 
-          {!isOneTime && form.frequency_type === 'yearly' && (
+          {!isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Ayı *</label>
               <select required value={form.target_month} onChange={set('target_month')} className={fieldCls}>
@@ -210,11 +214,17 @@ export default function PlanFormPage() {
                   <option key={i+1} value={i+1}>{m}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Her yıl bu ayın son gününe otomatik görev atanır</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {form.frequency_type === 'yearly'
+                  ? 'Her yıl bu ayın son gününe otomatik görev atanır'
+                  : form.frequency_type === 'semiannual'
+                    ? 'İlk bakım bu ayda, sonraki 6 ay arayla devam eder'
+                    : 'İlk bakım bu ayda, sonraki 3 ay arayla devam eder'}
+              </p>
             </div>
           )}
 
-          {(isOneTime || form.frequency_type !== 'yearly') && (
+          {(isOneTime || !MONTH_BASED_FREQS.includes(form.frequency_type)) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {isOneTime ? 'Görev Ayı *' : isEdit ? 'Referans Ayı *' : 'İlk Bakım Ayı *'}

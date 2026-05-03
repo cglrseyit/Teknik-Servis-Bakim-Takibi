@@ -3,9 +3,9 @@ const { logAction } = require('../services/auditLogger');
 const { generateTasksForPlan } = require('../services/taskGenerator');
 
 const PERIOD_TO_FREQ = {
-  monthly:   { frequency_type: 'monthly',   frequency_days: null },
+  monthly:   { frequency_type: 'monthly',    frequency_days: null },
   quarterly: { frequency_type: 'quarterly',  frequency_days: null },
-  biannual:  { frequency_type: 'custom',     frequency_days: 180  },
+  biannual:  { frequency_type: 'semiannual', frequency_days: null },
   yearly:    { frequency_type: 'yearly',     frequency_days: null },
 };
 

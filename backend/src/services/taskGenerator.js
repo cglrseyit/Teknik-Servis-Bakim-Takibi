@@ -32,22 +32,24 @@ function getMonthEndDate(year, month) {
 // Returns calendar-month count for month-based frequencies, null for day-based
 function getFrequencyMonths(plan) {
   switch (plan.frequency_type) {
-    case 'monthly':   return 1;
-    case 'quarterly': return 3;
-    case 'yearly':    return 12;
-    default:          return null;
+    case 'monthly':    return 1;
+    case 'quarterly':  return 3;
+    case 'semiannual': return 6;
+    case 'yearly':     return 12;
+    default:           return null;
   }
 }
 
 function getIntervalDays(plan) {
   switch (plan.frequency_type) {
-    case 'daily':     return 1;
-    case 'weekly':    return 7;
-    case 'monthly':   return 30;
-    case 'quarterly': return 90;
-    case 'yearly':    return 365;
-    case 'custom':    return plan.frequency_days || 30;
-    default:          return 30;
+    case 'daily':      return 1;
+    case 'weekly':     return 7;
+    case 'monthly':    return 30;
+    case 'quarterly':  return 90;
+    case 'semiannual': return 180;
+    case 'yearly':     return 365;
+    case 'custom':     return plan.frequency_days || 30;
+    default:           return 30;
   }
 }
 
@@ -67,48 +69,32 @@ async function generateTasksForPlan(plan, daysAhead) {
     );
 
     const lastDate = toDateStr(existing[0].last_date);
-    const useTargetMonth = plan.target_month && freqMonths === 12;
+    // target_month, ay-bazli (monthly, quarterly, semiannual, yearly) periyotlar icin baslangic ayini belirler
+    const useTargetMonth = !!plan.target_month && !!freqMonths;
 
-    // Advance function: move to next occurrence
+    // Advance function: bir sonraki gerceklesme tarihine git (her zaman freqMonths kadar atla)
     function advanceNext(date) {
-      if (useTargetMonth) {
-        const yr = new Date(date).getFullYear();
-        return getMonthEndDate(yr + 1, plan.target_month);
-      }
       return freqMonths ? addMonthsEnd(date, freqMonths) : addDays(date, intervalDays);
     }
 
     let nextDate;
 
-    if (useTargetMonth) {
-      // Yearly plan locked to a specific month (e.g. always April)
-      if (lastDate) {
-        const lastYear = new Date(lastDate).getFullYear();
-        nextDate = getMonthEndDate(lastYear + 1, plan.target_month);
-      } else {
-        const sd = toDateStr(plan.start_date) || today;
-        const sdYear = new Date(sd).getFullYear();
-        const candidateThisYear = getMonthEndDate(sdYear, plan.target_month);
-        nextDate = candidateThisYear >= today
-          ? candidateThisYear
-          : getMonthEndDate(sdYear + 1, plan.target_month);
-      }
-      while (nextDate < today) {
-        nextDate = advanceNext(nextDate);
-      }
-    } else if (lastDate) {
-      nextDate = freqMonths ? addMonthsEnd(lastDate, freqMonths) : addDays(lastDate, intervalDays);
-      while (nextDate < today) {
-        nextDate = advanceNext(nextDate);
-      }
+    if (lastDate) {
+      // Mevcut son gorevden sonrasini uret
+      nextDate = advanceNext(lastDate);
+      while (nextDate < today) nextDate = advanceNext(nextDate);
+    } else if (useTargetMonth) {
+      // Plan icin hic gorev yok + target_month var — ilk gorevi target_month'a sabitle
+      const sdYear = new Date(toDateStr(plan.start_date) || today).getFullYear();
+      let candidate = getMonthEndDate(sdYear, plan.target_month);
+      while (candidate < today) candidate = advanceNext(candidate);
+      nextDate = candidate;
     } else {
       const sd = toDateStr(plan.start_date) || today;
       if (freqMonths) {
         const monthEnd = toMonthEnd(sd);
         nextDate = monthEnd < today ? addMonthsEnd(monthEnd, freqMonths) : monthEnd;
-        while (nextDate < today) {
-          nextDate = addMonthsEnd(nextDate, freqMonths);
-        }
+        while (nextDate < today) nextDate = addMonthsEnd(nextDate, freqMonths);
       } else {
         nextDate = sd < today ? today : sd;
       }

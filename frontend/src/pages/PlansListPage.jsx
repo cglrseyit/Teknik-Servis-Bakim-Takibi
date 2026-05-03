@@ -8,15 +8,16 @@ import api from '../api/axios';
 
 const FREQ_LABELS = {
   daily: 'Günlük', weekly: 'Haftalık', monthly: 'Aylık',
-  quarterly: '3 Aylık', yearly: 'Yıllık', custom: 'Özel',
+  quarterly: '3 Aylık', semiannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel',
 };
 const FREQ_COLORS = {
-  daily:     'bg-amber-50 text-amber-700',
-  weekly:    'bg-violet-50 text-violet-700',
-  monthly:   'bg-amber-50 text-amber-700',
-  quarterly: 'bg-orange-50 text-orange-700',
-  yearly:    'bg-red-50 text-red-700',
-  custom:    'bg-slate-100 text-slate-600',
+  daily:      'bg-amber-50 text-amber-700',
+  weekly:     'bg-violet-50 text-violet-700',
+  monthly:    'bg-amber-50 text-amber-700',
+  quarterly:  'bg-orange-50 text-orange-700',
+  semiannual: 'bg-rose-50 text-rose-700',
+  yearly:     'bg-red-50 text-red-700',
+  custom:     'bg-slate-100 text-slate-600',
 };
 
 export default function PlansListPage() {

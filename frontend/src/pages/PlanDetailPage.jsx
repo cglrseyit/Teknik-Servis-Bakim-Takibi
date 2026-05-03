@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 
-const FREQ_LABELS = { daily: 'Günlük', weekly: 'Haftalık', monthly: 'Aylık', quarterly: '3 Aylık', yearly: 'Yıllık', custom: 'Özel' };
+const FREQ_LABELS = { daily: 'Günlük', weekly: 'Haftalık', monthly: 'Aylık', quarterly: '3 Aylık', semiannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel' };
 
 function fmt(dateStr) {
   if (!dateStr) return '—';

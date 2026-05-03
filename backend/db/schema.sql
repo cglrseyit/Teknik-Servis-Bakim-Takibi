@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS maintenance_plans (
   equipment_id        INT REFERENCES equipment(id) ON DELETE CASCADE,
   title               VARCHAR(200) NOT NULL,
   description         TEXT,
-  frequency_type      VARCHAR(30) NOT NULL CHECK (frequency_type IN ('daily','weekly','monthly','quarterly','yearly','custom')),
+  frequency_type      VARCHAR(30) NOT NULL CHECK (frequency_type IN ('daily','weekly','monthly','quarterly','semiannual','yearly','custom')),
   frequency_days      INT,
   advance_notice_days INT DEFAULT 3,
   start_date          DATE,

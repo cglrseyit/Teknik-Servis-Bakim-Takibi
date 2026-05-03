@@ -33,6 +33,13 @@ async function migrate() {
     await client.query(`ALTER TABLE users DROP COLUMN IF EXISTS department_id`);
     await client.query(`ALTER TABLE equipment DROP COLUMN IF EXISTS department_id`);
     await client.query(`DROP TABLE IF EXISTS departments`);
+
+    // 'semiannual' frequency tipini CHECK'e ekle
+    await client.query(`
+      ALTER TABLE maintenance_plans DROP CONSTRAINT IF EXISTS maintenance_plans_frequency_type_check;
+      ALTER TABLE maintenance_plans ADD CONSTRAINT maintenance_plans_frequency_type_check
+        CHECK (frequency_type IN ('daily','weekly','monthly','quarterly','semiannual','yearly','custom'));
+    `);
     await client.query(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id         SERIAL PRIMARY KEY,
