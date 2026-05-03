@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+    --background: 40 40% 98%;
+    --foreground: 25 20% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 25 20% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 25 20% 12%;
+    --primary: 36 50% 45%;
+    --primary-foreground: 40 40% 98%;
+    --secondary: 40 30% 95%;
+    --secondary-foreground: 25 20% 18%;
+    --muted: 40 30% 95%;
+    --muted-foreground: 30 10% 42%;
+    --accent: 40 50% 92%;
+    --accent-foreground: 25 20% 18%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 36 30% 88%;
+    --input: 36 30% 88%;
+    --ring: 36 50% 45%;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply border-border;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    @apply text-slate-800 bg-[#FAF7F0];
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-300; }
+
+  /* Recharts: SVG ve dilim odağında siyah outline gözükmesin */
+  .recharts-wrapper:focus,
+  .recharts-surface:focus,
+  .recharts-sector:focus,
+  .recharts-rectangle:focus,
+  .recharts-wrapper *:focus { outline: none !important; }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-modal-in {
+    animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
