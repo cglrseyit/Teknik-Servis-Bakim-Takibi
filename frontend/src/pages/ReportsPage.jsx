@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { History, Wrench, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
@@ -64,7 +64,6 @@ function Field({ label, value }) {
 export default function ReportsPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
-  const [monthly, setMonthly] = useState([]);
   const [statusDist, setStatusDist] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
@@ -73,7 +72,6 @@ export default function ReportsPage() {
 
   useEffect(() => {
     api.get('/reports/stats').then(r => setStats(r.data)).catch(() => {});
-    api.get('/reports/summary').then(r => setMonthly(r.data)).catch(() => {});
     api.get('/reports/by-status').then(r => setStatusDist(r.data)).catch(() => {});
     if (user?.role === 'admin') {
       api.get('/reports/audit-logs').then(r => setAuditLogs(r.data)).catch(() => {});
@@ -157,81 +155,50 @@ export default function ReportsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Bar Chart */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold text-slate-800">Tamamlanan Görevler</p>
-              <p className="text-xs text-slate-400 mt-0.5">Son 6 ay</p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600">
-              <CheckCircle2 size={11} />
-              Aylık
-            </span>
+      {/* Donut Chart */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Görev Durum Dağılımı</p>
+            <p className="text-xs text-slate-400 mt-0.5">Toplam {pieData.reduce((s, d) => s + d.value, 0)} görev</p>
           </div>
-          {monthly.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-10">Veri yok</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={monthly} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#B8924A" stopOpacity={0.95} />
-                    <stop offset="100%" stopColor="#B8924A" stopOpacity={0.55} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} axisLine={false} tickLine={false} />
+        </div>
+        {pieData.length === 0 ? (
+          <p className="text-sm text-slate-400 text-center py-10">Veri yok</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={2}>
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
+                  ))}
+                </Pie>
                 <Tooltip
-                  formatter={(v) => [v, 'Tamamlanan']}
-                  cursor={{ fill: '#f1f5f9' }}
                   contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: 12 }}
                 />
-                <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
-              </BarChart>
+              </PieChart>
             </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Donut Chart */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-semibold text-slate-800">Görev Durum Dağılımı</p>
-              <p className="text-xs text-slate-400 mt-0.5">Toplam {pieData.reduce((s, d) => s + d.value, 0)} görev</p>
+            <div className="space-y-3">
+              {pieData.map(d => {
+                const total = pieData.reduce((s, x) => s + x.value, 0);
+                const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                return (
+                  <div key={d.name} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                      <span className="text-sm text-slate-700">{d.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-400">{pct}%</span>
+                      <span className="text-sm font-semibold text-slate-800 min-w-[28px] text-right">{d.value}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-          {pieData.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-10">Veri yok</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 items-center">
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                    {pieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} stroke="white" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: 12 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2">
-                {pieData.map(d => (
-                  <div key={d.name} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                      <span className="text-xs text-slate-600">{d.name}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-800">{d.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Audit Log — sadece admin */}
