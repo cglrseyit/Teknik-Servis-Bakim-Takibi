@@ -7,7 +7,8 @@ async function getAll(req, res) {
     const { rows } = await pool.query(
       `SELECT p.*, e.name AS equipment_name,
               COUNT(t.id)::int AS task_count,
-              MAX(CASE WHEN t.status = 'completed' THEN t.completed_at END) AS last_completed_at
+              MAX(CASE WHEN t.status = 'completed' THEN t.completed_at END) AS last_completed_at,
+              (SELECT status FROM maintenance_tasks WHERE plan_id = p.id ORDER BY scheduled_date DESC LIMIT 1) AS latest_task_status
        FROM maintenance_plans p
        LEFT JOIN equipment e ON e.id = p.equipment_id
        LEFT JOIN maintenance_tasks t ON t.plan_id = p.id

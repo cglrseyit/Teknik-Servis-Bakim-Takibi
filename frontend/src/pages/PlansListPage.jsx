@@ -112,7 +112,7 @@ export default function PlansListPage() {
                     )}
                   </td>
                   <td className="px-5 py-3.5">
-                    {p.last_completed_at ? (
+                    {p.last_completed_at && !['pending', 'in_progress', 'overdue'].includes(p.latest_task_status) ? (
                       <span className="flex items-center gap-1.5 text-slate-600">
                         <CalendarCheck size={12} className="text-emerald-500" />
                         {new Date(p.last_completed_at).toLocaleDateString('tr-TR')}
