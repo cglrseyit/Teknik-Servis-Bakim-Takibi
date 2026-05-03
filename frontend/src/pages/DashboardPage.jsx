@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays } from 'lucide-react';
+import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import Layout from '../components/Layout';
 import Badge from '../components/Badge';
 import ConfirmModal from '../components/ConfirmModal';
@@ -48,6 +48,124 @@ function lastDayOfMonth(ym) {
   const [year, month] = ym.split('-').map(Number);
   const day = new Date(year, month, 0).getDate();
   return `${ym}-${String(day).padStart(2, '0')}`;
+}
+
+function shiftMonth(ym, delta) {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+const MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+function MonthPicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => Number(value.split('-')[0]));
+  const ref = useRef(null);
+
+  const [selYear, selMonth] = value.split('-').map(Number);
+  const todayYM = currentYearMonth();
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) setPickerYear(Number(value.split('-')[0]));
+  }, [open, value]);
+
+  function pick(monthIdx) {
+    onChange(`${pickerYear}-${String(monthIdx + 1).padStart(2, '0')}`);
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative inline-flex items-center gap-1" ref={ref}>
+      <button
+        type="button"
+        onClick={() => onChange(shiftMonth(value, -1))}
+        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+        aria-label="Önceki ay"
+      >
+        <ChevronLeft size={16} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200/70 text-amber-800 hover:from-amber-100 hover:to-amber-100 transition-all shadow-sm min-w-[140px]"
+      >
+        <CalendarDays size={14} className="text-amber-600" />
+        <span className="text-sm font-semibold">{MONTH_NAMES[selMonth - 1]} {selYear}</span>
+        <ChevronDown size={13} className={`text-amber-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onChange(shiftMonth(value, 1))}
+        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+        aria-label="Sonraki ay"
+      >
+        <ChevronRight size={16} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-white rounded-xl shadow-xl border border-gray-100 p-3 w-72">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setPickerYear(y => y - 1)}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-sm font-bold text-gray-800">{pickerYear}</span>
+            <button
+              type="button"
+              onClick={() => setPickerYear(y => y + 1)}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {MONTH_NAMES.map((m, i) => {
+              const isSelected = pickerYear === selYear && i + 1 === selMonth;
+              const isToday = `${pickerYear}-${String(i + 1).padStart(2, '0')}` === todayYM;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => pick(i)}
+                  className={`px-2 py-2 text-xs font-medium rounded-lg transition-colors ${
+                    isSelected
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : isToday
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {m.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => { onChange(todayYM); setOpen(false); }}
+            className="mt-3 w-full text-xs font-semibold text-amber-600 hover:text-amber-700 py-1.5 rounded-md hover:bg-amber-50 transition-colors"
+          >
+            Bu Aya Dön
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -227,15 +345,11 @@ export default function DashboardPage() {
 
             {/* Sol: Başlık + Ay Seçici */}
             <div className="flex items-center gap-3">
-              <CalendarDays size={18} className="text-gray-400 shrink-0" />
               <h3 className="text-lg font-semibold text-gray-900 shrink-0">Bakım Görevleri</h3>
-              <input
-                type="month"
+              <MonthPicker
                 value={selectedMonth}
-                onChange={e => { setSelectedMonth(e.target.value); setStatusFilter('undone'); }}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 text-gray-700 font-medium"
+                onChange={ym => { setSelectedMonth(ym); setStatusFilter('undone'); }}
               />
-              <span className="text-sm text-gray-400 hidden sm:block">{monthLabel(selectedMonth)}</span>
             </div>
 
             {/* Sağ: Arama + Durum Filtreleri */}
