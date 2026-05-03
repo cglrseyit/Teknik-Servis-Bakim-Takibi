@@ -140,6 +140,48 @@ async function updateStatus(req, res) {
     if (!responsible_person?.trim()) return res.status(400).json({ error: 'Sorumlu kişi zorunludur' });
   }
   try {
+    // Başlatma/tamamlama için sıra ve tarih kontrolü
+    if (status === 'in_progress' || status === 'completed') {
+      const { rows: existing } = await pool.query(
+        'SELECT scheduled_date, plan_id, status FROM maintenance_tasks WHERE id = $1',
+        [id]
+      );
+      if (!existing[0]) return res.status(404).json({ error: 'Bulunamadı' });
+      const cur = existing[0];
+
+      if (cur.scheduled_date) {
+        // 1) Tarih kontrolü: scheduled_date gelecek bir aya aitse engelle
+        const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+        const sd = new Date(cur.scheduled_date);
+        const curYM = istanbulNow.getFullYear() * 12 + istanbulNow.getMonth();
+        const taskYM = sd.getFullYear() * 12 + sd.getMonth();
+        if (taskYM > curYM) {
+          return res.status(400).json({
+            error: 'Bu bakımın zamanı henüz gelmedi. İçinde bulunulan ay sonunda yapılabilir.'
+          });
+        }
+
+        // 2) Sıra kontrolü: aynı plana ait daha eski tamamlanmamış görev varsa engelle
+        if (cur.plan_id) {
+          const { rows: older } = await pool.query(
+            `SELECT id, scheduled_date FROM maintenance_tasks
+             WHERE plan_id = $1
+               AND id <> $2
+               AND scheduled_date < $3::date
+               AND status IN ('pending','in_progress','overdue')
+             ORDER BY scheduled_date ASC LIMIT 1`,
+            [cur.plan_id, id, cur.scheduled_date]
+          );
+          if (older[0]) {
+            const olderDate = new Date(older[0].scheduled_date).toLocaleDateString('tr-TR');
+            return res.status(400).json({
+              error: `Önce ${olderDate} tarihli tamamlanmamış bakımı yapmalısınız.`
+            });
+          }
+        }
+      }
+    }
+
     const completed_at = status === 'completed'
       ? (performed_date ? new Date(performed_date) : new Date())
       : null;

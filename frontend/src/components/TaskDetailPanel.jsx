@@ -106,6 +106,13 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
   const isPostponed = task.status === 'postponed';
   const hasEquipmentDetails = task.brand || task.model || task.serial_number || task.category;
 
+  const isFutureMonth = (() => {
+    if (!task.scheduled_date) return false;
+    const sd = new Date(task.scheduled_date);
+    const now = new Date();
+    return sd.getFullYear() * 12 + sd.getMonth() > now.getFullYear() * 12 + now.getMonth();
+  })();
+
   return (
     <div className="space-y-4">
       {/* Ekipman bilgisi */}
@@ -153,7 +160,12 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
         </div>
       )}
 
-      {isAlreadyDone ? (
+      {isFutureMonth && !isAlreadyDone ? (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
+          <p className="text-blue-700 font-semibold text-sm mb-1">Bu bakımın zamanı henüz gelmedi</p>
+          <p className="text-blue-600 text-xs">Bakım, vadesinin geldiği ay içinde gerçekleştirilebilir.</p>
+        </div>
+      ) : isAlreadyDone ? (
         <div className="bg-green-50 border border-green-200 rounded-xl p-5">
           <p className="text-green-700 font-medium text-center mb-3">Bu görev tamamlandı</p>
           {task.performed_work && (

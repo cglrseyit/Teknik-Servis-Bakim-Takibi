@@ -238,6 +238,13 @@ export default function DashboardPage() {
     } finally { setUpdating(null); }
   }
 
+  function isFutureMonth(scheduledDate) {
+    if (!scheduledDate) return false;
+    const sd = new Date(scheduledDate);
+    const now = new Date();
+    return sd.getFullYear() * 12 + sd.getMonth() > now.getFullYear() * 12 + now.getMonth();
+  }
+
   function handleStart(e, task) {
     e.stopPropagation();
     const scheduledDate = task.scheduled_date?.split('T')[0];
@@ -297,14 +304,18 @@ export default function DashboardPage() {
         </td>
         <td className="px-6 py-4">
           {t.status === 'pending' && (
-            <button
-              onClick={e => handleStart(e, t)}
-              disabled={updating === t.id}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-sm"
-            >
-              <PlayCircle className="w-3.5 h-3.5" />
-              Başla
-            </button>
+            isFutureMonth(t.scheduled_date?.split('T')[0]) ? (
+              <span className="text-xs text-gray-400 italic">Zamanı gelmedi</span>
+            ) : (
+              <button
+                onClick={e => handleStart(e, t)}
+                disabled={updating === t.id}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-sm"
+              >
+                <PlayCircle className="w-3.5 h-3.5" />
+                Başla
+              </button>
+            )
           )}
           {t.status === 'in_progress' && (
             <span className="text-xs text-green-600 font-semibold">Tamamla →</span>
