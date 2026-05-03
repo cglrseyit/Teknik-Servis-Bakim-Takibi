@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { sendDigestEmail } = require('./emailService');
 
 async function generateNotifications() {
   try {
@@ -49,9 +50,62 @@ async function generateNotifications() {
     }
 
     console.log(`[notifications] ${overdue.length} gecikmiş, ${upcoming.length} yaklaşan bildirim oluşturuldu`);
+
+    await sendDailyDigestEmails();
   } catch (err) {
     console.error('[notifications] Hata:', err.message);
   }
 }
 
-module.exports = { generateNotifications };
+// Her aktif kullanıcı için günlük tek bir özet e-posta gönderir.
+// Sadece kullanıcının bugün için yaklaşan veya gecikmiş görevleri varsa mail atılır.
+async function sendDailyDigestEmails() {
+  try {
+    const { rows: users } = await pool.query(
+      `SELECT id, name, email FROM users WHERE is_active = true AND email IS NOT NULL AND email <> ''`
+    );
+
+    let sent = 0;
+    for (const u of users) {
+      const { rows: userOverdue } = await pool.query(`
+        SELECT t.id, t.title, t.scheduled_date,
+               e.name AS equipment_name, e.location
+        FROM maintenance_tasks t
+        LEFT JOIN equipment e ON e.id = t.equipment_id
+        WHERE t.assigned_to = $1
+          AND t.status IN ('pending','in_progress','overdue')
+          AND t.scheduled_date < (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+        ORDER BY t.scheduled_date ASC
+      `, [u.id]);
+
+      const { rows: userUpcoming } = await pool.query(`
+        SELECT t.id, t.title, t.scheduled_date,
+               (t.scheduled_date - (NOW() AT TIME ZONE 'Europe/Istanbul')::date) AS days_left,
+               e.name AS equipment_name, e.location
+        FROM maintenance_tasks t
+        LEFT JOIN equipment e ON e.id = t.equipment_id
+        WHERE t.assigned_to = $1
+          AND t.status = 'pending'
+          AND t.scheduled_date BETWEEN (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+                                   AND (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '3 days'
+        ORDER BY t.scheduled_date ASC
+      `, [u.id]);
+
+      if (userOverdue.length === 0 && userUpcoming.length === 0) continue;
+
+      const ok = await sendDigestEmail({
+        to: u.email,
+        userName: u.name,
+        overdue: userOverdue,
+        upcoming: userUpcoming,
+      });
+      if (ok) sent++;
+    }
+
+    if (sent > 0) console.log(`[email] ${sent} kullanıcıya günlük özet maili gönderildi`);
+  } catch (err) {
+    console.error('[email] Özet gönderiminde hata:', err.message);
+  }
+}
+
+module.exports = { generateNotifications, sendDailyDigestEmails };
