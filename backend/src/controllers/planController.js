@@ -87,6 +87,13 @@ async function create(req, res) {
   if (!start_date) {
     return res.status(400).json({ error: 'Tarih zorunlu' });
   }
+  if (is_one_time) {
+    const now = new Date();
+    const thisYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (start_date.slice(0, 7) < thisYM) {
+      return res.status(400).json({ error: 'Tek seferlik görev geçmiş bir aya oluşturulamaz' });
+    }
+  }
   try {
     // Periyodik plan icin: ekipmanin baska aktif periyodik plani olmamali
     if (!is_one_time) {

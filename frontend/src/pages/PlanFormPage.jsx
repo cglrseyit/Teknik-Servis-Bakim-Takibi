@@ -242,7 +242,9 @@ export default function PlanFormPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {isOneTime ? 'Görev Ayı *' : isEdit ? 'Referans Ayı *' : 'İlk Bakım Ayı *'}
               </label>
-              <input required type="month" value={form.start_date} onChange={set('start_date')} className={fieldCls} />
+              <input required type="month" value={form.start_date} onChange={set('start_date')}
+                min={isOneTime ? (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })() : undefined}
+                className={fieldCls} />
               <p className="text-xs text-gray-400 mt-1">Ay seçin — görev o ayın son gününe atanır</p>
             </div>
           )}
