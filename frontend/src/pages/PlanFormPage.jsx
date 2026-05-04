@@ -114,7 +114,7 @@ export default function PlanFormPage() {
 
   return (
     <Layout>
-      <div className="max-w-xl">
+      <div className="max-w-xl mx-auto px-6 py-6">
         <h2 className="text-xl font-bold text-gray-800 mb-6">
           {isEdit ? 'Bakım Planını Düzenle' : 'Yeni Bakım Planı'}
         </h2>
