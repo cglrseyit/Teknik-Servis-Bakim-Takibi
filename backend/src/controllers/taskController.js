@@ -210,7 +210,11 @@ async function updateStatus(req, res) {
         );
         if (plans[0]) {
           if (plans[0].is_one_time) {
-            await pool.query('UPDATE maintenance_plans SET is_active = false WHERE id = $1', [plans[0].id]);
+            await pool.query(
+              `DELETE FROM maintenance_tasks WHERE plan_id=$1 AND status IN ('pending','in_progress','postponed','overdue')`,
+              [plans[0].id]
+            );
+            await pool.query('DELETE FROM maintenance_plans WHERE id=$1', [plans[0].id]);
           } else {
             // Pencere: periyotun en az 1 katı kadar ilerisi (3 aylık plan için 97 gün gibi)
             const interval = getIntervalDays(plans[0]);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import { useAuth } from '../context/AuthContext';
@@ -61,12 +61,15 @@ function Field({ label, value }) {
   );
 }
 
-function SectionCard({ title, icon: Icon, iconBg, iconColor, children }) {
+function SectionCard({ title, icon: Icon, iconBg, iconColor, badge, children }) {
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden">
-      <div className={`${iconBg} px-4 py-3 flex items-center gap-2.5 border-b border-slate-200`}>
-        <Icon size={14} className={iconColor} strokeWidth={2} />
-        <p className="text-sm font-semibold text-slate-700">{title}</p>
+      <div className={`${iconBg} px-4 py-3 flex items-center justify-between border-b border-slate-200`}>
+        <div className="flex items-center gap-2.5">
+          <Icon size={14} className={iconColor} strokeWidth={2} />
+          <p className="text-sm font-semibold text-slate-700">{title}</p>
+        </div>
+        {badge}
       </div>
       <div className="bg-white p-4">{children}</div>
     </div>
@@ -81,14 +84,18 @@ export default function ReportsPage() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [logDetail, setLogDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [auditFilter, setAuditFilter] = useState('');
 
   useEffect(() => {
     api.get('/reports/stats').then(r => setStats(r.data)).catch(() => {});
     api.get('/reports/by-status').then(r => setStatusDist(r.data)).catch(() => {});
-    if (user?.role === 'admin') {
-      api.get('/reports/audit-logs').then(r => setAuditLogs(r.data)).catch(() => {});
-    }
-  }, [user]);
+  }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    const url = auditFilter ? `/reports/audit-logs?action=${auditFilter}` : '/reports/audit-logs';
+    api.get(url).then(r => setAuditLogs(r.data)).catch(() => {});
+  }, [user, auditFilter]);
 
   function monthTrend(curr, prev) {
     if (prev === 0) return curr > 0 ? { dir: 'up', label: 'Yeni', bg: 'bg-emerald-50', text: 'text-emerald-600' } : null;
@@ -207,12 +214,37 @@ export default function ReportsPage() {
       {/* Audit Log — sadece admin */}
       {user?.role === 'admin' && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-800">Son İşlemler</p>
-              <p className="text-xs text-slate-400 mt-0.5">Denetim kaydı — son 20 işlem</p>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Son İşlemler</p>
+                <p className="text-xs text-slate-400 mt-0.5">Denetim kaydı — son 50 işlem</p>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
             </div>
-            <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
+            {/* Filtre sekmeleri */}
+            <div className="flex gap-1.5 flex-wrap">
+              {[
+                { value: '',                   label: 'Tümü' },
+                { value: 'task_completed',     label: 'Tamamlananlar' },
+                { value: 'plan_created',       label: 'Plan Oluşturuldu' },
+                { value: 'plan_deleted',       label: 'Plan Silindi' },
+                { value: 'equipment_created',  label: 'Ekipman Eklendi' },
+                { value: 'equipment_deleted',  label: 'Ekipman Silindi' },
+              ].map(f => (
+                <button
+                  key={f.value}
+                  onClick={() => setAuditFilter(f.value)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                    auditFilter === f.value
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
           {auditLogs.length === 0 ? (
             <div className="py-14 text-center">
@@ -269,6 +301,7 @@ export default function ReportsPage() {
         open={Boolean(selectedLog)}
         onClose={() => { setSelectedLog(null); setLogDetail(null); }}
         title={selectedLog ? (ACTION_LABELS[selectedLog.action] || selectedLog.action) : ''}
+        subtitle={logDetail?.equipment?.name || selectedLog?.detail || ''}
       >
         {loadingDetail ? (
           <div className="text-slate-400 text-sm text-center py-10">Yükleniyor...</div>
@@ -313,7 +346,18 @@ export default function ReportsPage() {
 
             {/* Görev detayları (task_completed log'ları için) */}
             {logDetail.task_detail?.title && (
-              <SectionCard title="Görev Detayları" icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600">
+              <SectionCard
+                title="Görev Detayları"
+                icon={CheckCircle2}
+                iconBg="bg-emerald-50"
+                iconColor="text-emerald-600"
+                badge={logDetail.task_detail.is_one_time ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-orange-100 text-orange-700">
+                    <Zap size={9} />
+                    Tek Seferlik
+                  </span>
+                ) : null}
+              >
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-4">
                   {logDetail.task_detail.scheduled_date && (
                     <Field label="Planlanan Tarih" value={fmtDate(logDetail.task_detail.scheduled_date)} />

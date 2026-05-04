@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function SlidePanel({ open, onClose, title, children }) {
+export default function SlidePanel({ open, onClose, title, subtitle, children }) {
   useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -22,7 +22,10 @@ export default function SlidePanel({ open, onClose, title, children }) {
       <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-modal-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
-          <h3 className="font-semibold text-gray-800 text-base truncate pr-4">{title}</h3>
+          <div className="min-w-0 pr-4">
+            <h3 className="font-semibold text-gray-800 text-base truncate">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors flex-shrink-0 text-lg"

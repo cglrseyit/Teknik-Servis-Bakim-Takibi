@@ -58,12 +58,17 @@ async function getStatusDistribution(req, res) {
 
 async function getAuditLogs(req, res) {
   try {
-    const { rows } = await pool.query(`
-      SELECT a.*, u.name AS user_name
-      FROM audit_logs a
-      LEFT JOIN users u ON u.id = a.user_id
-      ORDER BY a.created_at DESC LIMIT 20
-    `);
+    const { action } = req.query;
+    const params = [];
+    const where = action ? `WHERE a.action = $${params.push(action)}` : '';
+    const { rows } = await pool.query(
+      `SELECT a.*, u.name AS user_name
+       FROM audit_logs a
+       LEFT JOIN users u ON u.id = a.user_id
+       ${where}
+       ORDER BY a.created_at DESC LIMIT 50`,
+      params
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Sunucu hatası' });
@@ -102,10 +107,12 @@ async function getAuditLogDetail(req, res) {
                   t.title, t.scheduled_date, t.completed_at,
                   t.performed_work, t.notes AS task_notes,
                   t.maintained_by, t.responsible_person,
-                  u.name AS completed_by_name
+                  u.name AS completed_by_name,
+                  mp.is_one_time
            FROM maintenance_tasks t
            JOIN equipment e ON e.id = t.equipment_id
            LEFT JOIN users u ON u.id = t.completed_by
+           LEFT JOIN maintenance_plans mp ON mp.id = t.plan_id
            WHERE t.id = $1`, [log.entity_id]
         );
         if (r.rows[0]) {
@@ -129,6 +136,7 @@ async function getAuditLogDetail(req, res) {
             maintained_by: row.maintained_by,
             responsible_person: row.responsible_person,
             completed_by_name: row.completed_by_name,
+            is_one_time: row.is_one_time || false,
           };
         }
       } else if (log.entity === 'equipment') {
