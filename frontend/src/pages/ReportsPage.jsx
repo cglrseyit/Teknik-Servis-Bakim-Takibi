@@ -96,7 +96,8 @@ export default function ReportsPage() {
       toast.success(r.data.message);
     } catch (err) {
       const d = err.response?.data;
-      const msg = d?.detail ? `${d.message}: ${d.detail}` : (d?.message || 'Mail gönderilemedi');
+      const detail = typeof d?.detail === 'object' ? JSON.stringify(d.detail) : d?.detail;
+      const msg = detail ? `${d.message}: ${detail}` : (d?.message || 'Mail gönderilemedi');
       toast.error(msg);
     } finally {
       setTestingEmail(false);
