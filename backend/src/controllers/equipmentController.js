@@ -50,16 +50,24 @@ async function getOne(req, res) {
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
 
-    const { rows: tasks } = await pool.query(
+    const { rows: upcomingTasks } = await pool.query(
       `SELECT t.*, u.name AS assigned_name
        FROM maintenance_tasks t
        LEFT JOIN users u ON u.id = t.assigned_to
        WHERE t.equipment_id = $1
-       ORDER BY
-         CASE WHEN t.status IN ('pending','in_progress','overdue') THEN 0 ELSE 1 END ASC,
-         CASE WHEN t.status IN ('pending','in_progress','overdue') THEN t.scheduled_date END ASC,
-         CASE WHEN t.status NOT IN ('pending','in_progress','overdue') THEN t.scheduled_date END DESC NULLS LAST
-       LIMIT 20`,
+         AND t.status IN ('pending','in_progress','overdue','postponed')
+       ORDER BY t.scheduled_date ASC`,
+      [id]
+    );
+
+    const { rows: completedTasks } = await pool.query(
+      `SELECT t.*, u.name AS assigned_name
+       FROM maintenance_tasks t
+       LEFT JOIN users u ON u.id = t.assigned_to
+       WHERE t.equipment_id = $1
+         AND t.status IN ('completed','skipped')
+       ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC
+       LIMIT 50`,
       [id]
     );
 
@@ -75,7 +83,7 @@ async function getOne(req, res) {
       [id]
     );
 
-    res.json({ ...rows[0], recent_tasks: tasks, next_task: nextRows[0] || null });
+    res.json({ ...rows[0], upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Sunucu hatası' });
