@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 export default function SlidePanel({ open, onClose, title, subtitle, children }) {
   useEffect(() => {
@@ -8,37 +9,41 @@ export default function SlidePanel({ open, onClose, title, subtitle, children })
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <>
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className={`fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-[2px] transition-opacity duration-250 ${
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-modal-in">
+      {/* Side panel */}
+      <div
+        className={`fixed right-0 top-0 bottom-0 z-50 w-[460px] bg-white border-l border-slate-100 shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
-          <div className="min-w-0 pr-4">
-            <h3 className="font-semibold text-gray-800 text-base truncate">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
-          </div>
+        <div className="h-14 px-5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors flex-shrink-0 text-lg"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex-shrink-0"
           >
-            ✕
+            <X size={16} strokeWidth={2} />
           </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-800 truncate leading-tight">{title}</p>
+            {subtitle && <p className="text-xs text-slate-400 truncate mt-0.5">{subtitle}</p>}
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-5">
           {children}
         </div>
       </div>
-    </div>
+    </>
   );
 }

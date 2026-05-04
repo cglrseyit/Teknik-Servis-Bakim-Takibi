@@ -58,6 +58,14 @@
   .animate-modal-in {
     animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+
+  .animate-slide-in {
+    animation: slideIn 0.25s ease-out both;
+  }
+
+  .animate-toast-in {
+    animation: toastIn 0.2s ease-out both;
+  }
 }
 
 @keyframes fadeUp {
@@ -67,5 +75,15 @@
 
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
