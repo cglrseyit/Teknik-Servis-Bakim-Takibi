@@ -91,7 +91,7 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { name, brand, category, supplier, status, notes, maintenance_period } = req.body;
+  const { name, brand, category, supplier, status, notes, maintenance_period, maintenance_start_date } = req.body;
   if (!name) return res.status(400).json({ error: 'Ekipman adı gerekli' });
   if (!supplier) return res.status(400).json({ error: 'Tedarikçi gerekli' });
   try {
@@ -106,7 +106,10 @@ async function create(req, res) {
     if (maintenance_period && PERIOD_TO_FREQ[maintenance_period]) {
       try {
         const freq = PERIOD_TO_FREQ[maintenance_period];
-        const startDate = new Date().toISOString().split('T')[0];
+        // Kullanıcı ay seçtiyse o ayın 1'ini, seçmediyse bugünü kullan
+        const startDate = maintenance_start_date
+          ? `${maintenance_start_date}-01`
+          : new Date().toISOString().split('T')[0];
         const { rows: planRows } = await pool.query(
           `INSERT INTO maintenance_plans
              (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active)

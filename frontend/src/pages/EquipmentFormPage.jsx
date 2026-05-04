@@ -35,9 +35,11 @@ export default function EquipmentFormPage() {
   const toast = useToast();
   const isEdit = Boolean(id);
   const [error, setError] = useState('');
+  const [setupLater, setSetupLater] = useState(false);
   const [form, setForm] = useState({
     name: '', brand: '', category: '', supplier: '',
     status: 'active', notes: '', maintenance_period: '',
+    maintenance_start_date: '',
   });
 
   useEffect(() => {
@@ -165,39 +167,84 @@ export default function EquipmentFormPage() {
 
               {/* Bakım Periyodu */}
               <div className="space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-1.5">
-                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                  Bakım Periyodu <span className="text-destructive">*</span>
-                </Label>
-                <RadioGroup
-                  value={form.maintenance_period}
-                  onValueChange={val => setForm(f => ({ ...f, maintenance_period: val }))}
-                  className="grid grid-cols-2 gap-3"
-                >
-                  {PERIOD_OPTIONS.map(opt => {
-                    const selected = form.maintenance_period === opt.value;
-                    return (
-                      <div key={opt.value}>
-                        <RadioGroupItem value={opt.value} id={`period-${opt.value}`} className="peer sr-only" />
-                        <Label
-                          htmlFor={`period-${opt.value}`}
-                          className={`flex flex-col gap-0.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm ${
-                            selected
-                              ? 'bg-amber-50 border-amber-500 shadow-sm'
-                              : 'bg-background border-border hover:border-muted-foreground/40'
-                          }`}
-                        >
-                          <span className={`font-semibold text-sm ${selected ? 'text-amber-700' : 'text-foreground'}`}>
-                            {opt.label}
-                          </span>
-                          <span className={`text-xs ${selected ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                            {opt.sub}
-                          </span>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                    <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                    Bakım Periyodu
+                    {!isEdit && !setupLater && <span className="text-destructive">*</span>}
+                  </Label>
+                  {!isEdit && !setupLater && (
+                    <button
+                      type="button"
+                      onClick={() => { setSetupLater(true); setForm(f => ({ ...f, maintenance_period: '', maintenance_start_date: '' })); }}
+                      className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2"
+                    >
+                      Bakımı daha sonra ayarla
+                    </button>
+                  )}
+                </div>
+
+                {!isEdit && setupLater ? (
+                  <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 bg-slate-50">
+                    <span className="text-sm text-slate-500">Bakım planı daha sonra ayarlanacak</span>
+                    <button
+                      type="button"
+                      onClick={() => setSetupLater(false)}
+                      className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
+                    >
+                      Şimdi ayarla
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <RadioGroup
+                      value={form.maintenance_period}
+                      onValueChange={val => setForm(f => ({ ...f, maintenance_period: val }))}
+                      className="grid grid-cols-2 gap-3"
+                    >
+                      {PERIOD_OPTIONS.map(opt => {
+                        const selected = form.maintenance_period === opt.value;
+                        return (
+                          <div key={opt.value}>
+                            <RadioGroupItem value={opt.value} id={`period-${opt.value}`} className="peer sr-only" />
+                            <Label
+                              htmlFor={`period-${opt.value}`}
+                              className={`flex flex-col gap-0.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm ${
+                                selected
+                                  ? 'bg-amber-50 border-amber-500 shadow-sm'
+                                  : 'bg-background border-border hover:border-muted-foreground/40'
+                              }`}
+                            >
+                              <span className={`font-semibold text-sm ${selected ? 'text-amber-700' : 'text-foreground'}`}>
+                                {opt.label}
+                              </span>
+                              <span className={`text-xs ${selected ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                                {opt.sub}
+                              </span>
+                            </Label>
+                          </div>
+                        );
+                      })}
+                    </RadioGroup>
+
+                    {!isEdit && form.maintenance_period && (
+                      <div className="space-y-1.5 pt-1">
+                        <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
+                          <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+                          Bakım Başlangıç Ayı
                         </Label>
+                        <input
+                          type="month"
+                          value={form.maintenance_start_date}
+                          min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })()}
+                          onChange={e => setForm(f => ({ ...f, maintenance_start_date: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                        />
+                        <p className="text-xs text-slate-400">Boş bırakılırsa bu aydan başlatılır</p>
                       </div>
-                    );
-                  })}
-                </RadioGroup>
+                    )}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
