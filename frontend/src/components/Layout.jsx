@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard',     Icon: Home,          roles: ['admin', 'teknik_muduru', 'order_taker'] },
+  { to: '/dashboard', label: 'Bakım Takvimi', Icon: Home,          roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/equipment', label: 'Ekipmanlar',    Icon: Wrench,        roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/plans',     label: 'Bakım Planları', Icon: ClipboardList, roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/reports',   label: 'Raporlar',      Icon: BarChart3,     roles: ['admin', 'teknik_muduru', 'order_taker'] },
@@ -17,7 +17,7 @@ const NAV = [
 ];
 
 const PAGE_TITLES = {
-  '/dashboard': 'Dashboard',
+  '/dashboard': 'Bakım Takvimi',
   '/equipment': 'Ekipmanlar',
   '/plans':     'Bakım Planları',
   '/reports':   'Raporlar',
