@@ -54,9 +54,21 @@ function fmtDate(dateStr) {
 
 function Field({ label, value }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-3">
-      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-gray-800">{value || '—'}</p>
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">{label}</p>
+      <p className="text-sm font-medium text-slate-800">{value || '—'}</p>
+    </div>
+  );
+}
+
+function SectionCard({ title, icon: Icon, iconBg, iconColor, children }) {
+  return (
+    <div className="rounded-xl border border-slate-200 overflow-hidden">
+      <div className={`${iconBg} px-4 py-3 flex items-center gap-2.5 border-b border-slate-200`}>
+        <Icon size={14} className={iconColor} strokeWidth={2} />
+        <p className="text-sm font-semibold text-slate-700">{title}</p>
+      </div>
+      <div className="bg-white p-4">{children}</div>
     </div>
   );
 }
@@ -259,32 +271,26 @@ export default function ReportsPage() {
         title={selectedLog ? (ACTION_LABELS[selectedLog.action] || selectedLog.action) : ''}
       >
         {loadingDetail ? (
-          <div className="text-gray-400 text-sm text-center py-10">Yükleniyor...</div>
+          <div className="text-slate-400 text-sm text-center py-10">Yükleniyor...</div>
         ) : logDetail ? (
-          <div className="space-y-5">
+          <div className="space-y-4">
+
             {/* İşlem özeti */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-xl border border-slate-100">
               <div>
-                <p className="text-xs text-gray-400 mb-0.5">Yapan Kullanıcı</p>
-                <p className="text-sm font-medium text-gray-800">{logDetail.user_name || '—'}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Yapan Kullanıcı</p>
+                <p className="text-sm font-semibold text-slate-800">{logDetail.user_name || '—'}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Tarih</p>
-                <p className="text-sm font-medium text-gray-800">{fmt(logDetail.created_at)}</p>
+              <div className="text-right">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Tarih</p>
+                <p className="text-sm font-medium text-slate-600">{fmt(logDetail.created_at)}</p>
               </div>
-              {logDetail.detail && (
-                <div>
-                  <p className="text-xs text-gray-400 mb-0.5">Açıklama</p>
-                  <p className="text-sm font-medium text-gray-800">{logDetail.detail}</p>
-                </div>
-              )}
             </div>
 
-            {/* Ekipman detayları */}
+            {/* Ekipman bilgileri */}
             {logDetail.equipment ? (
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-3">Ekipman Bilgileri</p>
-                <div className="grid grid-cols-2 gap-2">
+              <SectionCard title="Ekipman Bilgileri" icon={ClipboardList} iconBg="bg-slate-50" iconColor="text-slate-500">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                   <Field label="Ekipman Adı" value={logDetail.equipment.name} />
                   <Field label="Kategori" value={logDetail.equipment.category} />
                   <Field label="Marka" value={logDetail.equipment.brand} />
@@ -295,103 +301,80 @@ export default function ReportsPage() {
                   )}
                 </div>
                 {logDetail.equipment.notes && (
-                  <div className="mt-2 bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-400 mb-0.5">Ekipman Notları</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.equipment.notes}</p>
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Ekipman Notları</p>
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap">{logDetail.equipment.notes}</p>
                   </div>
                 )}
-              </div>
+              </SectionCard>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">Ekipman bilgisi mevcut değil</p>
+              <p className="text-sm text-slate-400 text-center py-4">Ekipman bilgisi mevcut değil</p>
             )}
 
             {/* Görev detayları (task_completed log'ları için) */}
             {logDetail.task_detail?.title && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 size={14} className="text-emerald-500" />
-                  <p className="text-sm font-semibold text-gray-700">Görev Detayları</p>
+              <SectionCard title="Görev Detayları" icon={CheckCircle2} iconBg="bg-emerald-50" iconColor="text-emerald-600">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                  {logDetail.task_detail.scheduled_date && (
+                    <Field label="Planlanan Tarih" value={fmtDate(logDetail.task_detail.scheduled_date)} />
+                  )}
+                  {logDetail.task_detail.completed_at && (
+                    <Field label="Tamamlanma" value={fmt(logDetail.task_detail.completed_at)} />
+                  )}
+                  <Field label="Bakımı Yapan" value={logDetail.task_detail.maintained_by} />
+                  <Field label="Sorumlu Kişi" value={logDetail.task_detail.responsible_person} />
                 </div>
-                <div className="border border-emerald-100 bg-emerald-50/40 rounded-xl p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {logDetail.task_detail.completed_at && (
-                      <Field label="Tamamlanma" value={fmt(logDetail.task_detail.completed_at)} />
-                    )}
-                    {logDetail.task_detail.scheduled_date && (
-                      <Field label="Planlanan Tarih" value={fmtDate(logDetail.task_detail.scheduled_date)} />
-                    )}
-                    <Field label="Bakımı Yapan" value={logDetail.task_detail.maintained_by} />
-                    <Field label="Sorumlu Kişi" value={logDetail.task_detail.responsible_person} />
+                {logDetail.task_detail.performed_work && (
+                  <div className="pt-4 border-t border-slate-100">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Yapılan İşlem</p>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{logDetail.task_detail.performed_work}</p>
                   </div>
-                  {logDetail.task_detail.performed_work && (
-                    <div className="bg-white rounded-lg p-3 border border-emerald-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Yapılan İşlem</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.task_detail.performed_work}</p>
-                    </div>
-                  )}
-                  {logDetail.task_detail.notes && (
-                    <div className="bg-white rounded-lg p-3 border border-emerald-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Görev Notları</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.task_detail.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                )}
+                {logDetail.task_detail.notes && (
+                  <div className="pt-4 border-t border-slate-100 mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Notlar</p>
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap">{logDetail.task_detail.notes}</p>
+                  </div>
+                )}
+              </SectionCard>
             )}
 
             {/* Son tamamlanan görev (sadece equipment_deleted loglarında) */}
             {logDetail.last_task && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <History size={14} className="text-amber-500" />
-                  <p className="text-sm font-semibold text-gray-700">Son Tamamlanan İşlem</p>
-                </div>
-                <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
-                  <div>
-                    <p className="text-xs text-amber-600 mb-0.5">Görev</p>
-                    <p className="text-sm font-medium text-gray-800">{logDetail.last_task.title}</p>
+              <SectionCard title="Son Tamamlanan İşlem" icon={History} iconBg="bg-amber-50" iconColor="text-amber-600">
+                <div className="space-y-4">
+                  <Field label="Görev" value={logDetail.last_task.title} />
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                    {logDetail.last_task.completed_at && (
+                      <Field label="Tamamlanma Tarihi" value={fmt(logDetail.last_task.completed_at)} />
+                    )}
+                    {logDetail.last_task.completed_by_name && (
+                      <Field label="Tamamlayan" value={logDetail.last_task.completed_by_name} />
+                    )}
+                    {logDetail.last_task.maintained_by && (
+                      <Field label="Bakımı Yapan" value={logDetail.last_task.maintained_by} />
+                    )}
+                    {logDetail.last_task.responsible_person && (
+                      <Field label="Sorumlu Kişi" value={logDetail.last_task.responsible_person} />
+                    )}
                   </div>
-                  {logDetail.last_task.completed_at && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Tamamlanma Tarihi</p>
-                      <p className="text-sm font-medium text-gray-800">{fmt(logDetail.last_task.completed_at)}</p>
-                    </div>
-                  )}
-                  {logDetail.last_task.completed_by_name && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Tamamlayan</p>
-                      <p className="text-sm font-medium text-gray-800">{logDetail.last_task.completed_by_name}</p>
-                    </div>
-                  )}
-                  {logDetail.last_task.maintained_by && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Bakımı Yapan</p>
-                      <p className="text-sm text-gray-700">{logDetail.last_task.maintained_by}</p>
-                    </div>
-                  )}
-                  {logDetail.last_task.responsible_person && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Sorumlu Kişi</p>
-                      <p className="text-sm text-gray-700">{logDetail.last_task.responsible_person}</p>
-                    </div>
-                  )}
                   {logDetail.last_task.performed_work && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Yapılan İşlem</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.last_task.performed_work}</p>
+                    <div className="pt-4 border-t border-slate-100">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Yapılan İşlem</p>
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{logDetail.last_task.performed_work}</p>
                     </div>
                   )}
                   {logDetail.last_task.notes && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Görev Notları</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.last_task.notes}</p>
+                    <div className="pt-4 border-t border-slate-100 mt-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Notlar</p>
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{logDetail.last_task.notes}</p>
                     </div>
                   )}
                 </div>
-              </div>
+              </SectionCard>
             )}
             {selectedLog?.action === 'equipment_deleted' && !logDetail.last_task && (
-              <p className="text-xs text-gray-400 text-center py-2">Bu ekipman için tamamlanmış işlem kaydı bulunamadı</p>
+              <p className="text-xs text-slate-400 text-center py-2">Bu ekipman için tamamlanmış işlem kaydı bulunamadı</p>
             )}
           </div>
         ) : null}
