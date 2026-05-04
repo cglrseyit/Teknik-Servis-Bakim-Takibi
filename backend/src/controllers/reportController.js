@@ -97,15 +97,39 @@ async function getAuditLogDetail(req, res) {
     if (log.entity_id) {
       if (log.entity === 'task') {
         const r = await pool.query(
-          `SELECT e.*, t.maintained_by, t.responsible_person
+          `SELECT e.id AS eq_id, e.name, e.brand, e.category, e.supplier,
+                  e.status, e.notes, e.maintenance_period,
+                  t.title, t.scheduled_date, t.completed_at,
+                  t.performed_work, t.notes AS task_notes,
+                  t.maintained_by, t.responsible_person,
+                  u.name AS completed_by_name
            FROM maintenance_tasks t
            JOIN equipment e ON e.id = t.equipment_id
+           LEFT JOIN users u ON u.id = t.completed_by
            WHERE t.id = $1`, [log.entity_id]
         );
         if (r.rows[0]) {
-          const { maintained_by, responsible_person, ...equipmentData } = r.rows[0];
-          equipment = equipmentData;
-          task_detail = { maintained_by, responsible_person };
+          const row = r.rows[0];
+          equipment = {
+            id: row.eq_id,
+            name: row.name,
+            brand: row.brand,
+            category: row.category,
+            supplier: row.supplier,
+            status: row.status,
+            notes: row.notes,
+            maintenance_period: row.maintenance_period,
+          };
+          task_detail = {
+            title: row.title,
+            scheduled_date: row.scheduled_date,
+            completed_at: row.completed_at,
+            performed_work: row.performed_work,
+            notes: row.task_notes,
+            maintained_by: row.maintained_by,
+            responsible_person: row.responsible_person,
+            completed_by_name: row.completed_by_name,
+          };
         }
       } else if (log.entity === 'equipment') {
         const r = await pool.query(

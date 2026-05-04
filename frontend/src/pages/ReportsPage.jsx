@@ -288,35 +288,55 @@ export default function ReportsPage() {
                   <Field label="Ekipman Adı" value={logDetail.equipment.name} />
                   <Field label="Kategori" value={logDetail.equipment.category} />
                   <Field label="Marka" value={logDetail.equipment.brand} />
-                  <Field label="Model" value={logDetail.equipment.model} />
-                  <Field label="Seri No" value={logDetail.equipment.serial_number} />
+                  <Field label="Tedarikçi" value={logDetail.equipment.supplier} />
                   <Field label="Durum" value={EQUIP_STATUS_LABELS[logDetail.equipment.status] || logDetail.equipment.status} />
-                  <Field label="Konum" value={logDetail.equipment.location} />
-                  {logDetail.equipment.install_date && (
-                    <Field label="Kurulum Tarihi" value={fmtDate(logDetail.equipment.install_date)} />
-                  )}
-                  {logDetail.equipment.warranty_end && (
-                    <Field label="Garanti Bitiş" value={fmtDate(logDetail.equipment.warranty_end)} />
+                  {logDetail.equipment.maintenance_period && (
+                    <Field label="Bakım Periyodu" value={logDetail.equipment.maintenance_period} />
                   )}
                 </div>
                 {logDetail.equipment.notes && (
                   <div className="mt-2 bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-400 mb-0.5">Notlar</p>
-                    <p className="text-sm text-gray-700">{logDetail.equipment.notes}</p>
-                  </div>
-                )}
-                {(logDetail.task_detail?.maintained_by || logDetail.task_detail?.responsible_person) && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">Bakım Personeli</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Field label="Bakımı Yapan" value={logDetail.task_detail.maintained_by} />
-                      <Field label="Otel Sorumlusu" value={logDetail.task_detail.responsible_person} />
-                    </div>
+                    <p className="text-xs text-gray-400 mb-0.5">Ekipman Notları</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.equipment.notes}</p>
                   </div>
                 )}
               </div>
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">Ekipman bilgisi mevcut değil</p>
+            )}
+
+            {/* Görev detayları (task_completed log'ları için) */}
+            {logDetail.task_detail?.title && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 size={14} className="text-emerald-500" />
+                  <p className="text-sm font-semibold text-gray-700">Görev Detayları</p>
+                </div>
+                <div className="border border-emerald-100 bg-emerald-50/40 rounded-xl p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {logDetail.task_detail.completed_at && (
+                      <Field label="Tamamlanma" value={fmt(logDetail.task_detail.completed_at)} />
+                    )}
+                    {logDetail.task_detail.scheduled_date && (
+                      <Field label="Planlanan Tarih" value={fmtDate(logDetail.task_detail.scheduled_date)} />
+                    )}
+                    <Field label="Bakımı Yapan" value={logDetail.task_detail.maintained_by} />
+                    <Field label="Sorumlu Kişi" value={logDetail.task_detail.responsible_person} />
+                  </div>
+                  {logDetail.task_detail.performed_work && (
+                    <div className="bg-white rounded-lg p-3 border border-emerald-100">
+                      <p className="text-xs text-gray-400 mb-0.5">Yapılan İşlem</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.task_detail.performed_work}</p>
+                    </div>
+                  )}
+                  {logDetail.task_detail.notes && (
+                    <div className="bg-white rounded-lg p-3 border border-emerald-100">
+                      <p className="text-xs text-gray-400 mb-0.5">Görev Notları</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.task_detail.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
             {/* Son tamamlanan görev (sadece equipment_deleted loglarında) */}
@@ -343,24 +363,6 @@ export default function ReportsPage() {
                       <p className="text-sm font-medium text-gray-800">{logDetail.last_task.completed_by_name}</p>
                     </div>
                   )}
-                  {logDetail.last_task.performed_work && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Yapılan İşlem</p>
-                      <p className="text-sm text-gray-700">{logDetail.last_task.performed_work}</p>
-                    </div>
-                  )}
-                  {logDetail.last_task.responsible_person && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Sorumlu Kişi</p>
-                      <p className="text-sm text-gray-700">{logDetail.last_task.responsible_person}</p>
-                    </div>
-                  )}
-                  {logDetail.last_task.notes && (
-                    <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Notlar</p>
-                      <p className="text-sm text-gray-700">{logDetail.last_task.notes}</p>
-                    </div>
-                  )}
                   {logDetail.last_task.maintained_by && (
                     <div>
                       <p className="text-xs text-amber-600 mb-0.5">Bakımı Yapan</p>
@@ -369,8 +371,20 @@ export default function ReportsPage() {
                   )}
                   {logDetail.last_task.responsible_person && (
                     <div>
-                      <p className="text-xs text-amber-600 mb-0.5">Otel Sorumlusu</p>
+                      <p className="text-xs text-amber-600 mb-0.5">Sorumlu Kişi</p>
                       <p className="text-sm text-gray-700">{logDetail.last_task.responsible_person}</p>
+                    </div>
+                  )}
+                  {logDetail.last_task.performed_work && (
+                    <div>
+                      <p className="text-xs text-amber-600 mb-0.5">Yapılan İşlem</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.last_task.performed_work}</p>
+                    </div>
+                  )}
+                  {logDetail.last_task.notes && (
+                    <div>
+                      <p className="text-xs text-amber-600 mb-0.5">Görev Notları</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{logDetail.last_task.notes}</p>
                     </div>
                   )}
                 </div>
