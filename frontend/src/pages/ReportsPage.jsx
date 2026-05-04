@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap } from 'lucide-react';
+import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
 function KpiCard({ title, subtitle, value, valueColor, accentBg, accentText, Icon, trend, footer }) {
@@ -78,6 +79,7 @@ function SectionCard({ title, icon: Icon, iconBg, iconColor, badge, children }) 
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [stats, setStats] = useState(null);
   const [statusDist, setStatusDist] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -85,6 +87,19 @@ export default function ReportsPage() {
   const [logDetail, setLogDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [auditTab, setAuditTab] = useState('completed');
+  const [testingEmail, setTestingEmail] = useState(false);
+
+  async function handleTestEmail() {
+    setTestingEmail(true);
+    try {
+      const r = await api.post('/reports/test-email', {});
+      toast.success(r.data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Mail gönderilemedi');
+    } finally {
+      setTestingEmail(false);
+    }
+  }
 
   useEffect(() => {
     api.get('/reports/stats').then(r => setStats(r.data)).catch(() => {});
@@ -219,7 +234,17 @@ export default function ReportsPage() {
                 <p className="text-sm font-semibold text-slate-800">Son İşlemler</p>
                 <p className="text-xs text-slate-400 mt-0.5">Denetim kaydı — son 50 işlem</p>
               </div>
-              <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleTestEmail}
+                  disabled={testingEmail}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                >
+                  <Mail size={12} strokeWidth={2} />
+                  {testingEmail ? 'Gönderiliyor...' : 'Test E-posta'}
+                </button>
+                <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
+              </div>
             </div>
             {/* Sekmeler */}
             <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
