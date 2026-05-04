@@ -361,7 +361,7 @@ export default function DashboardPage() {
               <h3 className="text-lg font-semibold text-gray-900 shrink-0">Bakım Görevleri</h3>
               <MonthPicker
                 value={selectedMonth}
-                onChange={ym => { setSelectedMonth(ym); setStatusFilter('undone'); }}
+                onChange={ym => setSelectedMonth(ym)}
               />
             </div>
 
