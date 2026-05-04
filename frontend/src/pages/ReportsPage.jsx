@@ -95,7 +95,9 @@ export default function ReportsPage() {
       const r = await api.post('/reports/test-email', {});
       toast.success(r.data.message);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Mail gönderilemedi');
+      const d = err.response?.data;
+      const msg = d?.detail ? `${d.message}: ${d.detail}` : (d?.message || 'Mail gönderilemedi');
+      toast.error(msg);
     } finally {
       setTestingEmail(false);
     }

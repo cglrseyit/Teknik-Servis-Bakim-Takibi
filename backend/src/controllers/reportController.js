@@ -174,33 +174,48 @@ async function getAuditLogDetail(req, res) {
 }
 
 async function testEmail(req, res) {
-  const { sendDigestEmail } = require('../services/emailService');
-  const to = req.body.to || req.user.email;
-  try {
-    const ok = await sendDigestEmail({
-      to,
-      userName: req.user.name || 'Admin',
-      overdue: [{
-        title: 'Test Gecikmiş Görev',
-        equipment_name: 'Klima - 301',
-        location: 'Kat 3',
-        scheduled_date: new Date(Date.now() - 86400000).toISOString(),
-      }],
-      upcoming: [{
-        title: 'Test Yaklaşan Bakım',
-        equipment_name: 'Asansör',
-        location: 'Lobi',
-        scheduled_date: new Date(Date.now() + 2 * 86400000).toISOString(),
-        days_left: 2,
-      }],
+  const nodemailer = require('nodemailer');
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    return res.status(500).json({
+      success: false,
+      message: 'SMTP değişkenleri eksik',
+      detail: { SMTP_HOST: !!SMTP_HOST, SMTP_USER: !!SMTP_USER, SMTP_PASS: !!SMTP_PASS },
     });
-    if (ok) {
-      res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
-    } else {
-      res.status(500).json({ success: false, message: 'Mail gönderilemedi — SMTP ayarlarını kontrol edin' });
-    }
+  }
+
+  const port = Number(SMTP_PORT) || 587;
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port,
+    secure: port === 465,
+    requireTLS: port === 587,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    tls: { rejectUnauthorized: false },
+  });
+
+  try {
+    await transporter.verify();
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: 'SMTP bağlantısı kurulamadı',
+      detail: err.message,
+    });
+  }
+
+  const to = req.body.to || SMTP_USER;
+  try {
+    await transporter.sendMail({
+      from: SMTP_FROM || SMTP_USER,
+      to,
+      subject: '[Bellis] Test E-postası',
+      html: '<p>SMTP bağlantısı başarılı. Mail sistemi çalışıyor.</p>',
+    });
+    res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Bağlantı kuruldu ama mail gönderilemedi', detail: err.message });
   }
 }
 
