@@ -22,6 +22,8 @@ const STATUS_OPTIONS = [
   { value: 'passive',     label: 'Pasif',   color: 'text-gray-500',   bgColor: 'bg-gray-50',   borderColor: 'border-gray-400',   icon: Clock        },
 ];
 
+const MONTH_NAMES = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
 const PERIOD_OPTIONS = [
   { value: 'monthly',   label: 'Aylık',   sub: 'Her ay' },
   { value: 'quarterly', label: '3 Aylık', sub: 'Her 3 ayda bir' },
@@ -227,22 +229,51 @@ export default function EquipmentFormPage() {
                       })}
                     </RadioGroup>
 
-                    {!isEdit && form.maintenance_period && (
-                      <div className="space-y-1.5 pt-1">
-                        <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
-                          <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
-                          Bakım Başlangıç Ayı
-                        </Label>
-                        <input
-                          type="month"
-                          value={form.maintenance_start_date}
-                          min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })()}
-                          onChange={e => setForm(f => ({ ...f, maintenance_start_date: e.target.value }))}
-                          className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                        />
-                        <p className="text-xs text-slate-400">Boş bırakılırsa bu aydan başlatılır</p>
-                      </div>
-                    )}
+                    {!isEdit && form.maintenance_period && (() => {
+                      const now = new Date();
+                      const curYear = now.getFullYear();
+                      const curMonth = now.getMonth() + 1;
+                      const [selYear, selMonth] = form.maintenance_start_date
+                        ? form.maintenance_start_date.split('-').map(Number)
+                        : [0, 0];
+                      const years = [curYear, curYear + 1, curYear + 2];
+                      const selectCls = 'flex-1 px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent';
+                      function update(year, month) {
+                        if (year && month) setForm(f => ({ ...f, maintenance_start_date: `${year}-${String(month).padStart(2,'0')}` }));
+                        else setForm(f => ({ ...f, maintenance_start_date: '' }));
+                      }
+                      return (
+                        <div className="space-y-1.5 pt-1">
+                          <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
+                            <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+                            Bakım Başlangıç Ayı
+                          </Label>
+                          <div className="flex gap-2">
+                            <select
+                              value={selMonth || ''}
+                              onChange={e => update(selYear || curYear, Number(e.target.value))}
+                              className={selectCls}
+                            >
+                              <option value="">Ay</option>
+                              {MONTH_NAMES.map((m, i) => {
+                                const monthNum = i + 1;
+                                const disabled = (selYear || curYear) === curYear && monthNum < curMonth;
+                                return <option key={i} value={monthNum} disabled={disabled}>{m}</option>;
+                              })}
+                            </select>
+                            <select
+                              value={selYear || ''}
+                              onChange={e => update(Number(e.target.value), selMonth || curMonth)}
+                              className={selectCls}
+                            >
+                              <option value="">Yıl</option>
+                              {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+                          <p className="text-xs text-slate-400">Boş bırakılırsa bu aydan başlatılır</p>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </div>
