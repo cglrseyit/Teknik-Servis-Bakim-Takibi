@@ -58,9 +58,14 @@ async function getStatusDistribution(req, res) {
 
 async function getAuditLogs(req, res) {
   try {
-    const { action } = req.query;
+    const { type } = req.query;
     const params = [];
-    const where = action ? `WHERE a.action = $${params.push(action)}` : '';
+    let where = '';
+    if (type === 'completed') {
+      where = `WHERE a.action = $${params.push('task_completed')}`;
+    } else if (type === 'audit') {
+      where = `WHERE a.action != $${params.push('task_completed')}`;
+    }
     const { rows } = await pool.query(
       `SELECT a.*, u.name AS user_name
        FROM audit_logs a
@@ -107,12 +112,11 @@ async function getAuditLogDetail(req, res) {
                   t.title, t.scheduled_date, t.completed_at,
                   t.performed_work, t.notes AS task_notes,
                   t.maintained_by, t.responsible_person,
-                  u.name AS completed_by_name,
-                  mp.is_one_time
+                  t.is_one_time,
+                  u.name AS completed_by_name
            FROM maintenance_tasks t
            JOIN equipment e ON e.id = t.equipment_id
            LEFT JOIN users u ON u.id = t.completed_by
-           LEFT JOIN maintenance_plans mp ON mp.id = t.plan_id
            WHERE t.id = $1`, [log.entity_id]
         );
         if (r.rows[0]) {

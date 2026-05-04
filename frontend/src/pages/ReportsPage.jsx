@@ -84,7 +84,7 @@ export default function ReportsPage() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [logDetail, setLogDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [auditFilter, setAuditFilter] = useState('');
+  const [auditTab, setAuditTab] = useState('completed');
 
   useEffect(() => {
     api.get('/reports/stats').then(r => setStats(r.data)).catch(() => {});
@@ -93,9 +93,8 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (user?.role !== 'admin') return;
-    const url = auditFilter ? `/reports/audit-logs?action=${auditFilter}` : '/reports/audit-logs';
-    api.get(url).then(r => setAuditLogs(r.data)).catch(() => {});
-  }, [user, auditFilter]);
+    api.get(`/reports/audit-logs?type=${auditTab}`).then(r => setAuditLogs(r.data)).catch(() => {});
+  }, [user, auditTab]);
 
   function monthTrend(curr, prev) {
     if (prev === 0) return curr > 0 ? { dir: 'up', label: 'Yeni', bg: 'bg-emerald-50', text: 'text-emerald-600' } : null;
@@ -222,26 +221,22 @@ export default function ReportsPage() {
               </div>
               <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
             </div>
-            {/* Filtre sekmeleri */}
-            <div className="flex gap-1.5 flex-wrap">
+            {/* Sekmeler */}
+            <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
               {[
-                { value: '',                   label: 'Tümü' },
-                { value: 'task_completed',     label: 'Tamamlananlar' },
-                { value: 'plan_created',       label: 'Plan Oluşturuldu' },
-                { value: 'plan_deleted',       label: 'Plan Silindi' },
-                { value: 'equipment_created',  label: 'Ekipman Eklendi' },
-                { value: 'equipment_deleted',  label: 'Ekipman Silindi' },
-              ].map(f => (
+                { value: 'completed', label: 'Tamamlananlar' },
+                { value: 'audit',     label: 'Denetimler' },
+              ].map(t => (
                 <button
-                  key={f.value}
-                  onClick={() => setAuditFilter(f.value)}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
-                    auditFilter === f.value
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  key={t.value}
+                  onClick={() => setAuditTab(t.value)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    auditTab === t.value
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  {f.label}
+                  {t.label}
                 </button>
               ))}
             </div>

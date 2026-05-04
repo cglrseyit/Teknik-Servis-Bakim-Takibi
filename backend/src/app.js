@@ -64,6 +64,7 @@ if (process.env.NODE_ENV === 'production') {
 // Auto-migrations
 pool.query(`ALTER TABLE maintenance_plans ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`).catch(() => {});
 pool.query(`ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS maintained_by TEXT`).catch(() => {});
+pool.query(`ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`).catch(() => {});
 pool.query(`ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS responsible_person TEXT`).catch(() => {});
 pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS supplier TEXT`).catch(() => {});
 pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS brand TEXT`).catch(() => {});

@@ -119,8 +119,8 @@ async function create(req, res) {
 
     if (is_one_time) {
       await pool.query(
-        `INSERT INTO maintenance_tasks (plan_id, equipment_id, title, description, scheduled_date, status)
-         VALUES ($1,$2,$3,$4,$5,'pending')`,
+        `INSERT INTO maintenance_tasks (plan_id, equipment_id, title, description, scheduled_date, status, is_one_time)
+         VALUES ($1,$2,$3,$4,$5,'pending',true)`,
         [plan.id, plan.equipment_id, plan.title, plan.description, start_date]
       );
     } else {
