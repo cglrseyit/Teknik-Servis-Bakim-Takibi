@@ -290,11 +290,11 @@ export default function DashboardPage() {
         onClick={() => setSelectedTask(t)}
         className="hover:bg-gray-50 cursor-pointer"
       >
-        <td className="px-6 py-4 text-sm font-medium text-gray-900">{t.title}</td>
-        <td className="px-6 py-4 text-sm text-gray-600">
+        <td className="px-6 py-4 text-sm font-medium text-gray-900">
           {t.equipment_name || '—'}
-          {t.location ? <span className="text-gray-400"> · {t.location}</span> : ''}
+          {t.location ? <span className="text-gray-400 font-normal"> · {t.location}</span> : ''}
         </td>
+        <td className="px-6 py-4 text-sm text-gray-600">{t.title}</td>
         <td className="px-6 py-4 text-sm text-gray-600">{t.assigned_name || '—'}</td>
         <td className="px-6 py-4 text-sm text-gray-600">
           {t.scheduled_date
@@ -422,8 +422,8 @@ export default function DashboardPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Görev</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ekipman</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Görev</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sorumlu</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vade</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
