@@ -13,11 +13,17 @@ function getTransporter() {
     }
     return null;
   }
+  const port = Number(SMTP_PORT) || 587;
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
-    port: Number(SMTP_PORT) || 587,
-    secure: Number(SMTP_PORT) === 465,
+    port,
+    secure: port === 465,
+    requireTLS: port === 587,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
+    greetingTimeout: 10000,
   });
   return transporter;
 }

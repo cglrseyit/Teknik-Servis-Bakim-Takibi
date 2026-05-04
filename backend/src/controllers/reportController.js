@@ -193,6 +193,9 @@ async function testEmail(req, res) {
     requireTLS: port === 587,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
     tls: { rejectUnauthorized: false },
+    connectionTimeout: 8000,
+    socketTimeout: 8000,
+    greetingTimeout: 8000,
   });
 
   try {
