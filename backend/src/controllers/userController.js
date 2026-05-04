@@ -19,7 +19,7 @@ async function create(req, res) {
     return res.status(400).json({ error: 'Ad, e-posta, şifre ve rol zorunlu' });
   }
   try {
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
       `INSERT INTO users (name, email, password, role)
        VALUES ($1,$2,$3,$4) RETURNING id, name, email, role, is_active, created_at`,
@@ -39,7 +39,7 @@ async function update(req, res) {
   try {
     let query, params;
     if (password) {
-      const hashed = await bcrypt.hash(password, 10);
+      const hashed = await bcrypt.hash(password, 12);
       query = `UPDATE users SET name=$1,email=$2,role=$3,is_active=$4,password=$5 WHERE id=$6
                RETURNING id,name,email,role,is_active,created_at`;
       params = [name, email, role, is_active !== false, hashed, id];

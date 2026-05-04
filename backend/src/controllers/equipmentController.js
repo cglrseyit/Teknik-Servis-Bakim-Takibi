@@ -126,7 +126,7 @@ async function create(req, res) {
     res.status(201).json(equipment);
   } catch (err) {
     console.error('Equipment create error:', err.message);
-    res.status(500).json({ error: 'Sunucu hatası: ' + err.message });
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
 }
 
