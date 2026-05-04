@@ -67,7 +67,16 @@ async function getAuditLogs(req, res) {
       where = `WHERE a.action != $${params.push('task_completed')}`;
     }
     const { rows } = await pool.query(
-      `SELECT a.*, u.name AS user_name
+      `SELECT a.*, u.name AS user_name,
+         CASE
+           WHEN a.entity = 'equipment' AND a.action != 'equipment_deleted'
+             THEN (SELECT e.name FROM equipment e WHERE e.id = a.entity_id)
+           WHEN a.entity = 'task'
+             THEN (SELECT e.name FROM maintenance_tasks t JOIN equipment e ON e.id = t.equipment_id WHERE t.id = a.entity_id)
+           WHEN a.entity = 'plan'
+             THEN (SELECT e.name FROM maintenance_plans p JOIN equipment e ON e.id = p.equipment_id WHERE p.id = a.entity_id)
+           ELSE NULL
+         END AS equipment_name
        FROM audit_logs a
        LEFT JOIN users u ON u.id = a.user_id
        ${where}

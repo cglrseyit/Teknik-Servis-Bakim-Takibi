@@ -258,9 +258,9 @@ export default function ReportsPage() {
               <tbody className="divide-y divide-slate-50">
                 {auditLogs.map(log => {
                   const isDeleted = log.action === 'equipment_deleted';
-                  let detailText = log.detail || '—';
-                  if (isDeleted && log.detail) {
-                    try { detailText = JSON.parse(log.detail).equipment?.name || '—'; } catch { /* plain text */ }
+                  let equipName = log.equipment_name || null;
+                  if (!equipName && isDeleted && log.detail) {
+                    try { equipName = JSON.parse(log.detail).equipment?.name || null; } catch { /* plain text */ }
                   }
                   return (
                     <tr
@@ -270,7 +270,7 @@ export default function ReportsPage() {
                     >
                       <td className="px-5 py-3 font-medium text-slate-700">{ACTION_LABELS[log.action] || log.action}</td>
                       <td className="px-5 py-3 text-slate-500">{log.user_name || '—'}</td>
-                      <td className="px-5 py-3 text-slate-500 truncate max-w-xs">{detailText}</td>
+                      <td className="px-5 py-3 text-slate-700 font-medium truncate max-w-xs">{equipName || '—'}</td>
                       <td className="px-5 py-3 text-slate-400 text-xs whitespace-nowrap">{fmt(log.created_at)}</td>
                       <td className="px-5 py-3 text-right">
                         {isDeleted ? (
