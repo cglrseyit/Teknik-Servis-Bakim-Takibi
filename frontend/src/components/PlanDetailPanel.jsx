@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import ConfirmModal from './ConfirmModal';
 
 const FREQ_LABELS = { daily: 'Günlük', weekly: 'Haftalık', monthly: 'Aylık', quarterly: '3 Aylık', semiannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel' };
 
@@ -9,9 +10,11 @@ function fmt(dateStr) {
   return new Date(dateStr).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-export default function PlanDetailPanel({ planId }) {
+export default function PlanDetailPanel({ planId, onDeleted }) {
   const navigate = useNavigate();
   const [plan, setPlan] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!planId) return;
@@ -19,46 +22,29 @@ export default function PlanDetailPanel({ planId }) {
     api.get(`/plans/${planId}`).then(r => setPlan(r.data)).catch(() => {});
   }, [planId]);
 
-  if (!plan) return <div className="text-gray-400 text-sm text-center py-10">Yükleniyor...</div>;
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await api.delete(`/plans/${planId}`);
+      onDeleted?.();
+    } catch {
+      setDeleting(false);
+    }
+  }
 
-  const last = plan.last_maintenance;
+  if (!plan) return <div className="text-gray-400 text-sm text-center py-10">Yükleniyor...</div>;
 
   return (
     <div className="space-y-5">
-      {/* Ekipman Detayı */}
-      <div className="bg-gray-50 rounded-xl p-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Ekipman</p>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-gray-400 text-xs">Ekipman Adı</p>
-            <p className="font-medium text-gray-800">{plan.equipment_name || '—'}</p>
-          </div>
-          {plan.location && (
-            <div>
-              <p className="text-gray-400 text-xs">Konum</p>
-              <p className="font-medium text-gray-800">{plan.location}</p>
-            </div>
-          )}
-          {plan.brand && (
-            <div>
-              <p className="text-gray-400 text-xs">Marka</p>
-              <p className="font-medium text-gray-800">{plan.brand}</p>
-            </div>
-          )}
-          {plan.serial_number && (
-            <div>
-              <p className="text-gray-400 text-xs">Seri No</p>
-              <p className="font-medium text-gray-800">{plan.serial_number}</p>
-            </div>
-          )}
-          {plan.category && (
-            <div>
-              <p className="text-gray-400 text-xs">Kategori</p>
-              <p className="font-medium text-gray-800">{plan.category}</p>
-            </div>
-          )}
-        </div>
-      </div>
+      <ConfirmModal
+        open={showConfirm}
+        title="Planı Sil"
+        message={`"${plan.title}" planını ve bağlı tüm bekleyen görevleri kalıcı olarak silmek istediğinize emin misiniz?`}
+        confirmLabel="Evet, Sil"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
 
       {/* Plan Bilgileri */}
       <div className="bg-gray-50 rounded-xl p-4">
@@ -90,53 +76,14 @@ export default function PlanDetailPanel({ planId }) {
         </div>
       </div>
 
-      {/* Son Bakım */}
-      <div className="bg-white border rounded-xl p-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Son Bakım</p>
-        {last ? (
-          <div className="space-y-2 text-sm">
-            <div className="flex gap-6">
-              <div>
-                <p className="text-xs text-gray-400">Tarih</p>
-                <p className="font-semibold text-gray-800">{fmt(last.completed_at)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Yapan Personel</p>
-                <p className="font-semibold text-gray-800">{last.completed_by_name || '—'}</p>
-              </div>
-            </div>
-            {last.performed_work && (
-              <div>
-                <p className="text-xs text-gray-400">Yapılan İşlem</p>
-                <p className="text-gray-700 bg-gray-50 rounded p-2 text-xs">{last.performed_work}</p>
-              </div>
-            )}
-            {last.maintained_by && (
-              <div>
-                <p className="text-xs text-gray-400">Bakımı Yapan</p>
-                <p className="text-gray-700 bg-gray-50 rounded p-2 text-xs">{last.maintained_by}</p>
-              </div>
-            )}
-            {last.responsible_person && (
-              <div>
-                <p className="text-xs text-gray-400">Sorumlu Kişi</p>
-                <p className="text-gray-700 bg-gray-50 rounded p-2 text-xs">{last.responsible_person}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-gray-400 text-sm">Henüz bakım yapılmadı</p>
-        )}
-      </div>
-
       {/* Sonraki Bakım */}
       <div className="bg-amber-50 rounded-xl p-4">
-        <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-2">Sonraki Bakım</p>
+        <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-2">Bir Sonraki Bakım</p>
         {plan.next_scheduled_date ? (
           <div>
             <p className="text-xl font-bold text-amber-700">{fmt(plan.next_scheduled_date)}</p>
             <p className="text-xs text-amber-400 mt-1">
-              {Math.ceil((new Date(plan.next_scheduled_date) - new Date()) / 86400000)} gün kaldı
+              {Math.max(0, Math.ceil((new Date(plan.next_scheduled_date) - new Date()) / 86400000))} gün kaldı
             </p>
           </div>
         ) : (
@@ -144,18 +91,28 @@ export default function PlanDetailPanel({ planId }) {
         )}
       </div>
 
+      {/* Alt butonlar */}
       <div className="flex items-center justify-between">
         <Link to={`/equipment/${plan.equipment_id}`} className="text-sm text-amber-600 hover:underline">
           Ekipman Detayına Git →
         </Link>
-        {plan.is_active && (
+        <div className="flex gap-2">
+          {plan.is_active && (
+            <button
+              onClick={() => navigate(`/plans/${planId}/edit`)}
+              className="px-4 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Düzenle
+            </button>
+          )}
           <button
-            onClick={() => navigate(`/plans/${planId}/edit`)}
-            className="px-4 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition-colors"
+            onClick={() => setShowConfirm(true)}
+            disabled={deleting}
+            className="px-4 py-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
           >
-            Düzenle
+            Sil
           </button>
-        )}
+        </div>
       </div>
     </div>
   );

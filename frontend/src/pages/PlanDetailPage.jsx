@@ -21,8 +21,6 @@ export default function PlanDetailPage() {
 
   if (!plan) return <Layout><div className="text-gray-400 text-sm">Yükleniyor...</div></Layout>;
 
-  const last = plan.last_maintenance;
-
   return (
     <Layout>
       <div className="max-w-2xl">
@@ -65,59 +63,19 @@ export default function PlanDetailPage() {
           </div>
         </div>
 
-        {/* Bakım Durumu */}
-        <div className="grid grid-cols-2 gap-4 mb-5">
-          {/* Son Bakım */}
-          <div className="bg-white rounded-xl shadow-sm p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Son Bakım</p>
-            {last ? (
-              <div className="space-y-2 text-sm">
-                <div>
-                  <p className="text-xs text-gray-400">Tarih</p>
-                  <p className="font-semibold text-gray-800">{fmt(last.completed_at)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Yapan Personel</p>
-                  <p className="font-medium text-gray-700">{last.completed_by_name || '—'}</p>
-                </div>
-                {last.performed_work && (
-                  <div>
-                    <p className="text-xs text-gray-400">Yapılan İşlem</p>
-                    <p className="text-gray-600">{last.performed_work}</p>
-                  </div>
-                )}
-                {last.maintained_by && (
-                  <div>
-                    <p className="text-xs text-gray-400">Bakımı Yapan</p>
-                    <p className="text-gray-600">{last.maintained_by}</p>
-                  </div>
-                )}
-                {last.responsible_person && (
-                  <div>
-                    <p className="text-xs text-gray-400">Sorumlu Kişi</p>
-                    <p className="text-gray-600">{last.responsible_person}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm">Henüz bakım yapılmadı</p>
-            )}
-          </div>
-
-          {/* Sonraki Bakım */}
-          <div className="bg-white rounded-xl shadow-sm p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Sonraki Bakım</p>
-            {plan.next_scheduled_date ? (
-              <div className="space-y-2">
-                <p className="text-2xl font-bold text-amber-600">{fmt(plan.next_scheduled_date)}</p>
-                <p className="text-xs text-gray-400">
-                  {Math.ceil((new Date(plan.next_scheduled_date) - new Date()) / 86400000)} gün kaldı
-                </p>
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm">Planlanmış görev yok</p>
-            )}
-          </div>
+        {/* Sonraki Bakım */}
+        <div className="bg-amber-50 rounded-xl shadow-sm p-5 mb-5">
+          <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-3">Bir Sonraki Bakım</p>
+          {plan.next_scheduled_date ? (
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-amber-700">{fmt(plan.next_scheduled_date)}</p>
+              <p className="text-xs text-amber-400">
+                {Math.max(0, Math.ceil((new Date(plan.next_scheduled_date) - new Date()) / 86400000))} gün kaldı
+              </p>
+            </div>
+          ) : (
+            <p className="text-amber-400 text-sm">Planlanmış görev yok</p>
+          )}
         </div>
 
         {/* Ekipman linki */}

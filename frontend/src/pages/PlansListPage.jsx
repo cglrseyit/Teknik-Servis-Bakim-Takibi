@@ -26,13 +26,15 @@ export default function PlansListPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  useEffect(() => {
+  function loadPlans() {
     setLoading(true);
     api.get('/plans')
       .then(r => setPlans(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { loadPlans(); }, []);
 
   return (
     <Layout>
@@ -166,7 +168,10 @@ export default function PlansListPage() {
       </div>
 
       <SlidePanel open={Boolean(selectedPlan)} onClose={() => setSelectedPlan(null)} title={selectedPlan?.title || ''}>
-        <PlanDetailPanel planId={selectedPlan?.id} />
+        <PlanDetailPanel
+          planId={selectedPlan?.id}
+          onDeleted={() => { setSelectedPlan(null); loadPlans(); }}
+        />
       </SlidePanel>
     </Layout>
   );
