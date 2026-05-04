@@ -173,4 +173,35 @@ async function getAuditLogDetail(req, res) {
   }
 }
 
-module.exports = { getStats, getMonthlySummary, getStatusDistribution, getAuditLogs, getAuditLogDetail };
+async function testEmail(req, res) {
+  const { sendDigestEmail } = require('../services/emailService');
+  const to = req.body.to || req.user.email;
+  try {
+    const ok = await sendDigestEmail({
+      to,
+      userName: req.user.name || 'Admin',
+      overdue: [{
+        title: 'Test Gecikmiş Görev',
+        equipment_name: 'Klima - 301',
+        location: 'Kat 3',
+        scheduled_date: new Date(Date.now() - 86400000).toISOString(),
+      }],
+      upcoming: [{
+        title: 'Test Yaklaşan Bakım',
+        equipment_name: 'Asansör',
+        location: 'Lobi',
+        scheduled_date: new Date(Date.now() + 2 * 86400000).toISOString(),
+        days_left: 2,
+      }],
+    });
+    if (ok) {
+      res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
+    } else {
+      res.status(500).json({ success: false, message: 'Mail gönderilemedi — SMTP ayarlarını kontrol edin' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+module.exports = { getStats, getMonthlySummary, getStatusDistribution, getAuditLogs, getAuditLogDetail, testEmail };
