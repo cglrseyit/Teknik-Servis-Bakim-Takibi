@@ -120,18 +120,14 @@ export default function PlansListPage() {
                         <CalendarCheck size={12} className="text-emerald-500" />
                         {new Date(p.this_month_completed_at).toLocaleDateString('tr-TR')}
                       </span>
-                    ) : p.this_month_has_pending ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700">
-                        <Clock size={10} />
-                        Bekliyor
-                      </span>
                     ) : p.last_completed_at ? (
                       <span className="flex items-center gap-1.5 text-slate-600">
                         <CalendarCheck size={12} className="text-emerald-500" />
                         {new Date(p.last_completed_at).toLocaleDateString('tr-TR')}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700">
+                    ) : null}
+                    {!p.this_month_completed_at && p.this_month_has_pending && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 mt-0.5">
                         <Clock size={10} />
                         Bekliyor
                       </span>
