@@ -183,7 +183,7 @@ async function updateStatus(req, res) {
     }
 
     const completed_at = status === 'completed'
-      ? (performed_date ? new Date(performed_date) : new Date())
+      ? (performed_date ? new Date(performed_date + 'T12:00:00') : new Date())
       : null;
     const completed_by = status === 'completed' ? req.user.id : null;
 

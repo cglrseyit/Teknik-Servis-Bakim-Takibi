@@ -254,7 +254,7 @@ export default function EquipmentDetailPage() {
                         {t.completed_at && (
                           <>
                             <span className="text-slate-200">•</span>
-                            <span className="text-green-600 font-medium">Yapıldı: {fmtDateTime(t.completed_at)}</span>
+                            <span className="text-green-600 font-medium">Yapıldı: {fmtDate(t.completed_at)}</span>
                           </>
                         )}
                       </div>
