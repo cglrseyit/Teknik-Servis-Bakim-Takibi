@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail } from 'lucide-react';
 import Layout from '../components/Layout';
@@ -80,6 +81,7 @@ function SectionCard({ title, icon: Icon, iconBg, iconColor, badge, children }) 
 export default function ReportsPage() {
   const { user } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [statusDist, setStatusDist] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -442,6 +444,19 @@ export default function ReportsPage() {
             )}
             {selectedLog?.action === 'equipment_deleted' && !logDetail.last_task && (
               <p className="text-xs text-slate-400 text-center py-2">Bu ekipman için tamamlanmış işlem kaydı bulunamadı</p>
+            )}
+
+            {logDetail.equipment?.id && selectedLog?.action !== 'equipment_deleted' && (
+              <button
+                onClick={() => {
+                  setSelectedLog(null);
+                  setLogDetail(null);
+                  navigate(`/equipment/${logDetail.equipment.id}`);
+                }}
+                className="w-full mt-2 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors"
+              >
+                Tüm Bakım Planlarını Gör →
+              </button>
             )}
           </div>
         ) : null}
