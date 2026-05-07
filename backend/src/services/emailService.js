@@ -1,10 +1,10 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-let transporter = null;
+let client = null;
 let configWarningLogged = false;
 
-function getTransporter() {
-  if (transporter) return transporter;
+function getClient() {
+  if (client) return client;
   const { RESEND_API_KEY } = process.env;
   if (!RESEND_API_KEY) {
     if (!configWarningLogged) {
@@ -13,17 +13,22 @@ function getTransporter() {
     }
     return null;
   }
-  transporter = nodemailer.createTransport({
-    host: 'smtp.resend.com',
-    port: 465,
-    secure: true,
-    auth: { user: 'resend', pass: RESEND_API_KEY },
-  });
-  return transporter;
+  client = new Resend(RESEND_API_KEY);
+  return client;
 }
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function buildDigestHtml({ userName, overdue, upcoming }) {
@@ -47,7 +52,6 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
 
   const overdueRows = overdue.map(t => tableRow(t, true)).join('');
   const upcomingRows = upcoming.map(t => tableRow(t, false)).join('');
-
   const total = overdue.length + upcoming.length;
 
   return `<!DOCTYPE html>
@@ -102,19 +106,9 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
 </body></html>`;
 }
 
-function escapeHtml(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 async function sendDigestEmail({ to, userName, overdue, upcoming }) {
-  const t = getTransporter();
-  if (!t) return false;
+  const c = getClient();
+  if (!c) return false;
   if (overdue.length === 0 && upcoming.length === 0) return false;
 
   const total = overdue.length + upcoming.length;
@@ -123,12 +117,17 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
     : `[Bellis] ${total} bakım göreviniz yaklaşıyor`;
 
   try {
-    await t.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to,
+    const from = process.env.SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
+    const { error } = await c.emails.send({
+      from,
+      to: [to],
       subject,
       html: buildDigestHtml({ userName, overdue, upcoming }),
     });
+    if (error) {
+      console.error(`[email] ${to} adresine gönderim başarısız:`, error.message);
+      return false;
+    }
     return true;
   } catch (err) {
     console.error(`[email] ${to} adresine gönderim başarısız:`, err.message);

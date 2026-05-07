@@ -174,7 +174,7 @@ async function getAuditLogDetail(req, res) {
 }
 
 async function testEmail(req, res) {
-  const nodemailer = require('nodemailer');
+  const { Resend } = require('resend');
   const { RESEND_API_KEY, SMTP_FROM } = process.env;
 
   if (!RESEND_API_KEY) {
@@ -184,34 +184,23 @@ async function testEmail(req, res) {
     });
   }
 
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.resend.com',
-    port: 465,
-    secure: true,
-    auth: { user: 'resend', pass: RESEND_API_KEY },
-  });
-
-  try {
-    await transporter.verify();
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: 'Resend bağlantısı kurulamadı',
-      detail: err.message,
-    });
-  }
-
+  const resend = new Resend(RESEND_API_KEY);
   const to = req.body.to || 'seyitcaglar881@gmail.com';
+  const from = SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
+
   try {
-    await transporter.sendMail({
-      from: SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>',
-      to,
+    const { error } = await resend.emails.send({
+      from,
+      to: [to],
       subject: '[Bellis] Test E-postası',
       html: '<p>Resend bağlantısı başarılı. Mail sistemi çalışıyor.</p>',
     });
+    if (error) {
+      return res.status(500).json({ success: false, message: 'Mail gönderilemedi', detail: error.message });
+    }
     res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Bağlantı kuruldu ama mail gönderilemedi', detail: err.message });
+    res.status(500).json({ success: false, message: 'Hata oluştu', detail: err.message });
   }
 }
 
