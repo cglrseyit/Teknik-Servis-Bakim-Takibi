@@ -5,25 +5,19 @@ let configWarningLogged = false;
 
 function getTransporter() {
   if (transporter) return transporter;
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+  const { RESEND_API_KEY } = process.env;
+  if (!RESEND_API_KEY) {
     if (!configWarningLogged) {
-      console.warn('[email] SMTP yapılandırması eksik — e-posta gönderimi devre dışı');
+      console.warn('[email] RESEND_API_KEY eksik — e-posta gönderimi devre dışı');
       configWarningLogged = true;
     }
     return null;
   }
-  const port = Number(SMTP_PORT) || 587;
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port,
-    secure: port === 465,
-    requireTLS: port === 587,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { rejectUnauthorized: false },
-    connectionTimeout: 10000,
-    socketTimeout: 10000,
-    greetingTimeout: 10000,
+    host: 'smtp.resend.com',
+    port: 465,
+    secure: true,
+    auth: { user: 'resend', pass: RESEND_API_KEY },
   });
   return transporter;
 }

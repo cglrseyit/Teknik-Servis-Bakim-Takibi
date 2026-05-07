@@ -175,27 +175,20 @@ async function getAuditLogDetail(req, res) {
 
 async function testEmail(req, res) {
   const nodemailer = require('nodemailer');
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  const { RESEND_API_KEY, SMTP_FROM } = process.env;
 
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+  if (!RESEND_API_KEY) {
     return res.status(500).json({
       success: false,
-      message: 'SMTP değişkenleri eksik',
-      detail: { SMTP_HOST: !!SMTP_HOST, SMTP_USER: !!SMTP_USER, SMTP_PASS: !!SMTP_PASS },
+      message: 'RESEND_API_KEY eksik — Railway Variables kısmına ekleyin',
     });
   }
 
-  const port = Number(SMTP_PORT) || 587;
   const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port,
-    secure: port === 465,
-    requireTLS: port === 587,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { rejectUnauthorized: false },
-    connectionTimeout: 8000,
-    socketTimeout: 8000,
-    greetingTimeout: 8000,
+    host: 'smtp.resend.com',
+    port: 465,
+    secure: true,
+    auth: { user: 'resend', pass: RESEND_API_KEY },
   });
 
   try {
@@ -203,18 +196,18 @@ async function testEmail(req, res) {
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: 'SMTP bağlantısı kurulamadı',
+      message: 'Resend bağlantısı kurulamadı',
       detail: err.message,
     });
   }
 
-  const to = req.body.to || SMTP_USER;
+  const to = req.body.to || 'seyitcaglar881@gmail.com';
   try {
     await transporter.sendMail({
-      from: SMTP_FROM || SMTP_USER,
+      from: SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>',
       to,
       subject: '[Bellis] Test E-postası',
-      html: '<p>SMTP bağlantısı başarılı. Mail sistemi çalışıyor.</p>',
+      html: '<p>Resend bağlantısı başarılı. Mail sistemi çalışıyor.</p>',
     });
     res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
   } catch (err) {
