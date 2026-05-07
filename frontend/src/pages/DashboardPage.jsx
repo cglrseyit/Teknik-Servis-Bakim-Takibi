@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import Layout from '../components/Layout';
@@ -266,17 +266,6 @@ export default function DashboardPage() {
     loadSummary();
   }
 
-  // Kategori bazlı gruplama (arama modunda düz liste)
-  const groupedTasks = useMemo(() => {
-    if (search || tasks.length === 0) return null;
-    const groups = {};
-    for (const t of tasks) {
-      const cat = t.category || 'Diğer';
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(t);
-    }
-    return groups;
-  }, [tasks, search]);
 
   function renderTaskRow(t) {
     const isOverdue = t.status === 'overdue' ||
@@ -442,17 +431,6 @@ export default function DashboardPage() {
                       </p>
                     </td>
                   </tr>
-                ) : groupedTasks ? (
-                  Object.entries(groupedTasks).map(([cat, catTasks]) => (
-                    <>
-                      <tr key={`cat-${cat}`} className="bg-amber-50/50 border-y border-amber-100">
-                        <td colSpan={6} className="px-6 py-2 text-[11px] font-bold text-amber-600 uppercase tracking-widest">
-                          ▸ {cat}
-                        </td>
-                      </tr>
-                      {catTasks.map(t => renderTaskRow(t))}
-                    </>
-                  ))
                 ) : (
                   tasks.map(t => renderTaskRow(t))
                 )}
