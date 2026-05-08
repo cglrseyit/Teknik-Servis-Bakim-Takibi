@@ -60,7 +60,18 @@ async function getOne(req, res) {
     );
 
     const { rows: completedTasks } = await pool.query(
-      `SELECT t.*
+      `SELECT t.*,
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                          'id', a.id,
+                          'filename', a.filename,
+                          'mime_type', a.mime_type,
+                          'size_bytes', a.size_bytes,
+                          'uploaded_at', a.uploaded_at
+                        ) ORDER BY a.uploaded_at DESC)
+                 FROM task_attachments a WHERE a.task_id = t.id),
+                '[]'::json
+              ) AS attachments
        FROM maintenance_tasks t
        WHERE t.equipment_id = $1
          AND t.status IN ('completed','skipped')

@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip } from 'lucide-react';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 const STATUS_COLORS = {
@@ -63,6 +63,20 @@ export default function EquipmentDetailPage() {
   async function handleDelete() {
     await api.delete(`/equipment/${id}`);
     navigate('/equipment');
+  }
+
+  async function downloadAttachment(att) {
+    try {
+      const r = await api.get(`/attachments/${att.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {}
   }
 
   if (!equipment) return <Layout><div className="p-6 text-slate-400 text-sm">Yükleniyor...</div></Layout>;
@@ -283,6 +297,30 @@ export default function EquipmentDetailPage() {
                               <span className="text-slate-500 italic">{t.notes}</span>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Ek dosyalar */}
+                      {t.attachments && t.attachments.length > 0 && (
+                        <div className="border-t border-slate-100 pt-3 mt-3">
+                          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                            <Paperclip size={11} />
+                            Ek Dosyalar ({t.attachments.length})
+                          </p>
+                          <ul className="space-y-1">
+                            {t.attachments.map(a => (
+                              <li key={a.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-slate-50 rounded text-xs">
+                                <span className="truncate text-slate-700">{a.filename}</span>
+                                <button
+                                  onClick={() => downloadAttachment(a)}
+                                  className="text-amber-600 hover:text-amber-700 flex-shrink-0"
+                                  title="İndir"
+                                >
+                                  <Download size={13} />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>

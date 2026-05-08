@@ -10,6 +10,10 @@ backend/.env
 frontend/dist/
 frontend/build/
 
+# Uploaded files (local dev only — production uses Railway volume)
+backend/uploads/
+uploads/
+
 # Logs
 *.log
 npm-debug.log*

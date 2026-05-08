@@ -1,7 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Paperclip, X, Download, Trash2 } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from './ConfirmModal';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_EXT = '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx';
+
+function fmtBytes(b) {
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+  return `${(b / 1024 / 1024).toFixed(1)} MB`;
+}
 
 function fmt(dateStr) {
   if (!dateStr) return '—';
@@ -34,11 +44,16 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPostponeConfirm, setShowPostponeConfirm] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!taskId) return;
     setTask(null);
     setNextDate(null);
+    setSelectedFiles([]);
+    setAttachments([]);
     setForm({
       performed_work: '', maintained_by: '', responsible_person: '',
       performed_date: new Date().toISOString().split('T')[0],
@@ -59,7 +74,54 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
         } catch {}
       }
     }).catch(() => {});
+
+    api.get(`/tasks/${taskId}/attachments`).then(r => setAttachments(r.data)).catch(() => {});
   }, [taskId]);
+
+  function handleFilePick(e) {
+    const incoming = Array.from(e.target.files || []);
+    const valid = [];
+    for (const f of incoming) {
+      if (f.size > MAX_FILE_SIZE) {
+        toast?.error(`"${f.name}" 10MB sınırını aşıyor`);
+        continue;
+      }
+      valid.push(f);
+    }
+    setSelectedFiles(prev => [...prev, ...valid].slice(0, 10));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function removeSelected(idx) {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  async function downloadAttachment(att) {
+    try {
+      const r = await api.get(`/attachments/${att.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast?.error('İndirme başarısız');
+    }
+  }
+
+  async function deleteAttachment(att) {
+    if (!window.confirm(`"${att.filename}" silinsin mi?`)) return;
+    try {
+      await api.delete(`/attachments/${att.id}`);
+      setAttachments(prev => prev.filter(a => a.id !== att.id));
+      toast?.success('Dosya silindi');
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'Silme başarısız');
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -69,6 +131,13 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
     setLoading(true);
     setError('');
     try {
+      if (selectedFiles.length > 0) {
+        const fd = new FormData();
+        selectedFiles.forEach(f => fd.append('files', f));
+        await api.post(`/tasks/${taskId}/attachments`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
       await api.put(`/tasks/${taskId}/status`, {
         status: 'completed',
         performed_work: form.performed_work,
@@ -183,6 +252,21 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
               )}
             </div>
           )}
+          {attachments.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-green-200">
+              <p className="text-xs font-semibold text-green-700 mb-2">Ek Dosyalar ({attachments.length})</p>
+              <ul className="space-y-1">
+                {attachments.map(a => (
+                  <li key={a.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white rounded text-xs">
+                    <span className="truncate text-gray-700">{a.filename}</span>
+                    <button type="button" onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700 flex-shrink-0">
+                      <Download size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -243,6 +327,62 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
               onChange={e => setForm(f => ({ ...f, performed_date: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
+          </div>
+
+          {/* Dosya Ekle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Dosya Ekle <span className="text-gray-400 text-xs font-normal">(PDF, resim, Office — max 10MB)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ALLOWED_EXT}
+              onChange={handleFilePick}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-amber-400 hover:bg-amber-50 transition-colors"
+            >
+              <Paperclip size={16} />
+              Dosya Seç
+            </button>
+            {selectedFiles.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {selectedFiles.map((f, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-gray-50 rounded text-xs">
+                    <span className="truncate text-gray-700">{f.name}</span>
+                    <span className="text-gray-400 flex-shrink-0">{fmtBytes(f.size)}</span>
+                    <button type="button" onClick={() => removeSelected(i)} className="text-red-400 hover:text-red-600 flex-shrink-0">
+                      <X size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {attachments.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs text-gray-400 mb-1">Mevcut dosyalar:</p>
+                <ul className="space-y-1">
+                  {attachments.map(a => (
+                    <li key={a.id} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-gray-50 rounded text-xs">
+                      <span className="truncate text-gray-700">{a.filename}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700">
+                          <Download size={14} />
+                        </button>
+                        <button type="button" onClick={() => deleteAttachment(a)} className="text-red-400 hover:text-red-600">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Teknik Müdür Onayı */}

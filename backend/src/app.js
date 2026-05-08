@@ -62,6 +62,7 @@ app.use('/api/tasks',         require('./routes/tasks'));
 app.use('/api/users',         require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports',       require('./routes/reports'));
+app.use('/api',               require('./routes/attachments'));
 
 // Cron: Her gece yarisi Istanbul saatiyle gorev uret + durum guncelle
 cron.schedule('0 0 * * *', async () => {
@@ -107,6 +108,18 @@ const AUTO_MIGRATIONS = [
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category TEXT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS notes TEXT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS maintenance_period VARCHAR(20)`,
+  `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS approved_by_manager BOOLEAN DEFAULT false`,
+  `CREATE TABLE IF NOT EXISTS task_attachments (
+     id SERIAL PRIMARY KEY,
+     task_id INT NOT NULL REFERENCES maintenance_tasks(id) ON DELETE CASCADE,
+     filename TEXT NOT NULL,
+     stored_filename TEXT NOT NULL,
+     mime_type TEXT NOT NULL,
+     size_bytes INT NOT NULL,
+     uploaded_by INT REFERENCES users(id) ON DELETE SET NULL,
+     uploaded_at TIMESTAMP DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_task_attachments_task_id ON task_attachments(task_id)`,
 ];
 AUTO_MIGRATIONS.forEach(sql => {
   pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));
