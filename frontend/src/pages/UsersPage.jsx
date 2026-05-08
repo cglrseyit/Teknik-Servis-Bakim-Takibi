@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, X, User, Mail, Lock, Shield, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, X, User, Mail, Lock, Shield, Trash2, AlertCircle, Pencil, ToggleLeft, ToggleRight } from 'lucide-react';
 import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
@@ -27,10 +27,13 @@ function FieldWrap({ icon: Icon, children }) {
   );
 }
 
+const EMPTY_FORM = { name: '', email: '', password: '', role: 'order_taker', is_active: true };
+
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'order_taker' });
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -40,14 +43,41 @@ export default function UsersPage() {
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
-  async function handleCreate(e) {
+  function openCreate() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError('');
+    setShowForm(true);
+  }
+
+  function openEdit(u) {
+    setEditingId(u.id);
+    setForm({ name: u.name, email: u.email, password: '', role: u.role, is_active: u.is_active });
+    setError('');
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError('');
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     try {
-      const { data } = await api.post('/users', form);
-      setUsers(u => [...u, data]);
-      setForm({ name: '', email: '', password: '', role: 'order_taker' });
-      setShowForm(false);
+      if (editingId) {
+        const payload = { name: form.name, email: form.email, role: form.role, is_active: form.is_active };
+        if (form.password) payload.password = form.password;
+        const { data } = await api.put(`/users/${editingId}`, payload);
+        setUsers(u => u.map(x => x.id === editingId ? data : x));
+      } else {
+        const { data } = await api.post('/users', form);
+        setUsers(u => [...u, data]);
+      }
+      closeForm();
     } catch (err) {
       setError(err.response?.data?.error || 'Hata oluştu');
     }
@@ -69,7 +99,7 @@ export default function UsersPage() {
           <p className="text-sm text-slate-500 mt-0.5">{users.length} kullanıcı kayıtlı</p>
         </div>
         <button
-          onClick={() => setShowForm(s => !s)}
+          onClick={() => showForm ? closeForm() : openCreate()}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-colors shadow-md ${
             showForm
               ? 'bg-slate-200 text-slate-700 hover:bg-slate-300 shadow-slate-200/50'
@@ -83,14 +113,16 @@ export default function UsersPage() {
       {/* Form */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6 animate-fade-up">
-          <h2 className="text-[15px] font-semibold text-slate-800 mb-4">Yeni Kullanıcı</h2>
+          <h2 className="text-[15px] font-semibold text-slate-800 mb-4">
+            {editingId ? 'Kullanıcıyı Düzenle' : 'Yeni Kullanıcı'}
+          </h2>
           {error && (
             <div className="mb-4 flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-200/80 text-red-600 text-sm rounded-xl">
               <AlertCircle size={15} className="flex-shrink-0" />
               {error}
             </div>
           )}
-          <form onSubmit={handleCreate}>
+          <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[12px] font-semibold text-slate-600 mb-1.5">Ad Soyad *</label>
@@ -105,9 +137,19 @@ export default function UsersPage() {
                 </FieldWrap>
               </div>
               <div>
-                <label className="block text-[12px] font-semibold text-slate-600 mb-1.5">Şifre *</label>
+                <label className="block text-[12px] font-semibold text-slate-600 mb-1.5">
+                  Şifre {editingId ? '' : '*'}
+                </label>
                 <FieldWrap icon={Lock}>
-                  <input required type="password" value={form.password} onChange={set('password')} placeholder="••••••••" className={INPUT_CLS} />
+                  <input
+                    required={!editingId}
+                    type="password"
+                    value={form.password}
+                    onChange={set('password')}
+                    placeholder={editingId ? 'Boş bırakırsanız değişmez' : '••••••••'}
+                    className={INPUT_CLS}
+                    autoComplete="new-password"
+                  />
                 </FieldWrap>
               </div>
               <div>
@@ -118,10 +160,27 @@ export default function UsersPage() {
                   </select>
                 </FieldWrap>
               </div>
+              {editingId && (
+                <div className="col-span-2">
+                  <label className="block text-[12px] font-semibold text-slate-600 mb-1.5">Durum</label>
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-colors border ${
+                      form.is_active
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                    }`}
+                  >
+                    {form.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                    {form.is_active ? 'Aktif' : 'Pasif'}
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex justify-end mt-5 pt-4 border-t border-slate-100">
               <button type="submit" className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20">
-                Kaydet
+                {editingId ? 'Güncelle' : 'Kaydet'}
               </button>
             </div>
           </form>
@@ -166,12 +225,22 @@ export default function UsersPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <button
-                      onClick={() => setDeleteTarget(u)}
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => openEdit(u)}
+                        title="Düzenle"
+                        className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(u)}
+                        title="Sil"
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
