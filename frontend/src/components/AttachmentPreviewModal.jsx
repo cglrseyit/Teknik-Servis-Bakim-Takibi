@@ -71,15 +71,15 @@ export default function AttachmentPreviewModal({ attachment, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 flex flex-col"
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="flex-1 flex flex-col overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 px-5 py-3 bg-white/95 backdrop-blur border-b border-slate-200">
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-200 flex-shrink-0">
           <p className="text-sm font-semibold text-slate-800 truncate">{attachment.filename}</p>
 
           {/* Toolbar (sadece preview yapılabiliyorsa) */}
@@ -157,9 +157,9 @@ export default function AttachmentPreviewModal({ attachment, onClose }) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto bg-slate-700 flex items-start justify-center p-6">
-          {loading && <p className="text-slate-300 text-sm py-20">Yükleniyor...</p>}
-          {error && <p className="text-red-300 text-sm py-20">Dosya yüklenemedi</p>}
+        <div className="flex-1 overflow-auto bg-slate-100 flex items-start justify-center p-6">
+          {loading && <p className="text-slate-500 text-sm py-20">Yükleniyor...</p>}
+          {error && <p className="text-red-500 text-sm py-20">Dosya yüklenemedi</p>}
           {!loading && !error && blobUrl && (
             <>
               {showImage && (
@@ -175,8 +175,8 @@ export default function AttachmentPreviewModal({ attachment, onClose }) {
                   file={blobUrl}
                   onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                   onLoadError={() => setError(true)}
-                  loading={<p className="text-slate-300 text-sm py-20">PDF yükleniyor...</p>}
-                  error={<p className="text-red-300 text-sm py-20">PDF açılamadı</p>}
+                  loading={<p className="text-slate-500 text-sm py-20">PDF yükleniyor...</p>}
+                  error={<p className="text-red-500 text-sm py-20">PDF açılamadı</p>}
                 >
                   <Page
                     pageNumber={pageNum}

@@ -23,10 +23,11 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       frameSrc: ["'self'", "blob:"],
+      workerSrc: ["'self'", "blob:"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
     }
