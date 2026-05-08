@@ -135,7 +135,7 @@ export default function EquipmentDetailPage() {
           {/* ─── LEFT: Ekipman detayları ─── */}
           <div className="space-y-4">
 
-            {/* Ekipman bilgileri */}
+            {/* Ekipman bilgileri + Bir sonraki bakım */}
             <div className="bg-white rounded-xl border border-amber-100/60 shadow-sm p-5">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700/50 mb-4">Ekipman Bilgileri</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
@@ -147,31 +147,33 @@ export default function EquipmentDetailPage() {
                   {equipment.notes}
                 </p>
               )}
-            </div>
 
-            {/* Bir sonraki bakım */}
-            {equipment.next_task ? (
-              <div className="bg-gradient-to-r from-amber-50 to-amber-50/40 border border-amber-200/60 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest mb-1">Bir Sonraki Bakım</p>
-                  <p className="text-lg font-bold text-amber-800">
-                    {new Date(equipment.next_task.scheduled_date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                  </p>
-                  <p className="text-sm text-amber-600 mt-0.5">{equipment.next_task.title}</p>
-                </div>
-                <div className="text-right flex-shrink-0 ml-4">
-                  <p className="text-3xl font-bold text-amber-600">
-                    {Math.max(0, Math.ceil((new Date(equipment.next_task.scheduled_date) - new Date()) / 86400000))}
-                  </p>
-                  <p className="text-xs text-amber-400">gün kaldı</p>
-                </div>
+              {/* Bir sonraki bakım — aynı çerçeve içinde alt blok */}
+              <div className="mt-5 pt-5 border-t border-slate-100">
+                {equipment.next_task ? (
+                  <div className="bg-gradient-to-r from-amber-50 to-amber-50/40 border border-amber-200/60 rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest mb-1">Bir Sonraki Bakım</p>
+                      <p className="text-lg font-bold text-amber-800">
+                        {new Date(equipment.next_task.scheduled_date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      </p>
+                      <p className="text-sm text-amber-600 mt-0.5">{equipment.next_task.title}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-4">
+                      <p className="text-3xl font-bold text-amber-600">
+                        {Math.max(0, Math.ceil((new Date(equipment.next_task.scheduled_date) - new Date()) / 86400000))}
+                      </p>
+                      <p className="text-xs text-amber-400">gün kaldı</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-4">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Bir Sonraki Bakım</p>
+                    <p className="text-sm text-slate-400">Planlanmış bakım görevi yok</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Bir Sonraki Bakım</p>
-                <p className="text-sm text-slate-400">Planlanmış bakım görevi yok</p>
-              </div>
-            )}
+            </div>
 
             {/* Yaklaşan / Aktif görevler */}
             <div>
