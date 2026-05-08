@@ -45,13 +45,14 @@ export default function PlanFormPage() {
     api.get(`/plans/${id}`).then(r => {
       const p = r.data;
       setIsOneTime(p.is_one_time || false);
+      const sd = p.start_date ? String(p.start_date).split('T')[0] : '';
       setForm({
         equipment_id: String(p.equipment_id),
         title: p.title || '',
         description: p.description || '',
         frequency_type: p.frequency_type || 'monthly',
         frequency_days: p.frequency_days || '',
-        start_date: p.start_date ? String(p.start_date).split('T')[0].slice(0, 7) : '',
+        start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
         target_month: p.target_month ? String(p.target_month) : '',
       });
     }).catch(() => {});
@@ -231,13 +232,21 @@ export default function PlanFormPage() {
             </div>
           )}
 
-          {(isOneTime || !MONTH_BASED_FREQS.includes(form.frequency_type)) && (
+          {!isOneTime && form.frequency_type === 'custom' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {isOneTime ? 'Görev Ayı *' : isEdit ? 'Referans Ayı *' : 'İlk Bakım Ayı *'}
+                {isEdit ? 'Referans Tarihi *' : 'İlk Bakım Tarihi *'}
               </label>
+              <input required type="date" value={form.start_date} onChange={set('start_date')} className={fieldCls} />
+              <p className="text-xs text-gray-400 mt-1">İlk bakım bu tarihte yapılır, sonrakiler {form.frequency_days || 'N'} gün arayla devam eder</p>
+            </div>
+          )}
+
+          {isOneTime && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Görev Ayı *</label>
               <input required type="month" value={form.start_date} onChange={set('start_date')}
-                min={isOneTime ? (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })() : undefined}
+                min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })()}
                 className={fieldCls} />
               <p className="text-xs text-gray-400 mt-1">Ay seçin — görev o ayın son gününe atanır</p>
             </div>
