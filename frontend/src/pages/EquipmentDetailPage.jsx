@@ -139,7 +139,6 @@ export default function EquipmentDetailPage() {
             <div className="bg-white rounded-xl border border-amber-100/60 shadow-sm p-5">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700/50 mb-4">Ekipman Bilgileri</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <InfoRow label="Kategori"        value={equipment.category} />
                 <InfoRow label="Tedarikçi"       value={equipment.supplier} />
                 <InfoRow label="Bakım Periyodu"  value={PERIOD_LABELS[equipment.maintenance_period] || equipment.maintenance_period} />
               </div>
