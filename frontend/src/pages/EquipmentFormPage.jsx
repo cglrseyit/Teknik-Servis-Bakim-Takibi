@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { SelectTrigger } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 
 const CATEGORIES = ['HVAC', 'Elektrik', 'Asansör', 'Su Sistemi', 'Jeneratör', 'Güvenlik', 'Diğer'];
@@ -132,34 +131,29 @@ export default function EquipmentFormPage() {
                 <Label className="text-sm font-semibold">
                   Durum <span className="text-destructive">*</span>
                 </Label>
-                <RadioGroup
-                  value={form.status}
-                  onValueChange={val => setForm(f => ({ ...f, status: val }))}
-                  className="grid grid-cols-3 gap-3"
-                >
+                <div className="grid grid-cols-3 gap-3">
                   {STATUS_OPTIONS.map(opt => {
                     const Icon = opt.icon;
                     const selected = form.status === opt.value;
                     return (
-                      <div key={opt.value}>
-                        <RadioGroupItem value={opt.value} id={`status-${opt.value}`} className="peer sr-only" />
-                        <Label
-                          htmlFor={`status-${opt.value}`}
-                          className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm ${
-                            selected
-                              ? `${opt.bgColor} ${opt.borderColor} shadow-sm`
-                              : 'bg-background border-border hover:border-muted-foreground/40'
-                          }`}
-                        >
-                          <Icon className={`w-4 h-4 flex-shrink-0 ${selected ? opt.color : 'text-muted-foreground'}`} />
-                          <span className={`font-medium text-sm ${selected ? opt.color : 'text-foreground'}`}>
-                            {opt.label}
-                          </span>
-                        </Label>
-                      </div>
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, status: opt.value }))}
+                        className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm text-left ${
+                          selected
+                            ? `${opt.bgColor} ${opt.borderColor} shadow-sm`
+                            : 'bg-background border-border hover:border-muted-foreground/40'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 flex-shrink-0 ${selected ? opt.color : 'text-muted-foreground'}`} />
+                        <span className={`font-medium text-sm ${selected ? opt.color : 'text-foreground'}`}>
+                          {opt.label}
+                        </span>
+                      </button>
                     );
                   })}
-                </RadioGroup>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -207,35 +201,30 @@ export default function EquipmentFormPage() {
                   </div>
                 ) : (
                   <>
-                    <RadioGroup
-                      value={form.maintenance_period}
-                      onValueChange={val => setForm(f => ({ ...f, maintenance_period: val }))}
-                      className="grid grid-cols-2 gap-3"
-                    >
+                    <div className="grid grid-cols-2 gap-3">
                       {PERIOD_OPTIONS.map(opt => {
                         const selected = form.maintenance_period === opt.value;
                         return (
-                          <div key={opt.value}>
-                            <RadioGroupItem value={opt.value} id={`period-${opt.value}`} className="peer sr-only" />
-                            <Label
-                              htmlFor={`period-${opt.value}`}
-                              className={`flex flex-col gap-0.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm ${
-                                selected
-                                  ? 'bg-amber-50 border-amber-500 shadow-sm'
-                                  : 'bg-background border-border hover:border-muted-foreground/40'
-                              }`}
-                            >
-                              <span className={`font-semibold text-sm ${selected ? 'text-amber-700' : 'text-foreground'}`}>
-                                {opt.label}
-                              </span>
-                              <span className={`text-xs ${selected ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                                {opt.sub}
-                              </span>
-                            </Label>
-                          </div>
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, maintenance_period: opt.value }))}
+                            className={`flex flex-col gap-0.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm text-left ${
+                              selected
+                                ? 'bg-amber-50 border-amber-500 shadow-sm'
+                                : 'bg-background border-border hover:border-muted-foreground/40'
+                            }`}
+                          >
+                            <span className={`font-semibold text-sm ${selected ? 'text-amber-700' : 'text-foreground'}`}>
+                              {opt.label}
+                            </span>
+                            <span className={`text-xs ${selected ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                              {opt.sub}
+                            </span>
+                          </button>
                         );
                       })}
-                    </RadioGroup>
+                    </div>
 
                     {!isEdit && form.maintenance_period && (() => {
                       const now = new Date();
