@@ -26,6 +26,7 @@ app.use(helmet({
       connectSrc: ["'self'"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
+      frameSrc: ["'self'", "blob:"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
     }
