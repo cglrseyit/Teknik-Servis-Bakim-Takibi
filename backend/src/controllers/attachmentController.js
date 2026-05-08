@@ -54,10 +54,12 @@ async function uploadAttachments(req, res) {
 
     const inserted = [];
     for (const f of files) {
+      // multer dosya adını latin-1 olarak parse ediyor; UTF-8'e geri çevir (Türkçe harfler için)
+      const originalname = Buffer.from(f.originalname, 'latin1').toString('utf8');
       const { rows } = await pool.query(
         `INSERT INTO task_attachments (task_id, filename, stored_filename, mime_type, size_bytes, uploaded_by)
          VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, filename, mime_type, size_bytes, uploaded_at`,
-        [taskId, f.originalname, f.filename, f.mimetype, f.size, req.user.id]
+        [taskId, originalname, f.filename, f.mimetype, f.size, req.user.id]
       );
       inserted.push(rows[0]);
     }

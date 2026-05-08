@@ -122,6 +122,10 @@ const AUTO_MIGRATIONS = [
      uploaded_at TIMESTAMP DEFAULT NOW()
    )`,
   `CREATE INDEX IF NOT EXISTS idx_task_attachments_task_id ON task_attachments(task_id)`,
+  // Eski kayıtlarda UTF-8 olarak yanlış kaydedilmiş dosya adlarını düzelt (latin1 → utf8)
+  `UPDATE task_attachments
+   SET filename = convert_from(convert_to(filename, 'LATIN1'), 'UTF8')
+   WHERE filename ~ '[ÃÄÅ]'`,
 ];
 AUTO_MIGRATIONS.forEach(sql => {
   pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));
