@@ -32,7 +32,6 @@ export default function PlanFormPage() {
     equipment_id: searchParams.get('equipment_id') || '',
     title: '', description: '',
     frequency_type: 'monthly', frequency_days: '',
-    advance_notice_days: '3',
     start_date: '',
     target_month: '',
   });
@@ -52,7 +51,6 @@ export default function PlanFormPage() {
         description: p.description || '',
         frequency_type: p.frequency_type || 'monthly',
         frequency_days: p.frequency_days || '',
-        advance_notice_days: String(p.advance_notice_days ?? 3),
         start_date: p.start_date ? String(p.start_date).split('T')[0].slice(0, 7) : '',
         target_month: p.target_month ? String(p.target_month) : '',
       });
@@ -209,10 +207,6 @@ export default function PlanFormPage() {
                   <input type="number" min="1" required value={form.frequency_days} onChange={set('frequency_days')} className={fieldCls} />
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Uyarı Süresi (gün)</label>
-                <input type="number" min="0" max="30" value={form.advance_notice_days} onChange={set('advance_notice_days')} className={fieldCls} />
-              </div>
             </div>
           )}
 

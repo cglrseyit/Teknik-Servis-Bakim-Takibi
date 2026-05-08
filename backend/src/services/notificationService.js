@@ -36,28 +36,25 @@ async function generateNotifications() {
       }
     }
 
-    // 3 gün içinde yaklaşan görevler
+    // Bu aydaki görevler — ayda bir kez bildirim
     const { rows: upcoming } = await pool.query(`
-      SELECT t.id, t.title, t.scheduled_date,
-             (t.scheduled_date - (NOW() AT TIME ZONE 'Europe/Istanbul')::date) AS days_left
+      SELECT t.id, t.title, t.scheduled_date
       FROM maintenance_tasks t
-      WHERE t.status = 'pending'
-        AND t.scheduled_date BETWEEN (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-                                 AND (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '3 days'
+      WHERE t.status IN ('pending', 'in_progress')
+        AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
+        AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
         AND NOT EXISTS (
           SELECT 1 FROM notifications n
           WHERE n.task_id = t.id AND n.type = 'reminder'
-            AND (n.sent_at AT TIME ZONE 'Europe/Istanbul')::date = (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+            AND DATE_TRUNC('month', (n.sent_at AT TIME ZONE 'Europe/Istanbul')) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul'))
         )
     `);
 
     for (const t of upcoming) {
-      const days = t.days_left;
-      const msg = days === 0 ? `Bugün yapılacak: ${t.title}` : `${days} gün içinde: ${t.title}`;
       for (const uid of managerIds) {
         await pool.query(
           `INSERT INTO notifications (user_id, task_id, message, type) VALUES ($1,$2,$3,'reminder')`,
-          [uid, t.id, msg]
+          [uid, t.id, `Bu ay yapılacak: ${t.title}`]
         );
       }
     }
@@ -93,13 +90,12 @@ async function sendDailyDigestEmails() {
 
       const { rows: userUpcoming } = await pool.query(`
         SELECT t.id, t.title, t.scheduled_date,
-               (t.scheduled_date - (NOW() AT TIME ZONE 'Europe/Istanbul')::date) AS days_left,
                e.name AS equipment_name, e.location
         FROM maintenance_tasks t
         LEFT JOIN equipment e ON e.id = t.equipment_id
-        WHERE t.status = 'pending'
-          AND t.scheduled_date BETWEEN (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-                                   AND (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '3 days'
+        WHERE t.status IN ('pending', 'in_progress')
+          AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
+          AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
         ORDER BY t.scheduled_date ASC
       `);
 
