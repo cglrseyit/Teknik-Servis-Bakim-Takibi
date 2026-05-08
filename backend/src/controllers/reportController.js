@@ -140,6 +140,11 @@ async function getAuditLogDetail(req, res) {
             notes: row.notes,
             maintenance_period: row.maintenance_period,
           };
+          const attRes = await pool.query(
+            `SELECT id, filename, mime_type, size_bytes, uploaded_at
+             FROM task_attachments WHERE task_id = $1 ORDER BY uploaded_at DESC`,
+            [log.entity_id]
+          );
           task_detail = {
             title: row.title,
             scheduled_date: row.scheduled_date,
@@ -150,6 +155,7 @@ async function getAuditLogDetail(req, res) {
             responsible_person: row.responsible_person,
             completed_by_name: row.completed_by_name,
             is_one_time: row.is_one_time || false,
+            attachments: attRes.rows,
           };
         }
       } else if (log.entity === 'equipment') {

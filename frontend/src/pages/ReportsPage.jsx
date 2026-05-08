@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail } from 'lucide-react';
+import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail, Paperclip, Download } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import { useAuth } from '../context/AuthContext';
@@ -124,6 +124,22 @@ export default function ReportsPage() {
     return diff > 0
       ? { dir: 'up', label: `+${pct}%`, bg: 'bg-emerald-50', text: 'text-emerald-600' }
       : { dir: 'down', label: `${pct}%`, bg: 'bg-red-50', text: 'text-red-600' };
+  }
+
+  async function downloadAttachment(att) {
+    try {
+      const r = await api.get(`/attachments/${att.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast?.error('İndirme başarısız');
+    }
   }
 
   function handleLogClick(log) {
@@ -403,6 +419,28 @@ export default function ReportsPage() {
                   <div className="pt-4 border-t border-slate-100 mt-4">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Notlar</p>
                     <p className="text-sm text-slate-600 whitespace-pre-wrap">{logDetail.task_detail.notes}</p>
+                  </div>
+                )}
+                {logDetail.task_detail.attachments?.length > 0 && (
+                  <div className="pt-4 border-t border-slate-100 mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
+                      <Paperclip size={11} />
+                      Ek Dosyalar ({logDetail.task_detail.attachments.length})
+                    </p>
+                    <ul className="space-y-1">
+                      {logDetail.task_detail.attachments.map(a => (
+                        <li key={a.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 rounded text-xs">
+                          <span className="truncate text-slate-700">{a.filename}</span>
+                          <button
+                            onClick={() => downloadAttachment(a)}
+                            className="text-amber-600 hover:text-amber-700 flex-shrink-0"
+                            title="İndir"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </SectionCard>
