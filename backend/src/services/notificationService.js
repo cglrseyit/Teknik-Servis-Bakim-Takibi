@@ -5,7 +5,7 @@ async function generateNotifications() {
   try {
     // Tüm yönetici rolündeki kullanıcıları al
     const { rows: managers } = await pool.query(
-      `SELECT id FROM users WHERE role IN ('teknik_muduru', 'order_taker') AND is_active = true`
+      `SELECT id FROM users WHERE role IN ('admin', 'teknik_muduru', 'order_taker') AND is_active = true`
     );
     const managerIds = managers.map(u => u.id);
     if (managerIds.length === 0) {
@@ -71,7 +71,7 @@ async function sendDailyDigestEmails() {
   try {
     const { rows: users } = await pool.query(
       `SELECT id, name, email FROM users
-       WHERE role IN ('teknik_muduru', 'order_taker')
+       WHERE role IN ('admin', 'teknik_muduru', 'order_taker')
          AND is_active = true
          AND email IS NOT NULL AND email <> ''`
     );
