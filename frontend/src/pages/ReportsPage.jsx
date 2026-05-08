@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail, Paperclip, Download } from 'lucide-react';
+import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail, Paperclip, Download, Eye } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
+import AttachmentPreviewModal from '../components/AttachmentPreviewModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
@@ -90,6 +91,7 @@ export default function ReportsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [auditTab, setAuditTab] = useState('completed');
   const [testingEmail, setTestingEmail] = useState(false);
+  const [previewAtt, setPreviewAtt] = useState(null);
 
   async function handleTestEmail() {
     setTestingEmail(true);
@@ -430,14 +432,21 @@ export default function ReportsPage() {
                     <ul className="space-y-1">
                       {logDetail.task_detail.attachments.map(a => (
                         <li key={a.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-50 rounded text-xs">
-                          <span className="truncate text-slate-700">{a.filename}</span>
                           <button
-                            onClick={() => downloadAttachment(a)}
-                            className="text-amber-600 hover:text-amber-700 flex-shrink-0"
-                            title="İndir"
+                            onClick={() => setPreviewAtt(a)}
+                            className="truncate text-left text-slate-700 hover:text-amber-700 hover:underline flex-1"
+                            title="Görüntüle"
                           >
-                            <Download size={14} />
+                            {a.filename}
                           </button>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button onClick={() => setPreviewAtt(a)} className="text-slate-500 hover:text-amber-700" title="Görüntüle">
+                              <Eye size={14} />
+                            </button>
+                            <button onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700" title="İndir">
+                              <Download size={14} />
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -499,6 +508,8 @@ export default function ReportsPage() {
           </div>
         ) : null}
       </SlidePanel>
+
+      <AttachmentPreviewModal attachment={previewAtt} onClose={() => setPreviewAtt(null)} />
     </Layout>
   );
 }

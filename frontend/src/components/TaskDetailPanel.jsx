@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Paperclip, X, Download, Trash2 } from 'lucide-react';
+import { Paperclip, X, Download, Trash2, Eye } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from './ConfirmModal';
+import AttachmentPreviewModal from './AttachmentPreviewModal';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_EXT = '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx';
@@ -46,6 +47,7 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
   const [showPostponeConfirm, setShowPostponeConfirm] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [previewAtt, setPreviewAtt] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -258,10 +260,22 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
               <ul className="space-y-1">
                 {attachments.map(a => (
                   <li key={a.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white rounded text-xs">
-                    <span className="truncate text-gray-700">{a.filename}</span>
-                    <button type="button" onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700 flex-shrink-0">
-                      <Download size={14} />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewAtt(a)}
+                      className="truncate text-left text-gray-700 hover:text-amber-700 hover:underline flex-1"
+                      title="Görüntüle"
+                    >
+                      {a.filename}
                     </button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button type="button" onClick={() => setPreviewAtt(a)} className="text-slate-500 hover:text-amber-700" title="Görüntüle">
+                        <Eye size={14} />
+                      </button>
+                      <button type="button" onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700" title="İndir">
+                        <Download size={14} />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -369,12 +383,22 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
                 <ul className="space-y-1">
                   {attachments.map(a => (
                     <li key={a.id} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-gray-50 rounded text-xs">
-                      <span className="truncate text-gray-700">{a.filename}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewAtt(a)}
+                        className="truncate text-left text-gray-700 hover:text-amber-700 hover:underline flex-1"
+                        title="Görüntüle"
+                      >
+                        {a.filename}
+                      </button>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <button type="button" onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700">
+                        <button type="button" onClick={() => setPreviewAtt(a)} className="text-slate-500 hover:text-amber-700" title="Görüntüle">
+                          <Eye size={14} />
+                        </button>
+                        <button type="button" onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700" title="İndir">
                           <Download size={14} />
                         </button>
-                        <button type="button" onClick={() => deleteAttachment(a)} className="text-red-400 hover:text-red-600">
+                        <button type="button" onClick={() => deleteAttachment(a)} className="text-red-400 hover:text-red-600" title="Sil">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -428,6 +452,8 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
         onConfirm={doPostpone}
         onCancel={() => setShowPostponeConfirm(false)}
       />
+
+      <AttachmentPreviewModal attachment={previewAtt} onClose={() => setPreviewAtt(null)} />
     </div>
   );
 }
