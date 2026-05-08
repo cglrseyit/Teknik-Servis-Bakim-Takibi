@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, WrenchIcon, Clock, CalendarDays } from 'lucide-react';
+import { CheckCircle2, WrenchIcon, Clock, CalendarDays, ArrowLeft } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -82,6 +82,14 @@ export default function EquipmentFormPage() {
       <div className="max-w-2xl mx-auto">
         {/* Başlık */}
         <div className="mb-8">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Geri Dön
+          </button>
           <div className="flex items-center gap-3 mb-1.5">
             <div className="p-2 bg-primary/10 rounded-lg">
               <WrenchIcon className="w-5 h-5 text-primary" />
