@@ -11,6 +11,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cron = require('node-cron');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const pool = require('./config/db');
 
 const app = express();
@@ -19,7 +20,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'"],
@@ -36,8 +37,18 @@ const corsOrigin = process.env.CLIENT_URL
   : (process.env.NODE_ENV === 'production' ? false : '*');
 app.use(cors({ origin: corsOrigin }));
 app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// Global API rate limiter — her IP için dakikada 120 istek
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Çok fazla istek. Lütfen biraz bekleyin.' },
+});
+app.use('/api', apiLimiter);
 
 // API Routes
 app.get('/api/health', (req, res) => {

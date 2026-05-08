@@ -2,6 +2,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 
+// Kullanıcı bulunamadığında da bcrypt.compare çalışsın diye sabit dummy hash
+const DUMMY_HASH = '$2a$12$JHEvKtvahPMSECVpeMzpzOpNWb18XfrKNisAtgMlN/7hHZ5dY2K/y';
+
 async function login(req, res) {
   const { email, password } = req.body;
 
@@ -16,12 +19,9 @@ async function login(req, res) {
     );
 
     const user = rows[0];
-    if (!user) {
-      return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
-    }
-
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
+    const hashToCompare = user ? user.password : DUMMY_HASH;
+    const valid = await bcrypt.compare(password, hashToCompare);
+    if (!user || !valid) {
       return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
     }
 
