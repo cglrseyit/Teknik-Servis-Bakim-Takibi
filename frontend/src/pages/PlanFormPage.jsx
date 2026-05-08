@@ -88,7 +88,7 @@ export default function PlanFormPage() {
       if (usesTargetMonth && form.target_month) {
         const tm = Number(form.target_month);
         const now = new Date();
-        const year = tm > now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
+        const year = tm >= now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
         payload.start_date = `${year}-${String(tm).padStart(2, '0')}-01`;
       }
       if (isEdit) {
