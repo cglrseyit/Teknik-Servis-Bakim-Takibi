@@ -36,7 +36,7 @@ const corsOrigin = process.env.CLIENT_URL
   ? process.env.CLIENT_URL
   : (process.env.NODE_ENV === 'production' ? false : '*');
 app.use(cors({ origin: corsOrigin }));
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
@@ -97,15 +97,20 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Auto-migrations
-pool.query(`ALTER TABLE maintenance_plans ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`).catch(() => {});
-pool.query(`ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS maintained_by TEXT`).catch(() => {});
-pool.query(`ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`).catch(() => {});
-pool.query(`ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS responsible_person TEXT`).catch(() => {});
-pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS supplier TEXT`).catch(() => {});
-pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS brand TEXT`).catch(() => {});
-pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category TEXT`).catch(() => {});
-pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS notes TEXT`).catch(() => {});
-pool.query(`ALTER TABLE equipment ADD COLUMN IF NOT EXISTS maintenance_period VARCHAR(20)`).catch(() => {});
+const AUTO_MIGRATIONS = [
+  `ALTER TABLE maintenance_plans ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`,
+  `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS maintained_by TEXT`,
+  `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`,
+  `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS responsible_person TEXT`,
+  `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS supplier TEXT`,
+  `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS brand TEXT`,
+  `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category TEXT`,
+  `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS notes TEXT`,
+  `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS maintenance_period VARCHAR(20)`,
+];
+AUTO_MIGRATIONS.forEach(sql => {
+  pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));
+});
 
 // Startup fix: geçmiş pending görevleri overdue yap, aktif planlar için gelecek görevleri üret
 (async () => {
