@@ -7,8 +7,6 @@ import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 
 const FREQ_OPTIONS = [
-  { value: 'daily', label: 'Günlük' },
-  { value: 'weekly', label: 'Haftalık' },
   { value: 'monthly', label: 'Aylık' },
   { value: 'quarterly', label: '3 Aylık' },
   { value: 'semiannual', label: '6 Aylık' },

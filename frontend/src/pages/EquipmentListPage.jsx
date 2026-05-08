@@ -12,8 +12,6 @@ const STATUS_CONFIG = {
 };
 
 const FREQUENCY_LABELS = {
-  daily:     'Günlük',
-  weekly:    'Haftalık',
   monthly:   'Aylık',
   quarterly: '3 Aylık',
   biannual:  '6 Aylık',

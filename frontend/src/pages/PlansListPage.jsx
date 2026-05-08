@@ -7,12 +7,9 @@ import PlanDetailPanel from '../components/PlanDetailPanel';
 import api from '../api/axios';
 
 const FREQ_LABELS = {
-  daily: 'Günlük', weekly: 'Haftalık', monthly: 'Aylık',
-  quarterly: '3 Aylık', semiannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel',
+  monthly: 'Aylık', quarterly: '3 Aylık', semiannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel',
 };
 const FREQ_COLORS = {
-  daily:      'bg-amber-50 text-amber-700',
-  weekly:     'bg-violet-50 text-violet-700',
   monthly:    'bg-amber-50 text-amber-700',
   quarterly:  'bg-orange-50 text-orange-700',
   semiannual: 'bg-rose-50 text-rose-700',
