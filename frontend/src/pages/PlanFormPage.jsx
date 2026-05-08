@@ -14,7 +14,7 @@ const FREQ_OPTIONS = [
   { value: 'custom', label: 'Özel (gün sayısı gir)' },
 ];
 
-const MONTH_BASED_FREQS = ['quarterly', 'semiannual', 'yearly'];
+const MONTH_BASED_FREQS = ['monthly', 'quarterly', 'semiannual', 'yearly'];
 
 export default function PlanFormPage() {
   const navigate = useNavigate();
@@ -230,7 +230,9 @@ export default function PlanFormPage() {
                   ? 'Her yıl bu ayın son gününe otomatik görev atanır'
                   : form.frequency_type === 'semiannual'
                     ? 'İlk bakım bu ayda, sonraki 6 ay arayla devam eder'
-                    : 'İlk bakım bu ayda, sonraki 3 ay arayla devam eder'}
+                    : form.frequency_type === 'quarterly'
+                      ? 'İlk bakım bu ayda, sonraki 3 ay arayla devam eder'
+                      : 'Her ay bu aydan itibaren son güne otomatik görev atanır'}
               </p>
             </div>
           )}
