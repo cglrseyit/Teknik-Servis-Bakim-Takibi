@@ -51,9 +51,8 @@ async function getOne(req, res) {
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
 
     const { rows: upcomingTasks } = await pool.query(
-      `SELECT t.*, u.name AS assigned_name
+      `SELECT t.*
        FROM maintenance_tasks t
-       LEFT JOIN users u ON u.id = t.assigned_to
        WHERE t.equipment_id = $1
          AND t.status IN ('pending','in_progress','overdue','postponed')
        ORDER BY t.scheduled_date ASC`,
@@ -61,9 +60,8 @@ async function getOne(req, res) {
     );
 
     const { rows: completedTasks } = await pool.query(
-      `SELECT t.*, u.name AS assigned_name
+      `SELECT t.*
        FROM maintenance_tasks t
-       LEFT JOIN users u ON u.id = t.assigned_to
        WHERE t.equipment_id = $1
          AND t.status IN ('completed','skipped')
        ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC
@@ -72,9 +70,8 @@ async function getOne(req, res) {
     );
 
     const { rows: nextRows } = await pool.query(
-      `SELECT t.*, u.name AS assigned_name, mp.title AS plan_title
+      `SELECT t.*, mp.title AS plan_title
        FROM maintenance_tasks t
-       LEFT JOIN users u ON u.id = t.assigned_to
        LEFT JOIN maintenance_plans mp ON mp.id = t.plan_id
        WHERE t.equipment_id = $1
          AND t.status IN ('pending','in_progress')

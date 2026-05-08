@@ -284,7 +284,6 @@ export default function DashboardPage() {
           {t.location ? <span className="text-gray-400 font-normal"> · {t.location}</span> : ''}
         </td>
         <td className="px-6 py-4 text-sm text-gray-600">{t.title}</td>
-        <td className="px-6 py-4 text-sm text-gray-600">{t.assigned_name || '—'}</td>
         <td className="px-6 py-4 text-sm text-gray-600">
           {t.scheduled_date
             ? new Date(t.scheduled_date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -413,7 +412,6 @@ export default function DashboardPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ekipman</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Görev</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sorumlu</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vade</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
                   <th className="px-6 py-3" />

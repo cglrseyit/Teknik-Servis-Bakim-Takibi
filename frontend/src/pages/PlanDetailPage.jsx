@@ -45,10 +45,6 @@ export default function PlanDetailPage() {
               </p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs">Sorumlu Teknisyen</p>
-              <p className="font-medium text-gray-800">{plan.assigned_name || '—'}</p>
-            </div>
-            <div>
               <p className="text-gray-400 text-xs">Durum</p>
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${plan.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                 {plan.is_active ? 'Aktif' : 'Pasif'}

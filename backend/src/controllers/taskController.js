@@ -3,7 +3,7 @@ const { generateTasksForPlan, getIntervalDays } = require('../services/taskGener
 const { logAction } = require('../services/auditLogger');
 
 async function getAll(req, res) {
-  const { status, assigned_to, date_from, date_to, equipment_id, search } = req.query;
+  const { status, date_from, date_to, equipment_id, search } = req.query;
   const conditions = [];
   const params = [];
 
@@ -23,7 +23,6 @@ async function getAll(req, res) {
   if (req.query.undone === 'true') {
     conditions.push(`t.status NOT IN ('completed','skipped')`);
   }
-  if (assigned_to)  { params.push(assigned_to);  conditions.push(`t.assigned_to = $${params.length}`); }
   if (equipment_id) { params.push(equipment_id); conditions.push(`t.equipment_id = $${params.length}`); }
   if (date_from)    { params.push(date_from);    conditions.push(`t.scheduled_date >= $${params.length}`); }
   if (date_to)      { params.push(date_to);      conditions.push(`t.scheduled_date <= $${params.length}`); }
@@ -33,11 +32,9 @@ async function getAll(req, res) {
 
   try {
     const { rows } = await pool.query(
-      `SELECT t.*, e.name AS equipment_name, e.location, e.category,
-              u.name AS assigned_name
+      `SELECT t.*, e.name AS equipment_name, e.location, e.category
        FROM maintenance_tasks t
        LEFT JOIN equipment e ON e.id = t.equipment_id
-       LEFT JOIN users u ON u.id = t.assigned_to
        LEFT JOIN maintenance_plans p ON p.id = t.plan_id
        ${where}
        ORDER BY t.scheduled_date ASC`,
@@ -50,55 +47,15 @@ async function getAll(req, res) {
   }
 }
 
-async function getMyTasks(req, res) {
-  try {
-    const { rows } = await pool.query(
-      `SELECT t.*, e.name AS equipment_name, e.location
-       FROM maintenance_tasks t
-       LEFT JOIN equipment e ON e.id = t.equipment_id
-       LEFT JOIN maintenance_plans p ON p.id = t.plan_id
-       WHERE t.assigned_to = $1
-         AND t.status NOT IN ('completed','skipped')
-         AND (t.status IN ('in_progress','overdue')
-              OR t.scheduled_date <= CURRENT_DATE + (COALESCE(p.advance_notice_days, 3) || ' days')::interval)
-       ORDER BY t.scheduled_date ASC`,
-      [req.user.id]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Sunucu hatası' });
-  }
-}
-
-async function getMyAllTasks(req, res) {
-  const { status } = req.query;
-  try {
-    const { rows } = await pool.query(
-      `SELECT t.*, e.name AS equipment_name, e.location
-       FROM maintenance_tasks t
-       LEFT JOIN equipment e ON e.id = t.equipment_id
-       WHERE t.assigned_to = $1 ${status ? `AND t.status = $2` : ''}
-       ORDER BY t.scheduled_date DESC LIMIT 50`,
-      status ? [req.user.id, status] : [req.user.id]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Sunucu hatası' });
-  }
-}
 
 async function getOne(req, res) {
   const { id } = req.params;
   try {
     const { rows } = await pool.query(
       `SELECT t.*, e.name AS equipment_name, e.location,
-              e.brand, e.model, e.serial_number, e.category,
-              u.name AS assigned_name
+              e.brand, e.model, e.serial_number, e.category
        FROM maintenance_tasks t
        LEFT JOIN equipment e ON e.id = t.equipment_id
-       LEFT JOIN users u ON u.id = t.assigned_to
        WHERE t.id = $1`,
       [id]
     );
@@ -111,15 +68,15 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { equipment_id, title, description, scheduled_date, assigned_to } = req.body;
+  const { equipment_id, title, description, scheduled_date } = req.body;
   if (!equipment_id || !title || !scheduled_date) {
     return res.status(400).json({ error: 'Ekipman, başlık ve tarih zorunlu' });
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO maintenance_tasks (equipment_id, title, description, scheduled_date, assigned_to, status)
-       VALUES ($1,$2,$3,$4,$5,'pending') RETURNING *`,
-      [equipment_id, title, description, scheduled_date, assigned_to || null]
+      `INSERT INTO maintenance_tasks (equipment_id, title, description, scheduled_date, status)
+       VALUES ($1,$2,$3,$4,'pending') RETURNING *`,
+      [equipment_id, title, description, scheduled_date]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -251,4 +208,4 @@ async function getSummary(req, res) {
   }
 }
 
-module.exports = { getAll, getMyTasks, getMyAllTasks, getOne, create, updateStatus, getSummary };
+module.exports = { getAll, getOne, create, updateStatus, getSummary };

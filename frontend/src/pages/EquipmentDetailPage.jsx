@@ -143,9 +143,6 @@ export default function EquipmentDetailPage() {
                     {new Date(equipment.next_task.scheduled_date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </p>
                   <p className="text-sm text-amber-600 mt-0.5">{equipment.next_task.title}</p>
-                  {equipment.next_task.assigned_name && (
-                    <p className="text-xs text-amber-500 mt-0.5">Atanan: {equipment.next_task.assigned_name}</p>
-                  )}
                 </div>
                 <div className="text-right flex-shrink-0 ml-4">
                   <p className="text-3xl font-bold text-amber-600">
