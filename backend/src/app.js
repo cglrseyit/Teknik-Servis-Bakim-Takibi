@@ -56,6 +56,13 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
+// API yanıtları cache'lenmesin (hassas veri olabilir)
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  next();
+});
+
 // API Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
@@ -98,8 +105,22 @@ cron.schedule('0 8 * * *', async () => {
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../../frontend/dist');
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        // HTML: tarayıcı her seferinde revalidate etsin (yeni deploy hemen aktif olsun)
+        res.setHeader('Cache-Control', 'no-cache');
+      } else if (/\.[a-f0-9]{8,}\.(js|css|woff2?|woff|ttf|eot|otf|png|jpg|jpeg|gif|svg|webp|ico)$/i.test(filePath)) {
+        // Hash'li asset'ler: 1 yıl cache (immutable)
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        // Diğer statik (robots.txt, favicon vs): 1 gün cache
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      }
+    },
+  }));
   app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
