@@ -4,8 +4,7 @@ import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, Eye, FileSpreadsheet } from 'lucide-react';
-import AttachmentPreviewModal from '../components/AttachmentPreviewModal';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet } from 'lucide-react';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 const STATUS_COLORS = {
@@ -56,7 +55,6 @@ export default function EquipmentDetailPage() {
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [previewAtt, setPreviewAtt] = useState(null);
 
   useEffect(() => {
     api.get(`/equipment/${id}`).then(r => setEquipment(r.data)).catch(() => navigate('/equipment'));
@@ -339,20 +337,15 @@ export default function EquipmentDetailPage() {
                             {t.attachments.map(a => (
                               <li key={a.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-slate-50 rounded text-xs">
                                 <button
-                                  onClick={() => setPreviewAtt(a)}
+                                  onClick={() => downloadAttachment(a)}
                                   className="truncate text-left text-slate-700 hover:text-amber-700 hover:underline flex-1"
-                                  title="Görüntüle"
+                                  title="İndir"
                                 >
                                   {a.filename}
                                 </button>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <button onClick={() => setPreviewAtt(a)} className="text-slate-500 hover:text-amber-700" title="Görüntüle">
-                                    <Eye size={13} />
-                                  </button>
-                                  <button onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700" title="İndir">
-                                    <Download size={13} />
-                                  </button>
-                                </div>
+                                <button onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700 flex-shrink-0" title="İndir">
+                                  <Download size={13} />
+                                </button>
                               </li>
                             ))}
                           </ul>
@@ -367,7 +360,6 @@ export default function EquipmentDetailPage() {
         </div>
       </div>
 
-      <AttachmentPreviewModal attachment={previewAtt} onClose={() => setPreviewAtt(null)} />
     </Layout>
   );
 }
