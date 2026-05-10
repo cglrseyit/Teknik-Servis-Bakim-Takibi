@@ -23,11 +23,11 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       // style-src-elem: <style> tag ve <link rel=stylesheet> — sadece kendi domainimiz
       // style-src-attr: style="..." attribute — Recharts/dinamik bileşenler için unsafe-inline
-      styleSrcElem: ["'self'", "https://fonts.googleapis.com"],
+      styleSrcElem: ["'self'"],
       styleSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "blob:"],
-      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       frameSrc: ["'self'", "blob:"],
       workerSrc: ["'self'", "blob:"],
