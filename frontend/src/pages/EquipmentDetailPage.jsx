@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, Eye } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, Eye, FileSpreadsheet } from 'lucide-react';
 import AttachmentPreviewModal from '../components/AttachmentPreviewModal';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
@@ -81,6 +81,23 @@ export default function EquipmentDetailPage() {
     } catch {}
   }
 
+  async function exportHistory() {
+    try {
+      const r = await api.get(`/exports/equipment/${id}/history.xlsx`, { responseType: 'blob' });
+      const cd = r.headers['content-disposition'] || '';
+      const match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+      const filename = match ? decodeURIComponent(match[1]) : `${equipment?.name || 'ekipman'}-bakim-gecmisi.xlsx`;
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {}
+  }
+
   if (!equipment) return <Layout><div className="p-6 text-slate-400 text-sm">Yükleniyor...</div></Layout>;
 
   const upcomingTasks = equipment.upcoming_tasks || [];
@@ -110,6 +127,14 @@ export default function EquipmentDetailPage() {
             {equipment.brand && <p className="text-sm text-slate-400 mt-0.5">{equipment.brand}</p>}
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={exportHistory}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium rounded-lg hover:bg-emerald-100 transition-colors"
+              title="Bakım geçmişini Excel olarak indir"
+            >
+              <FileSpreadsheet size={14} />
+              Excel'e Aktar
+            </button>
             {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
               <Link
                 to={`/equipment/${id}/edit`}

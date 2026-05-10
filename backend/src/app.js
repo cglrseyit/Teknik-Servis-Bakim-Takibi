@@ -65,6 +65,7 @@ app.use('/api/users',         require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports',       require('./routes/reports'));
 app.use('/api',               require('./routes/attachments'));
+app.use('/api/exports',       require('./routes/exports'));
 
 // Cron: Her gece yarisi Istanbul saatiyle gorev uret + durum guncelle
 cron.schedule('0 0 * * *', async () => {

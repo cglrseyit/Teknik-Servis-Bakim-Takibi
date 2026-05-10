@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail, Paperclip, Download, Eye } from 'lucide-react';
+import { History, ClipboardList, CheckCircle2, AlertTriangle, ArrowUpRight, ArrowDownRight, Minus, Zap, Mail, Paperclip, Download, Eye, FileSpreadsheet } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import AttachmentPreviewModal from '../components/AttachmentPreviewModal';
@@ -92,6 +92,9 @@ export default function ReportsPage() {
   const [auditTab, setAuditTab] = useState('completed');
   const [testingEmail, setTestingEmail] = useState(false);
   const [previewAtt, setPreviewAtt] = useState(null);
+  const [equipmentList, setEquipmentList] = useState([]);
+  const [exportEqId, setExportEqId] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   async function handleTestEmail() {
     setTestingEmail(true);
@@ -111,7 +114,34 @@ export default function ReportsPage() {
   useEffect(() => {
     api.get('/reports/stats').then(r => setStats(r.data)).catch(() => {});
     api.get('/reports/by-status').then(r => setStatusDist(r.data)).catch(() => {});
+    api.get('/equipment').then(r => setEquipmentList(r.data)).catch(() => {});
   }, []);
+
+  async function exportEquipmentHistory() {
+    if (!exportEqId) {
+      toast?.error('Lütfen bir ekipman seçin');
+      return;
+    }
+    setExporting(true);
+    try {
+      const r = await api.get(`/exports/equipment/${exportEqId}/history.xlsx`, { responseType: 'blob' });
+      const cd = r.headers['content-disposition'] || '';
+      const match = cd.match(/filename\*=UTF-8''([^;]+)/i);
+      const filename = match ? decodeURIComponent(match[1]) : `bakim-gecmisi.xlsx`;
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast?.error('Excel oluşturulamadı');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (user?.role !== 'admin') return;
@@ -246,6 +276,39 @@ export default function ReportsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Excel Export */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <FileSpreadsheet size={15} className="text-emerald-600" />
+              Ekipman Bakım Geçmişi (Excel)
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Seçilen ekipmanın tüm tamamlanmış bakımlarını Excel olarak indir</p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <select
+            value={exportEqId}
+            onChange={e => setExportEqId(e.target.value)}
+            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          >
+            <option value="">Ekipman seçin...</option>
+            {equipmentList.map(e => (
+              <option key={e.id} value={e.id}>{e.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={exportEquipmentHistory}
+            disabled={!exportEqId || exporting}
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={14} />
+            {exporting ? 'Hazırlanıyor...' : 'İndir'}
+          </button>
+        </div>
       </div>
 
       {/* Audit Log — sadece admin */}
