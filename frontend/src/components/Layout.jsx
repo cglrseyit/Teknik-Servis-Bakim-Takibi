@@ -86,9 +86,9 @@ export default function Layout({ children }) {
             src="/bellis-logo-dark.png"
             alt="Bellis Deluxe Hotel"
             className="h-20 w-auto max-w-full object-contain"
-            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
+            onError={(e) => { e.currentTarget.classList.add('hidden'); e.currentTarget.nextSibling.classList.remove('hidden'); }}
           />
-          <div style={{ display: 'none' }} className="text-center">
+          <div className="hidden text-center">
             <h1 className="text-lg font-bold tracking-[0.25em] text-amber-700 leading-tight">BELLIS</h1>
             <p className="text-[9px] tracking-[0.3em] text-amber-600/80 mt-0.5">DELUXE HOTEL</p>
           </div>

@@ -64,7 +64,7 @@ export default function PlansListPage() {
                 <tr key={i}>
                   {[...Array(7)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
-                      <div className="h-4 bg-slate-100 rounded-md animate-pulse" style={{ width: j === 0 ? '70%' : '55%' }} />
+                      <div className={`h-4 bg-slate-100 rounded-md animate-pulse ${j === 0 ? 'w-[70%]' : 'w-[55%]'}`} />
                     </td>
                   ))}
                 </tr>

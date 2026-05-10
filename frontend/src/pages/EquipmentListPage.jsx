@@ -99,7 +99,7 @@ export default function EquipmentListPage() {
                 <tr key={i}>
                   {[...Array(6)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
-                      <div className="h-4 bg-slate-100 rounded-md animate-pulse" style={{ width: j === 0 ? '70%' : j === 5 ? '40px' : '60%' }} />
+                      <div className={`h-4 bg-slate-100 rounded-md animate-pulse ${j === 0 ? 'w-[70%]' : j === 5 ? 'w-10' : 'w-[60%]'}`} />
                     </td>
                   ))}
                 </tr>

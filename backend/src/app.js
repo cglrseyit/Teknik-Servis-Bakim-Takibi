@@ -20,16 +20,20 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      // style-src-elem: <style> tag ve <link rel=stylesheet> — sadece kendi domainimiz
+      // style-src-attr: style="..." attribute — Recharts/dinamik bileşenler için unsafe-inline
+      styleSrcElem: ["'self'", "https://fonts.googleapis.com"],
+      styleSrcAttr: ["'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "blob:"],
-      fontSrc: ["'self'", "data:"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       frameSrc: ["'self'", "blob:"],
       workerSrc: ["'self'", "blob:"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
+      formAction: ["'self'"],
     }
   }
 }));

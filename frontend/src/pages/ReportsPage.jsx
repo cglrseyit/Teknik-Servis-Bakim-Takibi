@@ -37,6 +37,13 @@ function KpiCard({ title, subtitle, value, valueColor, accentBg, accentText, Ico
 
 const STATUS_LABELS = { pending: 'Bekliyor', in_progress: 'Devam Eden', completed: 'Tamamlandı', overdue: 'Gecikmiş', skipped: 'Atlandı' };
 const PIE_COLORS = { pending: '#94a3b8', in_progress: '#fbbf24', completed: '#22c55e', overdue: '#ef4444', skipped: '#cbd5e1' };
+const PIE_COLOR_CLASSES = {
+  pending: 'bg-slate-400',
+  in_progress: 'bg-amber-400',
+  completed: 'bg-green-500',
+  overdue: 'bg-red-500',
+  skipped: 'bg-slate-300',
+};
 const EQUIP_STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 
 const ACTION_LABELS = {
@@ -183,9 +190,11 @@ export default function ReportsPage() {
   }
 
   const pieData = statusDist.map(d => ({
+    status: d.status,
     name: STATUS_LABELS[d.status] || d.status,
     value: d.count,
     color: PIE_COLORS[d.status] || '#94a3b8',
+    colorClass: PIE_COLOR_CLASSES[d.status] || 'bg-slate-400',
   }));
 
   const trend = stats ? monthTrend(stats.completed_this_month, stats.completed_last_month) : null;
@@ -261,7 +270,7 @@ export default function ReportsPage() {
                 return (
                   <div key={d.name} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${d.colorClass}`} />
                       <span className="text-sm text-slate-700">{d.name}</span>
                     </div>
                     <div className="flex items-center gap-3">
