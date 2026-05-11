@@ -220,15 +220,12 @@ async function testDigestEmail(req, res) {
   }
 
   let userName = 'Yönetici';
-  let to = req.body.to;
   try {
-    const { rows } = await pool.query(`SELECT name, email FROM users WHERE id = $1`, [req.user.id]);
-    if (rows[0]) {
-      userName = rows[0].name || userName;
-      if (!to) to = rows[0].email;
-    }
+    const { rows } = await pool.query(`SELECT name FROM users WHERE id = $1`, [req.user.id]);
+    if (rows[0]?.name) userName = rows[0].name;
   } catch {}
-  if (!to) to = 'seyitcaglar881@gmail.com';
+  // Resend free tier: domain doğrulanmadan sadece hesap sahibine gönderilebilir
+  const to = req.body.to || 'seyitcaglar881@gmail.com';
 
   // Örnek veri
   const today = new Date();
