@@ -116,6 +116,20 @@ export default function ReportsPage() {
     }
   }
 
+  async function handleTestDigestEmail() {
+    setTestingEmail(true);
+    try {
+      const r = await api.post('/reports/test-digest-email', {});
+      toast.success(r.data.message);
+    } catch (err) {
+      const d = err.response?.data;
+      const msg = d?.detail || d?.message || 'Mail gönderilemedi';
+      toast.error(msg);
+    } finally {
+      setTestingEmail(false);
+    }
+  }
+
   useEffect(() => {
     api.get('/reports/stats').then(r => setStats(r.data)).catch(() => {});
     api.get('/reports/by-status').then(r => setStatusDist(r.data)).catch(() => {});
@@ -332,9 +346,19 @@ export default function ReportsPage() {
                   onClick={handleTestEmail}
                   disabled={testingEmail}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                  title="Resend bağlantısı doğrulama maili"
                 >
                   <Mail size={12} strokeWidth={2} />
-                  {testingEmail ? 'Gönderiliyor...' : 'Test E-posta'}
+                  {testingEmail ? '...' : 'Test E-posta'}
+                </button>
+                <button
+                  onClick={handleTestDigestEmail}
+                  disabled={testingEmail}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                  title="Örnek bakım hatırlatma maili — kayıtlı e-postana gider"
+                >
+                  <Mail size={12} strokeWidth={2} />
+                  {testingEmail ? '...' : 'Örnek Bakım Maili'}
                 </button>
                 <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
               </div>

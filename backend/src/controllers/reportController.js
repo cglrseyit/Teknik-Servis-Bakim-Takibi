@@ -210,4 +210,44 @@ async function testEmail(req, res) {
   }
 }
 
-module.exports = { getStats, getMonthlySummary, getStatusDistribution, getAuditLogs, getAuditLogDetail, testEmail };
+async function testDigestEmail(req, res) {
+  const { sendDigestEmail } = require('../services/emailService');
+  let userName = 'Yönetici';
+  let to = req.body.to;
+  try {
+    const { rows } = await pool.query(`SELECT name, email FROM users WHERE id = $1`, [req.user.id]);
+    if (rows[0]) {
+      userName = rows[0].name || userName;
+      if (!to) to = rows[0].email;
+    }
+  } catch {}
+  if (!to) to = 'seyitcaglar881@gmail.com';
+
+  // Örnek veri — sistemden gelir gibi
+  const today = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 5);
+  const lastWeek = new Date(today); lastWeek.setDate(today.getDate() - 12);
+  const next3 = new Date(today); next3.setDate(today.getDate() + 3);
+  const next10 = new Date(today); next10.setDate(today.getDate() + 10);
+  const next20 = new Date(today); next20.setDate(today.getDate() + 20);
+
+  const overdue = [
+    { id: 1, title: 'Aylık Klima Filtre Temizliği', scheduled_date: yesterday, equipment_name: 'Lobi VRF Klima', location: 'Lobi' },
+    { id: 2, title: 'Jeneratör Yağ Kontrolü',         scheduled_date: lastWeek, equipment_name: 'Acil Jeneratör', location: 'Teknik Oda' },
+  ];
+  const upcoming = [
+    { id: 3, title: 'Asansör Periyodik Bakımı',      scheduled_date: next3,  equipment_name: 'Müşteri Asansörü 1', location: 'A Blok' },
+    { id: 4, title: 'Yangın Tüpü Yıllık Kontrolü',   scheduled_date: next10, equipment_name: 'Yangın Tüpü Set #3', location: 'Mutfak' },
+    { id: 5, title: 'Havuz Pompası Bakımı',          scheduled_date: next20, equipment_name: 'Açık Havuz Pompa Sistemi', location: 'Bahçe' },
+  ];
+
+  try {
+    const ok = await sendDigestEmail({ to, userName, overdue, upcoming });
+    if (!ok) return res.status(500).json({ success: false, message: 'Mail gönderilemedi (RESEND_API_KEY eksik olabilir)' });
+    res.json({ success: true, message: `Örnek bakım maili ${to} adresine gönderildi` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Hata oluştu', detail: err.message });
+  }
+}
+
+module.exports = { getStats, getMonthlySummary, getStatusDistribution, getAuditLogs, getAuditLogDetail, testEmail, testDigestEmail };
