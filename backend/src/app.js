@@ -148,6 +148,14 @@ const AUTO_MIGRATIONS = [
      uploaded_at TIMESTAMP DEFAULT NOW()
    )`,
   `CREATE INDEX IF NOT EXISTS idx_task_attachments_task_id ON task_attachments(task_id)`,
+  // Performans için kritik index'ler
+  `CREATE INDEX IF NOT EXISTS idx_tasks_plan_id ON maintenance_tasks(plan_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_equipment_id ON maintenance_tasks(equipment_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON maintenance_tasks(completed_at) WHERE status = 'completed'`,
+  `CREATE INDEX IF NOT EXISTS idx_plans_equipment_id ON maintenance_plans(equipment_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_plans_active ON maintenance_plans(is_active) WHERE is_active = true`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`,
   // Eski kayıtlarda UTF-8 olarak yanlış kaydedilmiş dosya adlarını düzelt (latin1 → utf8)
   `UPDATE task_attachments
    SET filename = convert_from(convert_to(filename, 'LATIN1'), 'UTF8')
