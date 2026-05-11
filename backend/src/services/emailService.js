@@ -135,4 +135,4 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
   }
 }
 
-module.exports = { sendDigestEmail };
+module.exports = { sendDigestEmail, buildDigestHtml };

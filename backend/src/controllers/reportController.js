@@ -211,7 +211,14 @@ async function testEmail(req, res) {
 }
 
 async function testDigestEmail(req, res) {
-  const { sendDigestEmail } = require('../services/emailService');
+  const { Resend } = require('resend');
+  const { buildDigestHtml } = require('../services/emailService');
+  const { RESEND_API_KEY, SMTP_FROM } = process.env;
+
+  if (!RESEND_API_KEY) {
+    return res.status(500).json({ success: false, message: 'RESEND_API_KEY eksik — Railway Variables kısmına ekleyin' });
+  }
+
   let userName = 'Yönetici';
   let to = req.body.to;
   try {
@@ -223,7 +230,7 @@ async function testDigestEmail(req, res) {
   } catch {}
   if (!to) to = 'seyitcaglar881@gmail.com';
 
-  // Örnek veri — sistemden gelir gibi
+  // Örnek veri
   const today = new Date();
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 5);
   const lastWeek = new Date(today); lastWeek.setDate(today.getDate() - 12);
@@ -242,8 +249,15 @@ async function testDigestEmail(req, res) {
   ];
 
   try {
-    const ok = await sendDigestEmail({ to, userName, overdue, upcoming });
-    if (!ok) return res.status(500).json({ success: false, message: 'Mail gönderilemedi (RESEND_API_KEY eksik olabilir)' });
+    const resend = new Resend(RESEND_API_KEY);
+    const from = SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
+    const { error } = await resend.emails.send({
+      from,
+      to: [to],
+      subject: `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} yaklaşan bakım (örnek)`,
+      html: buildDigestHtml({ userName, overdue, upcoming }),
+    });
+    if (error) return res.status(500).json({ success: false, message: 'Mail gönderilemedi', detail: error.message });
     res.json({ success: true, message: `Örnek bakım maili ${to} adresine gönderildi` });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Hata oluştu', detail: err.message });
