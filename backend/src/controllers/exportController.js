@@ -68,43 +68,42 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Kolon genişlikleri
-    const widths = [6, 32, 14, 14, 14, 22, 22, 38, 28, 12, 28];
+    // Kolon genişlikleri (dikey A4'e sığacak)
+    const widths = [5, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18];
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-    // Logo ekle — sağ üst
+    // Logo ekle — sol üst
     try {
       const imgId = wb.addImage({
         filename: LOGO_PATH,
         extension: 'png',
       });
-      // Sağ üstte 11. kolonun başına denk gelecek şekilde
       ws.addImage(imgId, {
-        tl: { col: 8.3, row: 0.2 },
-        ext: { width: 160, height: 56 },
+        tl: { col: 0.1, row: 0.2 },
+        ext: { width: 140, height: 50 },
         editAs: 'oneCell',
       });
     } catch (e) {
       console.warn('Logo eklenemedi:', e.message);
     }
 
-    // Satır 1-3: Üst başlık alanı (yüksekliği logo'ya uyacak şekilde)
-    ws.getRow(1).height = 18;
-    ws.getRow(2).height = 18;
-    ws.getRow(3).height = 18;
+    // Satır 1-3: Üst başlık alanı (logo yüksekliği ~60px, satır başına ~20px)
+    ws.getRow(1).height = 20;
+    ws.getRow(2).height = 20;
+    ws.getRow(3).height = 20;
 
-    // Başlık metni — sol üst
-    ws.mergeCells('A1:G1');
-    const titleCell = ws.getCell('A1');
+    // Başlık metni — logo'nun sağında, sağa hizalı
+    ws.mergeCells('C1:K1');
+    const titleCell = ws.getCell('C1');
     titleCell.value = eq.name;
-    titleCell.font = { name: 'Calibri', bold: true, size: 18, color: { argb: COLORS.textDark } };
-    titleCell.alignment = { horizontal: 'left', vertical: 'middle' };
+    titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
+    titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
 
-    ws.mergeCells('A2:G2');
-    const subtitleCell = ws.getCell('A2');
+    ws.mergeCells('C2:K2');
+    const subtitleCell = ws.getCell('C2');
     subtitleCell.value = 'Bakım Geçmişi Raporu';
-    subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.primary } };
-    subtitleCell.alignment = { horizontal: 'left', vertical: 'middle' };
+    subtitleCell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.primary } };
+    subtitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
 
     // Satır 4: ince ayraç (amber çizgi)
     ws.getRow(4).height = 4;
@@ -220,14 +219,14 @@ async function equipmentHistory(req, res) {
     footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Print ayarları
+    // Print ayarları — A4 dikey
     ws.pageSetup = {
-      orientation: 'landscape',
+      orientation: 'portrait',
       paperSize: 9, // A4
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+      margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
     };
 
     const filename = `${safeFilename(eq.name)}-bakim-gecmisi-${new Date().toISOString().slice(0, 10)}.xlsx`;
