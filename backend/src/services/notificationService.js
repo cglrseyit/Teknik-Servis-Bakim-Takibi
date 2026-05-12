@@ -68,49 +68,43 @@ async function generateNotifications() {
 }
 
 async function sendDailyDigestEmails() {
+  // Tek bir grup adresine gönder, dağıtımı mail sunucusu yapsın
+  const to = process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
+
   try {
-    const { rows: users } = await pool.query(
-      `SELECT id, name, email FROM users
-       WHERE role IN ('admin', 'teknik_muduru', 'order_taker')
-         AND is_active = true
-         AND email IS NOT NULL AND email <> ''`
-    );
+    const { rows: overdue } = await pool.query(`
+      SELECT t.id, t.title, t.scheduled_date,
+             e.name AS equipment_name, e.location
+      FROM maintenance_tasks t
+      LEFT JOIN equipment e ON e.id = t.equipment_id
+      WHERE t.status IN ('pending','in_progress','overdue')
+        AND t.scheduled_date < (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+      ORDER BY t.scheduled_date ASC
+    `);
 
-    let sent = 0;
-    for (const u of users) {
-      const { rows: userOverdue } = await pool.query(`
-        SELECT t.id, t.title, t.scheduled_date,
-               e.name AS equipment_name, e.location
-        FROM maintenance_tasks t
-        LEFT JOIN equipment e ON e.id = t.equipment_id
-        WHERE t.status IN ('pending','in_progress','overdue')
-          AND t.scheduled_date < (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-        ORDER BY t.scheduled_date ASC
-      `);
+    const { rows: upcoming } = await pool.query(`
+      SELECT t.id, t.title, t.scheduled_date,
+             e.name AS equipment_name, e.location
+      FROM maintenance_tasks t
+      LEFT JOIN equipment e ON e.id = t.equipment_id
+      WHERE t.status IN ('pending', 'in_progress')
+        AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
+        AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+      ORDER BY t.scheduled_date ASC
+    `);
 
-      const { rows: userUpcoming } = await pool.query(`
-        SELECT t.id, t.title, t.scheduled_date,
-               e.name AS equipment_name, e.location
-        FROM maintenance_tasks t
-        LEFT JOIN equipment e ON e.id = t.equipment_id
-        WHERE t.status IN ('pending', 'in_progress')
-          AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
-          AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-        ORDER BY t.scheduled_date ASC
-      `);
-
-      if (userOverdue.length === 0 && userUpcoming.length === 0) continue;
-
-      const ok = await sendDigestEmail({
-        to: u.email,
-        userName: u.name,
-        overdue: userOverdue,
-        upcoming: userUpcoming,
-      });
-      if (ok) sent++;
+    if (overdue.length === 0 && upcoming.length === 0) {
+      console.log('[email] Gönderilecek görev yok, mail atılmadı');
+      return;
     }
 
-    if (sent > 0) console.log(`[email] ${sent} yöneticiye günlük özet maili gönderildi`);
+    const ok = await sendDigestEmail({
+      to,
+      userName: 'Bellis Teknik Ekibi',
+      overdue,
+      upcoming,
+    });
+    if (ok) console.log(`[email] Günlük özet ${to} adresine gönderildi (${overdue.length} gecikmiş, ${upcoming.length} yaklaşan)`);
   } catch (err) {
     console.error('[email] Özet gönderiminde hata:', err.message);
   }

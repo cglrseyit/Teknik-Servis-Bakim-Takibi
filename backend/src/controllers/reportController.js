@@ -219,13 +219,9 @@ async function testDigestEmail(req, res) {
     return res.status(500).json({ success: false, message: 'RESEND_API_KEY eksik — Railway Variables kısmına ekleyin' });
   }
 
-  let userName = 'Yönetici';
-  try {
-    const { rows } = await pool.query(`SELECT name FROM users WHERE id = $1`, [req.user.id]);
-    if (rows[0]?.name) userName = rows[0].name;
-  } catch {}
-  // Resend free tier: domain doğrulanmadan sadece hesap sahibine gönderilebilir
-  const to = req.body.to || 'seyitcaglar881@gmail.com';
+  const userName = 'Bellis Teknik Ekibi';
+  // Grup adresine gönder — dağıtım mail sunucusunda
+  const to = req.body.to || process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
 
   // Örnek veri
   const today = new Date();
