@@ -92,18 +92,18 @@ async function equipmentHistory(req, res) {
     ws.getRow(2).height = 20;
     ws.getRow(3).height = 20;
 
-    // Başlık metni — logo'nun sağında, sağa hizalı
+    // Başlık metni — logo'nun sağında, ortalı
     ws.mergeCells('C1:K1');
     const titleCell = ws.getCell('C1');
     titleCell.value = eq.name;
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
-    titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
     ws.mergeCells('C2:K2');
     const subtitleCell = ws.getCell('C2');
     subtitleCell.value = 'Bakım Geçmişi Raporu';
-    subtitleCell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.primary } };
-    subtitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+    subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.primary } };
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
     // Satır 4: ince ayraç (amber çizgi)
     ws.getRow(4).height = 4;
