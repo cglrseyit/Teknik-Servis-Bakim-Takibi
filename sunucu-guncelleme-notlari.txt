@@ -1,0 +1,242 @@
+================================================================
+BELLIS TEKNİK SERVİS — SUNUCU GÜNCELLEME NOTLARI
+================================================================
+Hazırlanma tarihi: 2026-06-03
+Konu: Otel sunucusuna geçtikten sonra Node, PM2, watch modu ve
+      güncelleme akışıyla ilgili sorularınızın özet cevapları.
+
+
+================================================================
+1) NODE.JS NEDEN OTOMATİK GÜNCELLENMEZ?
+================================================================
+
+SORUN:
+  - Node uygulamasını başlattığınızda (npm start), Node tüm kod
+    dosyalarını DİSKTEN OKUR ve BELLEĞE YÜKLER.
+  - Uygulama bundan sonra bellekteki kopyayı kullanır.
+  - Dosya değişse bile (örn. git pull sonrası) Node, bellekteki
+    eski kodu çalıştırmaya devam eder.
+
+BENZETME:
+  - Kitabı ezberlemek gibi. Kitabın yeni baskısı çıktı diye
+    kafanızdaki bilgi otomatik güncellenmez. Tekrar okumanız lazım.
+  - Node için "tekrar okumak" = uygulamayı yeniden başlatmak.
+
+NEDEN BÖYLE TASARLANMIŞ?
+  - Performans: Her istekte "dosya değişti mi?" kontrolü çok yavaş
+  - Kararlılık: Yarı eski yarı yeni kodla çalışmak bug çıkarır
+  - Kasıtlı: Production'da beklenmedik restart riskini azaltır
+
+ÇÖZÜM:
+  - Manuel restart  → pm2 restart bellis-backend
+  - Otomatik restart → PM2 --watch modu (aşağıda açıklandı)
+
+DİKKAT:
+  - Geliştirme sırasında "npm run dev" kullanırken nodemon adlı
+    araç dosyaları izleyip otomatik restart eder. O yüzden kendi
+    PC'nizde bu sorunu fark etmediniz.
+  - Production'da nodemon kullanılmaz, PM2 kullanılır.
+
+
+================================================================
+2) PM2 NEDİR?
+================================================================
+
+PM2 = Node uygulamasını 7/24 ayakta tutan, gözeten bir "bekçi".
+
+NE YAPAR?
+  - Uygulama çökerse otomatik yeniden başlatır (crash recovery)
+  - Sunucu yeniden başlasa bile uygulamayı otomatik açar (autostart)
+  - Birden fazla Node uygulamasını yönetebilir
+  - Log dosyalarını düzgün tutar
+  - Komutlarla uygulamayı durdurup başlatmanızı sağlar
+
+PM2 OLMASA NE OLUR?
+  - npm start ile başlatırsanız terminal kapanınca uygulama da kapanır
+  - Crash olursa elle açmak için sunucuya bağlanmanız lazım
+  - Sunucu yeniden başlarsa uygulama açılmaz
+
+KURULUM (BİR KERE):
+  npm install -g pm2
+
+BAŞLATMA (BİR KERE):
+  cd /opt/bellis-app/backend
+  pm2 start src/app.js --name bellis-backend --watch --ignore-watch="node_modules logs *.log"
+
+SUNUCU YENİDEN BAŞLASA DA AÇILSIN DİYE (BİR KERE):
+  pm2 startup
+  pm2 save
+
+GÜNLÜK KULLANIM KOMUTLARI:
+  pm2 status                    → çalışıyor mu kontrol et
+  pm2 logs bellis-backend       → logları gör
+  pm2 restart bellis-backend    → elle yeniden başlat
+  pm2 stop bellis-backend       → durdur
+  pm2 start bellis-backend      → başlat
+
+
+================================================================
+3) --WATCH NEDİR?
+================================================================
+
+--watch = PM2'nin "dosyaları izle, değişirse otomatik restart et"
+          özelliği.
+
+NASIL ÇALIŞIR?
+  1. PM2 backend/ klasörünü sürekli izler
+  2. Bir dosya değişirse (örn. git pull sonrası) farkeder
+  3. 2-3 saniye içinde uygulamayı kapatır
+  4. Yeniden başlatır (yeni kodu belleğe yükler)
+  5. Bitti — siz hiçbir şey yapmadınız
+
+NEDEN --ignore-watch GEREKLİ?
+  - node_modules klasörü çok büyük, izlenmesine gerek yok
+  - Log dosyaları sürekli değişir, yanlışlıkla restart olmasın
+  - Tam komut:
+    pm2 start src/app.js --watch --ignore-watch="node_modules logs *.log"
+
+ARTILARI:
+  + Manuel restart komutu çalıştırmaya gerek kalmaz
+  + git pull yeterli, gerisi otomatik
+
+EKSİLERİ:
+  - Hafif CPU kullanır (dosya izleme)
+  - Yanlış ignore ayarı yapılırsa gereksiz restart olabilir
+
+
+================================================================
+4) GÜNCELLEME AKIŞI (OTEL SUNUCUSUNA GEÇTİKTEN SONRA)
+================================================================
+
+İŞ AKIŞI:
+
+  [Kendi PC'niz]                      [Otel sunucusu]
+  ────────────────                    ──────────────────
+  1. Kodu düzenle
+  2. git commit
+  3. git push        ─────────────>   (sunucu henüz haberi yok)
+
+                                      4. RDP/SSH ile bağlan
+                                      5. git pull
+                                      6. (Frontend değişti ise:
+                                         cd frontend
+                                         npm install
+                                         npm run build)
+                                      7. (Backend için PM2 watch
+                                         varsa otomatik restart;
+                                         yoksa: pm2 restart bellis-backend)
+
+ÖZET:
+  - Sizin tarafınızdan iş: git push (PC'den)
+  - Sunucuda iş: git pull + (frontend varsa) npm run build
+  - Backend restart: PM2 --watch ile otomatik
+
+
+TEK KOMUTLA YAPMA (update.sh / update.bat HAZIRLAYIP):
+
+Linux için (/opt/bellis-app/update.sh):
+  #!/bin/bash
+  cd /opt/bellis-app
+  git pull
+  cd frontend && npm install && npm run build
+  cd ../backend && npm install
+  pm2 restart bellis-backend
+  echo "Güncelleme tamamlandı."
+
+Windows için (C:\bellis-app\update.bat):
+  @echo off
+  cd C:\bellis-app
+  git pull
+  cd frontend && npm install && npm run build
+  cd ..\backend && npm install
+  pm2 restart bellis-backend
+  echo Güncelleme tamamlandı.
+
+Sonra sunucuda sadece şu komut yeterli:
+  ./update.sh    (Linux)
+  update.bat     (Windows)
+
+
+================================================================
+5) SUNUCUYA NASIL BAĞLANILIR?
+================================================================
+
+SUNUCU WINDOWS İSE:
+  - Uzak Masaüstü Bağlantısı (RDP) kullanılır
+  - Kendi PC'nizde: Başlat → "Uzak Masaüstü Bağlantısı"
+  - Sunucu IP'sini, kullanıcı adı + şifre girin
+  - Sunucunun masaüstü ekranı açılır
+  - Sunucuda CMD veya PowerShell açıp komutları orada çalıştırırsınız
+
+SUNUCU LİNUX İSE:
+  - SSH kullanılır
+  - Kendi PC'nizde PowerShell açıp:
+    ssh kullanici@sunucu-ip
+  - Bağlantı kurulunca otomatik Linux terminal'i gelir
+  - Komutları doğrudan oraya yazarsınız
+
+ÖNEMLİ:
+  - PM2, npm, git komutları SUNUCUDA çalışır, kendi PC'nizde değil
+  - Kendi PC'niz sadece "bağlanmak" için kullanılır
+
+
+================================================================
+6) HIZLI BAŞLAMA KONTROL LİSTESİ (SUNUCU KURULUMUNDA)
+================================================================
+
+Sunucuya geçince yapılacaklar (bir kere):
+
+  [ ] PostgreSQL kur (v13+)
+  [ ] CREATE DATABASE teknik_bakim
+  [ ] psql -f backend/db/install.sql ile tabloları oluştur
+  [ ] İlk admin kullanıcısını ekle (bcrypt hash ile)
+  [ ] Node.js kur (v18+)
+  [ ] PM2'yi global kur: npm install -g pm2
+  [ ] Projeyi klonla: git clone <repo-url>
+  [ ] backend/.env dosyasını oluştur (DB ve SMTP bilgileri)
+  [ ] cd backend && npm install
+  [ ] cd ../frontend && npm install && npm run build
+  [ ] PM2 ile başlat:
+      pm2 start backend/src/app.js --name bellis-backend --watch \
+          --ignore-watch="node_modules logs *.log"
+  [ ] Otomatik açılma için: pm2 startup && pm2 save
+  [ ] update.sh / update.bat scriptini hazırla
+  [ ] Test mail butonuyla SMTP'yi doğrula
+
+
+================================================================
+7) GÜNLÜK İŞ AKIŞI — KURULUMDAN SONRA
+================================================================
+
+Her güncelleme için:
+
+  1. PC'de değişikliği yap
+  2. git add . && git commit -m "..." && git push
+  3. Sunucuya RDP/SSH ile bağlan
+  4. cd /opt/bellis-app   (veya C:\bellis-app)
+  5. ./update.sh           (veya update.bat)
+  6. Bitti.
+
+Toplam süre: ~30 saniye.
+
+
+================================================================
+NOTLAR
+================================================================
+
+- .env dosyası her ortamda ayrı, git'e dahil değil. Sunucuya bir
+  kez yazılır, güncellemelerde değişmez.
+
+- Frontend değişiklikleri için "npm run build" şart, yoksa
+  tarayıcı eski sürümü görür.
+
+- Veritabanı şema değişiklikleri uygulamada otomatik çalışıyor
+  (app.js içindeki AUTO_MIGRATIONS). Yeni sütun eklemek için
+  ekstra bir komut çalıştırmaya gerek yok.
+
+- Riskli güncellemelerden önce mutlaka DB yedeği alın:
+    pg_dump teknik_bakim > yedek-2026-06-03.sql
+
+================================================================
+SON
+================================================================
