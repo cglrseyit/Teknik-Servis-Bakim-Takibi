@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, ClipboardList, Wrench, CalendarCheck, RefreshCw, Hash, ChevronRight, Pencil, Zap, Clock } from 'lucide-react';
+import { Plus, ClipboardList, Wrench, CalendarCheck, RefreshCw, ChevronRight, Pencil, Zap, Clock } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import PlanDetailPanel from '../components/PlanDetailPanel';
@@ -131,9 +131,10 @@ export default function PlansListPage() {
                     )}
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className="flex items-center gap-1.5 text-slate-500">
-                      <Hash size={12} className="text-slate-400" />
-                      {p.task_count}
+                    <span className="inline-flex items-center gap-1.5 text-slate-600 text-sm">
+                      <span className="font-semibold text-emerald-600">{p.completed_count ?? 0}</span>
+                      <span className="text-slate-300">/</span>
+                      <span className="text-slate-500">{p.task_count}</span>
                     </span>
                   </td>
                   <td className="px-5 py-3.5">

@@ -7,6 +7,7 @@ async function getAll(req, res) {
     const { rows } = await pool.query(
       `SELECT p.*, e.name AS equipment_name,
               COUNT(t.id)::int AS task_count,
+              COUNT(t.id) FILTER (WHERE t.status = 'completed')::int AS completed_count,
               MAX(CASE WHEN t.status = 'completed' THEN t.completed_at END) AS last_completed_at,
               MAX(CASE WHEN t.status = 'completed'
                        AND DATE_TRUNC('month', t.completed_at) = DATE_TRUNC('month', NOW() AT TIME ZONE 'Europe/Istanbul')
