@@ -39,7 +39,6 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
     maintained_by: '',
     responsible_person: '',
     performed_date: new Date().toISOString().split('T')[0],
-    approved_by_manager: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,7 +56,6 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
     setForm({
       performed_work: '', maintained_by: '', responsible_person: '',
       performed_date: new Date().toISOString().split('T')[0],
-      approved_by_manager: false,
     });
     setError('');
 
@@ -144,7 +142,6 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
         maintained_by: form.maintained_by,
         responsible_person: form.responsible_person,
         performed_date: form.performed_date,
-        approved_by_manager: form.approved_by_manager,
       });
       toast?.success('Görev başarıyla tamamlandı');
       onCompleted?.();
@@ -397,20 +394,6 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
                 </ul>
               </div>
             )}
-          </div>
-
-          {/* Teknik Müdür Onayı */}
-          <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-lg border border-gray-200">
-            <input
-              type="checkbox"
-              id="approved_by_manager"
-              checked={form.approved_by_manager}
-              onChange={e => setForm(f => ({ ...f, approved_by_manager: e.target.checked }))}
-              className="w-4 h-4 rounded border-gray-300 accent-amber-600"
-            />
-            <label htmlFor="approved_by_manager" className="text-sm text-gray-700 cursor-pointer select-none">
-              Teknik Müdür tarafından onaylandı
-            </label>
           </div>
 
           <div className="flex gap-2 pt-1">
