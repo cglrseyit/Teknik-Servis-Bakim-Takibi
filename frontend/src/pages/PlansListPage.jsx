@@ -53,7 +53,7 @@ export default function PlansListPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80">
-              {['Başlık', 'Ekipman', 'Periyot', 'Son Bakım', 'Görev', 'Durum', ''].map(h => (
+              {['Başlık', 'Ekipman', 'Periyot', 'Son Bakım', 'Durum', ''].map(h => (
                 <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">{h}</th>
               ))}
             </tr>
@@ -62,7 +62,7 @@ export default function PlansListPage() {
             {loading ? (
               [...Array(4)].map((_, i) => (
                 <tr key={i}>
-                  {[...Array(7)].map((_, j) => (
+                  {[...Array(6)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
                       <div className={`h-4 bg-slate-100 rounded-md animate-pulse ${j === 0 ? 'w-[70%]' : 'w-[55%]'}`} />
                     </td>
@@ -71,7 +71,7 @@ export default function PlansListPage() {
               ))
             ) : plans.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-14 text-center">
+                <td colSpan={6} className="py-14 text-center">
                   <div className="flex flex-col items-center text-slate-400">
                     <ClipboardList size={32} className="mb-3 opacity-30" />
                     <p className="text-sm font-medium">Bakım planı bulunamadı</p>
@@ -129,13 +129,6 @@ export default function PlansListPage() {
                         Bekliyor
                       </span>
                     )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span className="inline-flex items-center gap-1.5 text-slate-600 text-sm">
-                      <span className="font-semibold text-emerald-600">{p.completed_count ?? 0}</span>
-                      <span className="text-slate-300">/</span>
-                      <span className="text-slate-500">{p.task_count}</span>
-                    </span>
                   </td>
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${p.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
