@@ -17,8 +17,8 @@ function getClient() {
   return client;
 }
 
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+function fmtMonth(d) {
+  return new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
 }
 
 function escapeHtml(s) {
@@ -33,19 +33,17 @@ function escapeHtml(s) {
 
 function buildDigestHtml({ userName, overdue, upcoming }) {
   const tableRow = (t, isOverdue) => {
-    const dateLabel = fmtDate(t.scheduled_date);
+    const monthLabel = fmtMonth(t.scheduled_date);
     const badge = isOverdue
       ? `<span style="background:#fee2e2;color:#b91c1c;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">GECİKMİŞ</span>`
-      : t.days_left === 0
-        ? `<span style="background:#fef3c7;color:#b45309;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">BUGÜN</span>`
-        : `<span style="background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">${t.days_left} GÜN</span>`;
+      : `<span style="background:#fef3c7;color:#b45309;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">BU AY</span>`;
     return `
       <tr>
         <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">
           <div style="font-weight:600;color:#1e293b;font-size:14px;">${escapeHtml(t.title)}</div>
           <div style="color:#64748b;font-size:12px;margin-top:2px;">${escapeHtml(t.equipment_name || '')}${t.location ? ' · ' + escapeHtml(t.location) : ''}</div>
         </td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:13px;white-space:nowrap;">${dateLabel}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:13px;white-space:nowrap;">${monthLabel}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;">${badge}</td>
       </tr>`;
   };
@@ -61,14 +59,14 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(184,146,74,0.08);">
         <tr><td style="background:linear-gradient(135deg,#d97706,#b45309);padding:24px 28px;">
-          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">Bakım Hatırlatması</h1>
+          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">Aylık Bakım Hatırlatması</h1>
           <p style="margin:4px 0 0;color:#fef3c7;font-size:13px;">Bellis Deluxe Hotel · Teknik Servis</p>
         </td></tr>
         <tr><td style="padding:24px 28px;">
           <p style="margin:0 0 8px;color:#1e293b;font-size:15px;">Merhaba <strong>${escapeHtml(userName)}</strong>,</p>
           <p style="margin:0 0 20px;color:#64748b;font-size:14px;line-height:1.5;">
-            Bugün dikkatinize sunulan <strong>${total}</strong> bakım göreviniz var.
-            ${overdue.length > 0 ? `<span style="color:#b91c1c;font-weight:600;">${overdue.length} tanesi gecikmiş.</span>` : ''}
+            Bu ay yapılması gereken <strong>${total}</strong> bakım göreviniz var.
+            ${overdue.length > 0 ? `<span style="color:#b91c1c;font-weight:600;">${overdue.length} tanesi geçmiş aylardan kalan gecikmiş görev.</span>` : ''}
           </p>
 
           ${overdue.length > 0 ? `
@@ -82,7 +80,7 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
 
           ${upcoming.length > 0 ? `
             <div>
-              <h2 style="margin:0 0 10px;color:#b45309;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Yaklaşan Görevler</h2>
+              <h2 style="margin:0 0 10px;color:#b45309;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Bu Ay Yapılacak Görevler</h2>
               <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #fde68a;border-radius:10px;overflow:hidden;">
                 ${upcomingRows}
               </table>
@@ -113,8 +111,8 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
 
   const total = overdue.length + upcoming.length;
   const subject = overdue.length > 0
-    ? `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} yaklaşan bakım`
-    : `[Bellis] ${total} bakım göreviniz yaklaşıyor`;
+    ? `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} bu ay yapılacak bakım`
+    : `[Bellis] Bu ay ${total} bakım göreviniz var`;
 
   try {
     const from = process.env.SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
