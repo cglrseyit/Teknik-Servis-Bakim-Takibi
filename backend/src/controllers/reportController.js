@@ -191,7 +191,7 @@ async function testEmail(req, res) {
   }
 
   const resend = new Resend(RESEND_API_KEY);
-  const to = req.body.to || 'seyitcaglar881@gmail.com';
+  const to = req.body.to || process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
   const from = SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
 
   try {
