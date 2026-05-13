@@ -1,20 +1,44 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-let client = null;
+let transport = null;
 let configWarningLogged = false;
 
-function getClient() {
-  if (client) return client;
-  const { RESEND_API_KEY } = process.env;
-  if (!RESEND_API_KEY) {
+function getTransport() {
+  if (transport) return transport;
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     if (!configWarningLogged) {
-      console.warn('[email] RESEND_API_KEY eksik — e-posta gönderimi devre dışı');
+      console.warn('[email] SMTP_HOST/SMTP_USER/SMTP_PASS eksik — e-posta gönderimi devre dışı');
       configWarningLogged = true;
     }
     return null;
   }
-  client = new Resend(RESEND_API_KEY);
-  return client;
+  const port = parseInt(SMTP_PORT, 10) || 587;
+  transport = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port,
+    secure: port === 465,
+    requireTLS: port === 587,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    tls: { rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false' },
+  });
+  return transport;
+}
+
+async function sendMail({ to, subject, html }) {
+  const t = getTransport();
+  if (!t) return { ok: false, error: 'SMTP yapılandırılmamış' };
+  const from = process.env.SMTP_FROM || `Bellis Teknik Servis <${process.env.SMTP_USER}>`;
+  try {
+    await t.sendMail({ from, to, subject, html });
+    return { ok: true };
+  } catch (err) {
+    console.error(`[email] ${to} adresine gönderim başarısız:`, err.message);
+    return { ok: false, error: err.message };
+  }
 }
 
 function fmtMonth(d) {
@@ -105,8 +129,6 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
 }
 
 async function sendDigestEmail({ to, userName, overdue, upcoming }) {
-  const c = getClient();
-  if (!c) return false;
   if (overdue.length === 0 && upcoming.length === 0) return false;
 
   const total = overdue.length + upcoming.length;
@@ -114,23 +136,12 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
     ? `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} bu ay yapılacak bakım`
     : `[Bellis] Bu ay ${total} bakım göreviniz var`;
 
-  try {
-    const from = process.env.SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
-    const { error } = await c.emails.send({
-      from,
-      to: [to],
-      subject,
-      html: buildDigestHtml({ userName, overdue, upcoming }),
-    });
-    if (error) {
-      console.error(`[email] ${to} adresine gönderim başarısız:`, error.message);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error(`[email] ${to} adresine gönderim başarısız:`, err.message);
-    return false;
-  }
+  const result = await sendMail({
+    to,
+    subject,
+    html: buildDigestHtml({ userName, overdue, upcoming }),
+  });
+  return result.ok;
 }
 
-module.exports = { sendDigestEmail, buildDigestHtml };
+module.exports = { sendDigestEmail, buildDigestHtml, sendMail };

@@ -180,81 +180,65 @@ async function getAuditLogDetail(req, res) {
 }
 
 async function testEmail(req, res) {
-  const { Resend } = require('resend');
-  const { RESEND_API_KEY, SMTP_FROM } = process.env;
+  const { sendMail } = require('../services/emailService');
+  const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
 
-  if (!RESEND_API_KEY) {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     return res.status(500).json({
       success: false,
-      message: 'RESEND_API_KEY eksik — Railway Variables kısmına ekleyin',
+      message: 'SMTP yapılandırması eksik — SMTP_HOST, SMTP_USER, SMTP_PASS değişkenlerini .env dosyasına ekleyin',
     });
   }
 
-  const resend = new Resend(RESEND_API_KEY);
   const to = req.body.to || process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
-  const from = SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
+  const result = await sendMail({
+    to,
+    subject: '[Bellis] Test E-postası',
+    html: '<p>SMTP bağlantısı başarılı. Mail sistemi çalışıyor.</p>',
+  });
 
-  try {
-    const { error } = await resend.emails.send({
-      from,
-      to: [to],
-      subject: '[Bellis] Test E-postası',
-      html: '<p>Resend bağlantısı başarılı. Mail sistemi çalışıyor.</p>',
-    });
-    if (error) {
-      return res.status(500).json({ success: false, message: 'Mail gönderilemedi', detail: error.message });
-    }
-    res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Hata oluştu', detail: err.message });
+  if (!result.ok) {
+    return res.status(500).json({ success: false, message: 'Mail gönderilemedi', detail: result.error });
   }
+  res.json({ success: true, message: `Test maili ${to} adresine gönderildi` });
 }
 
 async function testDigestEmail(req, res) {
-  const { Resend } = require('resend');
-  const { buildDigestHtml } = require('../services/emailService');
-  const { RESEND_API_KEY, SMTP_FROM } = process.env;
+  const { buildDigestHtml, sendMail } = require('../services/emailService');
+  const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
 
-  if (!RESEND_API_KEY) {
-    return res.status(500).json({ success: false, message: 'RESEND_API_KEY eksik — Railway Variables kısmına ekleyin' });
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    return res.status(500).json({ success: false, message: 'SMTP yapılandırması eksik — SMTP_HOST, SMTP_USER, SMTP_PASS değişkenlerini .env dosyasına ekleyin' });
   }
 
   const userName = 'Bellis Teknik Ekibi';
-  // Grup adresine gönder — dağıtım mail sunucusunda
   const to = req.body.to || process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
 
-  // Örnek veri
-  const today = new Date();
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 5);
-  const lastWeek = new Date(today); lastWeek.setDate(today.getDate() - 12);
-  const next3 = new Date(today); next3.setDate(today.getDate() + 3);
-  const next10 = new Date(today); next10.setDate(today.getDate() + 10);
-  const next20 = new Date(today); next20.setDate(today.getDate() + 20);
+  // Örnek veri — bu ay ve geçen aylardan örnek tarihler
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+  const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 15);
+  const thisMonth1 = new Date(now.getFullYear(), now.getMonth(), 15);
+  const thisMonth2 = new Date(now.getFullYear(), now.getMonth(), 28);
+  const thisMonth3 = new Date(now.getFullYear(), now.getMonth(), 20);
 
   const overdue = [
-    { id: 1, title: 'Aylık Klima Filtre Temizliği', scheduled_date: yesterday, equipment_name: 'Lobi VRF Klima', location: 'Lobi' },
-    { id: 2, title: 'Jeneratör Yağ Kontrolü',         scheduled_date: lastWeek, equipment_name: 'Acil Jeneratör', location: 'Teknik Oda' },
+    { id: 1, title: 'Aylık Klima Filtre Temizliği', scheduled_date: lastMonth,    equipment_name: 'Lobi VRF Klima',  location: 'Lobi' },
+    { id: 2, title: 'Jeneratör Yağ Kontrolü',        scheduled_date: twoMonthsAgo, equipment_name: 'Acil Jeneratör', location: 'Teknik Oda' },
   ];
   const upcoming = [
-    { id: 3, title: 'Asansör Periyodik Bakımı',      scheduled_date: next3,  equipment_name: 'Müşteri Asansörü 1', location: 'A Blok' },
-    { id: 4, title: 'Yangın Tüpü Yıllık Kontrolü',   scheduled_date: next10, equipment_name: 'Yangın Tüpü Set #3', location: 'Mutfak' },
-    { id: 5, title: 'Havuz Pompası Bakımı',          scheduled_date: next20, equipment_name: 'Açık Havuz Pompa Sistemi', location: 'Bahçe' },
+    { id: 3, title: 'Asansör Periyodik Bakımı',     scheduled_date: thisMonth1, equipment_name: 'Müşteri Asansörü 1',       location: 'A Blok' },
+    { id: 4, title: 'Yangın Tüpü Yıllık Kontrolü',  scheduled_date: thisMonth2, equipment_name: 'Yangın Tüpü Set #3',        location: 'Mutfak' },
+    { id: 5, title: 'Havuz Pompası Bakımı',         scheduled_date: thisMonth3, equipment_name: 'Açık Havuz Pompa Sistemi',  location: 'Bahçe' },
   ];
 
-  try {
-    const resend = new Resend(RESEND_API_KEY);
-    const from = SMTP_FROM || 'Bellis Teknik Servis <onboarding@resend.dev>';
-    const { error } = await resend.emails.send({
-      from,
-      to: [to],
-      subject: `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} yaklaşan bakım (örnek)`,
-      html: buildDigestHtml({ userName, overdue, upcoming }),
-    });
-    if (error) return res.status(500).json({ success: false, message: 'Mail gönderilemedi', detail: error.message });
-    res.json({ success: true, message: `Örnek bakım maili ${to} adresine gönderildi` });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Hata oluştu', detail: err.message });
-  }
+  const result = await sendMail({
+    to,
+    subject: `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} bu ay yapılacak bakım (örnek)`,
+    html: buildDigestHtml({ userName, overdue, upcoming }),
+  });
+  if (!result.ok) return res.status(500).json({ success: false, message: 'Mail gönderilemedi', detail: result.error });
+  res.json({ success: true, message: `Örnek bakım maili ${to} adresine gönderildi` });
 }
 
 module.exports = { getStats, getMonthlySummary, getStatusDistribution, getAuditLogs, getAuditLogDetail, testEmail, testDigestEmail };
