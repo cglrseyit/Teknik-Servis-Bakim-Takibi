@@ -41,6 +41,7 @@ async function sendMail({ to, subject, html }) {
   }
 }
 
+// Bakım planlarında belirli gün yok — bakım o ay içinde yapılır. Sadece ay + yıl göster.
 function fmtMonth(d) {
   return new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
 }
@@ -56,69 +57,49 @@ function escapeHtml(s) {
 }
 
 function buildDigestHtml({ userName, overdue, upcoming }) {
-  const tableRow = (t, isOverdue) => {
-    const monthLabel = fmtMonth(t.scheduled_date);
-    const badge = isOverdue
-      ? `<span style="background:#fee2e2;color:#b91c1c;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">GECİKMİŞ</span>`
-      : `<span style="background:#fef3c7;color:#b45309;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">BU AY</span>`;
-    return `
+  // Tek satırlık kompakt görev satırı — çok sayıda görevde mail kısa kalsın
+  const taskRow = (t) => `
       <tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;">
-          <div style="font-weight:600;color:#1e293b;font-size:14px;">${escapeHtml(t.title)}</div>
-          <div style="color:#64748b;font-size:12px;margin-top:2px;">${escapeHtml(t.equipment_name || '')}${t.location ? ' · ' + escapeHtml(t.location) : ''}</div>
+        <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;font-size:13px;line-height:1.4;">
+          <strong style="color:#1e293b;font-weight:600;">${escapeHtml(t.title)}</strong><span style="color:#94a3b8;"> &middot; ${escapeHtml(t.equipment_name || '')}${t.location ? ' &middot; ' + escapeHtml(t.location) : ''}</span>
         </td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:13px;white-space:nowrap;">${monthLabel}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;">${badge}</td>
+        <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;color:#64748b;font-size:12px;white-space:nowrap;text-align:right;">${fmtMonth(t.scheduled_date)}</td>
       </tr>`;
-  };
 
-  const overdueRows = overdue.map(t => tableRow(t, true)).join('');
-  const upcomingRows = upcoming.map(t => tableRow(t, false)).join('');
+  const section = (label, color, border, items) => items.length === 0 ? '' : `
+          <p style="margin:0 0 6px;color:${color};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">${label} (${items.length})</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${border};border-radius:8px;overflow:hidden;margin-bottom:18px;">
+            ${items.map(taskRow).join('')}
+          </table>`;
+
   const total = overdue.length + upcoming.length;
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#faf7f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf7f0;padding:24px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf7f0;padding:20px 0;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(184,146,74,0.08);">
-        <tr><td style="background:linear-gradient(135deg,#d97706,#b45309);padding:24px 28px;">
-          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">Aylık Bakım Hatırlatması</h1>
-          <p style="margin:4px 0 0;color:#fef3c7;font-size:13px;">Bellis Deluxe Hotel · Teknik Servis</p>
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(184,146,74,0.08);">
+        <tr><td style="background:linear-gradient(135deg,#d97706,#b45309);padding:18px 24px;">
+          <h1 style="margin:0;color:#ffffff;font-size:17px;font-weight:700;">Aylık Bakım Hatırlatması</h1>
+          <p style="margin:3px 0 0;color:#fef3c7;font-size:12px;">Bellis Deluxe Hotel &middot; Teknik Servis</p>
         </td></tr>
-        <tr><td style="padding:24px 28px;">
-          <p style="margin:0 0 8px;color:#1e293b;font-size:15px;">Merhaba <strong>${escapeHtml(userName)}</strong>,</p>
-          <p style="margin:0 0 20px;color:#64748b;font-size:14px;line-height:1.5;">
-            Bu ay yapılması gereken <strong>${total}</strong> bakım göreviniz var.
-            ${overdue.length > 0 ? `<span style="color:#b91c1c;font-weight:600;">${overdue.length} tanesi geçmiş aylardan kalan gecikmiş görev.</span>` : ''}
+        <tr><td style="padding:18px 24px;">
+          <p style="margin:0 0 16px;color:#475569;font-size:13px;line-height:1.5;">
+            Merhaba <strong style="color:#1e293b;">${escapeHtml(userName)}</strong>, bu ay <strong style="color:#1e293b;">${total}</strong> bakım göreviniz var${overdue.length > 0 ? `, <strong style="color:#b91c1c;">${overdue.length} tanesi gecikmiş</strong>` : ''}.
           </p>
 
-          ${overdue.length > 0 ? `
-            <div style="margin-bottom:24px;">
-              <h2 style="margin:0 0 10px;color:#b91c1c;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Gecikmiş Görevler</h2>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #fecaca;border-radius:10px;overflow:hidden;">
-                ${overdueRows}
-              </table>
-            </div>
-          ` : ''}
-
-          ${upcoming.length > 0 ? `
-            <div>
-              <h2 style="margin:0 0 10px;color:#b45309;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Bu Ay Yapılacak Görevler</h2>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #fde68a;border-radius:10px;overflow:hidden;">
-                ${upcomingRows}
-              </table>
-            </div>
-          ` : ''}
+          ${section('Gecikmiş Görevler', '#b91c1c', '#fecaca', overdue)}
+          ${section('Bu Ay Yapılacak', '#b45309', '#fde68a', upcoming)}
 
           ${process.env.CLIENT_URL ? `
-            <div style="margin-top:28px;text-align:center;">
-              <a href="${process.env.CLIENT_URL}/dashboard" style="display:inline-block;background:#d97706;color:#ffffff;text-decoration:none;padding:11px 24px;border-radius:10px;font-size:14px;font-weight:600;">Panele Git</a>
+            <div style="margin-top:4px;text-align:center;">
+              <a href="${process.env.CLIENT_URL}/dashboard" style="display:inline-block;background:#d97706;color:#ffffff;text-decoration:none;padding:9px 22px;border-radius:8px;font-size:13px;font-weight:600;">Panele Git</a>
             </div>
           ` : ''}
         </td></tr>
-        <tr><td style="padding:18px 28px;background:#faf7f0;border-top:1px solid #fde68a;">
-          <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">
+        <tr><td style="padding:14px 24px;background:#faf7f0;border-top:1px solid #fde68a;">
+          <p style="margin:0;color:#94a3b8;font-size:10px;text-align:center;">
             Bu e-posta Bellis Deluxe Hotel Teknik Servis sisteminden otomatik gönderildi.
           </p>
         </td></tr>
