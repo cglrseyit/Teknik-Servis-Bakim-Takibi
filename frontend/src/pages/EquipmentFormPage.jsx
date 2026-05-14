@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { SelectTrigger } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 
 const CATEGORIES = ['HVAC', 'Elektrik', 'Asansör', 'Su Sistemi', 'Jeneratör', 'Güvenlik', 'Diğer'];
 
@@ -24,9 +23,9 @@ const STATUS_OPTIONS = [
 const MONTH_NAMES = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
 const PERIOD_OPTIONS = [
-  { value: 'monthly',   label: 'Aylık',   sub: 'Her ay' },
-  { value: 'quarterly', label: '3 Aylık', sub: 'Her 3 ayda bir' },
-  { value: 'biannual',  label: '6 Aylık', sub: 'Her 6 ayda bir' },
+  { value: 'monthly',   label: 'Aylık',    sub: 'Her ay' },
+  { value: 'quarterly', label: '3 Aylık',  sub: 'Her 3 ayda bir' },
+  { value: 'biannual',  label: '6 Aylık',  sub: 'Her 6 ayda bir' },
   { value: 'yearly',    label: '1 Yıllık', sub: 'Yılda bir kez' },
 ];
 
@@ -85,324 +84,330 @@ export default function EquipmentFormPage() {
   return (
     <Layout>
       <div className="p-6 overflow-auto min-h-full">
-      <div className="max-w-2xl mx-auto">
-        {/* Başlık */}
-        <div className="mb-8">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Geri Dön
-          </button>
-          <div className="flex items-center gap-3 mb-1.5">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <WrenchIcon className="w-5 h-5 text-primary" />
+        <div className="max-w-5xl mx-auto">
+
+          {/* Başlık */}
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Geri Dön
+            </button>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <WrenchIcon className="w-5 h-5 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {isEdit ? 'Ekipmanı Düzenle' : 'Yeni Ekipman'}
+              </h1>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {isEdit ? 'Ekipmanı Düzenle' : 'Yeni Ekipman'}
-            </h1>
+            <p className="text-muted-foreground text-sm ml-[52px]">
+              {isEdit ? 'Ekipman bilgilerini güncelleyin' : 'Sisteme yeni bir ekipman kaydedin'}
+            </p>
           </div>
-          <p className="text-muted-foreground text-sm ml-[52px]">
-            {isEdit ? 'Ekipman bilgilerini güncelleyin' : 'Sisteme yeni bir ekipman kaydedin'}
-          </p>
-        </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>
-        )}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          {/* Zorunlu Bilgiler */}
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle>Zorunlu Bilgiler</CardTitle>
-              <CardDescription>Tüm zorunlu alanları doldurunuz</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-semibold">
-                  Ekipman Adı <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  required
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="örn: Klima Santrali, Asansör No:2"
-                />
-              </div>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-6 items-start">
 
-              {!isEdit && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold flex items-center gap-1.5">
-                    Adet
-                    {quantity > 1 && (
-                      <span className="text-xs font-normal text-slate-400">({form.name || 'Ekipman'} #1 … #{quantity} oluşturulacak)</span>
-                    )}
-                  </Label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 text-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center"
-                    >−</button>
-                    <span className="w-10 text-center text-lg font-semibold text-slate-800">{quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(q => Math.min(100, q + 1))}
-                      className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 text-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center"
-                    >+</button>
-                    {quantity > 1 && (
-                      <button type="button" onClick={() => setQuantity(1)} className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">
-                        Tek'e döndür
-                      </button>
-                    )}
+              {/* ── SOL: Zorunlu Bilgiler ── */}
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle>Zorunlu Bilgiler</CardTitle>
+                  <CardDescription>Tüm zorunlu alanları doldurunuz</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-semibold">
+                      Ekipman Adı <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      required
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="örn: Klima Santrali, Asansör No:2"
+                    />
                   </div>
-                  {quantity > 1 && (
-                    <p className="text-xs text-amber-600">Bakım planı grubun kendisine bağlanır, tüm birimleri kapsar.</p>
+
+                  {!isEdit && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold flex items-center gap-1.5">
+                        Adet
+                        {quantity > 1 && (
+                          <span className="text-xs font-normal text-slate-400">({form.name || 'Ekipman'} #1 … #{quantity} oluşturulacak)</span>
+                        )}
+                      </Label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                          className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 text-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center"
+                        >−</button>
+                        <span className="w-10 text-center text-lg font-semibold text-slate-800">{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(q => Math.min(100, q + 1))}
+                          className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 text-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center"
+                        >+</button>
+                        {quantity > 1 && (
+                          <button type="button" onClick={() => setQuantity(1)} className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">
+                            Tek'e döndür
+                          </button>
+                        )}
+                      </div>
+                      {quantity > 1 && (
+                        <p className="text-xs text-amber-600">Bakım planı grubun kendisine bağlanır, tüm birimleri kapsar.</p>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
 
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">
-                  Durum <span className="text-destructive">*</span>
-                </Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {STATUS_OPTIONS.map(opt => {
-                    const Icon = opt.icon;
-                    const selected = form.status === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, status: opt.value }))}
-                        className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm text-left ${
-                          selected
-                            ? `${opt.bgColor} ${opt.borderColor} shadow-sm`
-                            : 'bg-background border-border hover:border-muted-foreground/40'
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 flex-shrink-0 ${selected ? opt.color : 'text-muted-foreground'}`} />
-                        <span className={`font-medium text-sm ${selected ? opt.color : 'text-foreground'}`}>
-                          {opt.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="supplier" className="text-sm font-semibold">
-                  Tedarikçi <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="supplier"
-                  required
-                  value={form.supplier}
-                  onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
-                  placeholder="örn: ABC Teknik Ltd."
-                />
-              </div>
-
-              {/* Bakım Periyodu — birimde gösterilmez, grup/tekil ekipmanlarda gösterilir */}
-              {!isUnit && <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold flex items-center gap-1.5">
-                    <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                    Bakım Periyodu
-                    {!isEdit && !setupLater && <span className="text-destructive">*</span>}
-                  </Label>
-                  {!isEdit && !setupLater && (
-                    <button
-                      type="button"
-                      onClick={() => { setSetupLater(true); setForm(f => ({ ...f, maintenance_period: '', maintenance_start_date: '' })); }}
-                      className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2"
-                    >
-                      Bakımı daha sonra ayarla
-                    </button>
-                  )}
-                </div>
-
-                {!isEdit && setupLater ? (
-                  <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 bg-slate-50">
-                    <span className="text-sm text-slate-500">Bakım planı daha sonra ayarlanacak</span>
-                    <button
-                      type="button"
-                      onClick={() => setSetupLater(false)}
-                      className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
-                    >
-                      Şimdi ayarla
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      {PERIOD_OPTIONS.map(opt => {
-                        const selected = form.maintenance_period === opt.value;
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      Durum <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {STATUS_OPTIONS.map(opt => {
+                        const Icon = opt.icon;
+                        const selected = form.status === opt.value;
                         return (
                           <button
                             key={opt.value}
                             type="button"
-                            onClick={() => setForm(f => ({ ...f, maintenance_period: opt.value }))}
-                            className={`flex flex-col gap-0.5 p-3.5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm text-left ${
+                            onClick={() => setForm(f => ({ ...f, status: opt.value }))}
+                            className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm text-left ${
                               selected
-                                ? 'bg-amber-50 border-amber-500 shadow-sm'
+                                ? `${opt.bgColor} ${opt.borderColor} shadow-sm`
                                 : 'bg-background border-border hover:border-muted-foreground/40'
                             }`}
                           >
-                            <span className={`font-semibold text-sm ${selected ? 'text-amber-700' : 'text-foreground'}`}>
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${selected ? opt.color : 'text-muted-foreground'}`} />
+                            <span className={`font-medium text-sm ${selected ? opt.color : 'text-foreground'}`}>
                               {opt.label}
-                            </span>
-                            <span className={`text-xs ${selected ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                              {opt.sub}
                             </span>
                           </button>
                         );
                       })}
                     </div>
+                  </div>
 
-                    {!isEdit && form.maintenance_period && (() => {
-                      const now = new Date();
-                      const curYear = now.getFullYear();
-                      const curMonth = now.getMonth() + 1;
-                      const [selYear, selMonth] = form.maintenance_start_date
-                        ? form.maintenance_start_date.split('-').map(Number)
-                        : [0, 0];
-                      const years = [curYear, curYear + 1, curYear + 2];
-                      const selectCls = 'flex-1 px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent';
-                      function update(year, month) {
-                        if (year && month) setForm(f => ({ ...f, maintenance_start_date: `${year}-${String(month).padStart(2,'0')}` }));
-                        else setForm(f => ({ ...f, maintenance_start_date: '' }));
-                      }
-                      return (
-                        <div className="space-y-1.5 pt-1">
-                          <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
-                            <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
-                            Bakım Başlangıç Ayı
-                          </Label>
-                          <div className="flex gap-2">
-                            <select
-                              value={selMonth || ''}
-                              onChange={e => update(selYear || curYear, Number(e.target.value))}
-                              className={selectCls}
-                            >
-                              <option value="">Ay</option>
-                              {MONTH_NAMES.map((m, i) => {
-                                const monthNum = i + 1;
-                                const disabled = (selYear || curYear) === curYear && monthNum < curMonth;
-                                return <option key={i} value={monthNum} disabled={disabled}>{m}</option>;
-                              })}
-                            </select>
-                            <select
-                              value={selYear || ''}
-                              onChange={e => update(Number(e.target.value), selMonth || curMonth)}
-                              className={selectCls}
-                            >
-                              <option value="">Yıl</option>
-                              {years.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
-                          </div>
-                          <p className="text-xs text-slate-400">Boş bırakılırsa bu aydan başlatılır</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier" className="text-sm font-semibold">
+                      Tedarikçi {!isUnit && <span className="text-destructive">*</span>}
+                    </Label>
+                    <Input
+                      id="supplier"
+                      required={!isUnit}
+                      value={form.supplier}
+                      onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                      placeholder="örn: ABC Teknik Ltd."
+                    />
+                  </div>
+
+                  {/* Bakım Periyodu — birimde gizlenir */}
+                  {!isUnit && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold flex items-center gap-1.5">
+                          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                          Bakım Periyodu
+                          {!isEdit && !setupLater && <span className="text-destructive">*</span>}
+                        </Label>
+                        {!isEdit && !setupLater && (
+                          <button
+                            type="button"
+                            onClick={() => { setSetupLater(true); setForm(f => ({ ...f, maintenance_period: '', maintenance_start_date: '' })); }}
+                            className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2"
+                          >
+                            Daha sonra ayarla
+                          </button>
+                        )}
+                      </div>
+
+                      {!isEdit && setupLater ? (
+                        <div className="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 bg-slate-50">
+                          <span className="text-sm text-slate-500">Bakım planı daha sonra ayarlanacak</span>
+                          <button
+                            type="button"
+                            onClick={() => setSetupLater(false)}
+                            className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
+                          >
+                            Şimdi ayarla
+                          </button>
                         </div>
-                      );
-                    })()}
-                  </>
-                )}
-              </div>}
-            </CardContent>
-          </Card>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-2">
+                            {PERIOD_OPTIONS.map(opt => {
+                              const selected = form.maintenance_period === opt.value;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => setForm(f => ({ ...f, maintenance_period: opt.value }))}
+                                  className={`flex flex-col gap-0.5 p-3 rounded-xl border-2 cursor-pointer transition-all hover:shadow-sm text-left ${
+                                    selected
+                                      ? 'bg-amber-50 border-amber-500 shadow-sm'
+                                      : 'bg-background border-border hover:border-muted-foreground/40'
+                                  }`}
+                                >
+                                  <span className={`font-semibold text-sm ${selected ? 'text-amber-700' : 'text-foreground'}`}>
+                                    {opt.label}
+                                  </span>
+                                  <span className={`text-xs ${selected ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                                    {opt.sub}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-          <Separator className="my-6" />
+                          {!isEdit && form.maintenance_period && (() => {
+                            const now = new Date();
+                            const curYear = now.getFullYear();
+                            const curMonth = now.getMonth() + 1;
+                            const [selYear, selMonth] = form.maintenance_start_date
+                              ? form.maintenance_start_date.split('-').map(Number)
+                              : [0, 0];
+                            const years = [curYear, curYear + 1, curYear + 2];
+                            const selectCls = 'flex-1 px-3 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent';
+                            function update(year, month) {
+                              if (year && month) setForm(f => ({ ...f, maintenance_start_date: `${year}-${String(month).padStart(2,'0')}` }));
+                              else setForm(f => ({ ...f, maintenance_start_date: '' }));
+                            }
+                            return (
+                              <div className="space-y-1.5 pt-1">
+                                <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
+                                  <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+                                  Bakım Başlangıç Ayı
+                                </Label>
+                                <div className="flex gap-2">
+                                  <select
+                                    value={selMonth || ''}
+                                    onChange={e => update(selYear || curYear, Number(e.target.value))}
+                                    className={selectCls}
+                                  >
+                                    <option value="">Ay</option>
+                                    {MONTH_NAMES.map((m, i) => {
+                                      const monthNum = i + 1;
+                                      const disabled = (selYear || curYear) === curYear && monthNum < curMonth;
+                                      return <option key={i} value={monthNum} disabled={disabled}>{m}</option>;
+                                    })}
+                                  </select>
+                                  <select
+                                    value={selYear || ''}
+                                    onChange={e => update(Number(e.target.value), selMonth || curMonth)}
+                                    className={selectCls}
+                                  >
+                                    <option value="">Yıl</option>
+                                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                  </select>
+                                </div>
+                                <p className="text-xs text-slate-400">Boş bırakılırsa bu aydan başlatılır</p>
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Opsiyonel Bilgiler */}
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle>Opsiyonel Bilgiler</CardTitle>
-              <CardDescription>İsteğe bağlı ek bilgileri girebilirsiniz</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="brand" className="text-sm font-semibold">Marka</Label>
-                  <Input
-                    id="brand"
-                    value={form.brand}
-                    onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
-                    placeholder="örn: Carrier, Siemens"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="model" className="text-sm font-semibold">Model</Label>
-                  <Input
-                    id="model"
-                    value={form.model}
-                    onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
-                    placeholder="örn: VRF-3000, LG-X12"
-                  />
-                </div>
-              </div>
+              {/* ── SAĞ: Opsiyonel Bilgiler ── */}
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle>Opsiyonel Bilgiler</CardTitle>
+                  <CardDescription>İsteğe bağlı ek bilgileri girebilirsiniz</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="serial_number" className="text-sm font-semibold">Seri Numarası</Label>
-                  <Input
-                    id="serial_number"
-                    value={form.serial_number}
-                    onChange={e => setForm(f => ({ ...f, serial_number: e.target.value }))}
-                    placeholder="örn: SN-20240101-001"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-semibold">Lokasyon</Label>
-                  <Input
-                    id="location"
-                    value={form.location}
-                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                    placeholder="örn: 3. Kat, Teknik Oda"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="brand" className="text-sm font-semibold">Marka</Label>
+                      <Input
+                        id="brand"
+                        value={form.brand}
+                        onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
+                        placeholder="örn: Carrier, Siemens"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="model" className="text-sm font-semibold">Model</Label>
+                      <Input
+                        id="model"
+                        value={form.model}
+                        onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
+                        placeholder="örn: VRF-3000, LG-X12"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category" className="text-sm font-semibold">Kategori</Label>
-                <SelectTrigger
-                  id="category"
-                  value={form.category}
-                  onValueChange={val => setForm(f => ({ ...f, category: val }))}
-                  placeholder="Kategori seçiniz"
-                  options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                />
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="serial_number" className="text-sm font-semibold">Seri Numarası</Label>
+                      <Input
+                        id="serial_number"
+                        value={form.serial_number}
+                        onChange={e => setForm(f => ({ ...f, serial_number: e.target.value }))}
+                        placeholder="örn: SN-20240101-001"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="location" className="text-sm font-semibold">Lokasyon</Label>
+                      <Input
+                        id="location"
+                        value={form.location}
+                        onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                        placeholder="örn: 3. Kat, Teknik Oda"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-sm font-semibold">Notlar</Label>
-                <Textarea
-                  id="notes"
-                  value={form.notes}
-                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Ekipman hakkında önemli notlar..."
-                  rows={4}
-                  className="resize-none"
-                />
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-sm font-semibold">Kategori</Label>
+                    <SelectTrigger
+                      id="category"
+                      value={form.category}
+                      onValueChange={val => setForm(f => ({ ...f, category: val }))}
+                      placeholder="Kategori seçiniz"
+                      options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                    />
+                  </div>
 
-          {/* Butonlar */}
-          <div className="mt-6 flex gap-3 justify-end">
-            <Button type="button" variant="outline" size="lg" onClick={() => navigate('/equipment')}>
-              İptal
-            </Button>
-            <Button type="submit" size="lg">
-              {isEdit ? 'Değişiklikleri Kaydet' : 'Ekipmanı Kaydet'}
-            </Button>
-          </div>
-        </form>
-      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes" className="text-sm font-semibold">Notlar</Label>
+                    <Textarea
+                      id="notes"
+                      value={form.notes}
+                      onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                      placeholder="Ekipman hakkında önemli notlar..."
+                      rows={5}
+                      className="resize-none"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Butonlar */}
+            <div className="mt-6 flex gap-3 justify-end">
+              <Button type="button" variant="outline" size="lg" onClick={() => navigate('/equipment')}>
+                İptal
+              </Button>
+              <Button type="submit" size="lg">
+                {isEdit ? 'Değişiklikleri Kaydet' : 'Ekipmanı Kaydet'}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </Layout>
   );
