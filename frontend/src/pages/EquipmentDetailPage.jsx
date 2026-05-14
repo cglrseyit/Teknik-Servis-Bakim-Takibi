@@ -307,7 +307,12 @@ export default function EquipmentDetailPage() {
                         const sc = TASK_STATUS_CONFIG[t.status] || TASK_STATUS_CONFIG.pending;
                         return (
                           <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="px-4 py-3 font-medium text-slate-800 text-xs">{t.title}</td>
+                            <td className="px-4 py-3 font-medium text-slate-800 text-xs">
+                              {t.title}
+                              {isGroup && t.equipment_name && t.equipment_name !== equipment.name && (
+                                <span className="block text-[10px] font-normal text-slate-400 mt-0.5">{t.equipment_name}</span>
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-slate-500 text-xs">{fmtDate(t.scheduled_date)}</td>
                             <td className="px-4 py-3 text-slate-500 text-xs">{t.maintained_by || '—'}</td>
                             <td className="px-4 py-3">
@@ -447,7 +452,12 @@ export default function EquipmentDetailPage() {
                     >
                       {/* Header row */}
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="text-sm font-semibold text-slate-800 leading-tight">{t.title}</p>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800 leading-tight">{t.title}</p>
+                          {isGroup && t.equipment_name && t.equipment_name !== equipment.name && (
+                            <span className="block text-[11px] font-normal text-slate-400 mt-0.5">{t.equipment_name}</span>
+                          )}
+                        </div>
                         <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${TASK_STATUS_CONFIG[t.status]?.cls || ''}`}>
                           {TASK_STATUS_CONFIG[t.status]?.label}
                         </span>

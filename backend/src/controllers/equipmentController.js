@@ -77,17 +77,22 @@ async function getOne(req, res) {
       parent = pr[0] || null;
     }
 
+    // Grup ise üst kayıt + tüm birimlerin görevlerini birlikte göster
+    // (gruba plan eklendiğinde görevler her birime ayrı ayrı bağlanıyor)
+    const taskScopeIds = [Number(id), ...units.map(u => u.id)];
+
     const { rows: upcomingTasks } = await pool.query(
-      `SELECT t.*
+      `SELECT t.*, eq.name AS equipment_name
        FROM maintenance_tasks t
-       WHERE t.equipment_id = $1
+       LEFT JOIN equipment eq ON eq.id = t.equipment_id
+       WHERE t.equipment_id = ANY($1)
          AND t.status IN ('pending','in_progress','overdue','postponed')
        ORDER BY t.scheduled_date ASC`,
-      [id]
+      [taskScopeIds]
     );
 
     const { rows: completedTasks } = await pool.query(
-      `SELECT t.*,
+      `SELECT t.*, eq.name AS equipment_name,
               COALESCE(
                 (SELECT json_agg(json_build_object(
                           'id', a.id,
@@ -100,22 +105,23 @@ async function getOne(req, res) {
                 '[]'::json
               ) AS attachments
        FROM maintenance_tasks t
-       WHERE t.equipment_id = $1
+       LEFT JOIN equipment eq ON eq.id = t.equipment_id
+       WHERE t.equipment_id = ANY($1)
          AND t.status IN ('completed','skipped')
        ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC
        LIMIT 50`,
-      [id]
+      [taskScopeIds]
     );
 
     const { rows: nextRows } = await pool.query(
       `SELECT t.*, mp.title AS plan_title
        FROM maintenance_tasks t
        LEFT JOIN maintenance_plans mp ON mp.id = t.plan_id
-       WHERE t.equipment_id = $1
+       WHERE t.equipment_id = ANY($1)
          AND t.status IN ('pending','in_progress')
          AND t.scheduled_date >= CURRENT_DATE
        ORDER BY t.scheduled_date ASC LIMIT 1`,
-      [id]
+      [taskScopeIds]
     );
 
     res.json({ ...equipment, units, parent, upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
