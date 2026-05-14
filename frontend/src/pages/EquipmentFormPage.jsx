@@ -29,19 +29,35 @@ function emptyUnit(name, index) {
   return { name: name ? `${name} #${index + 1}` : `Birim ${index + 1}`, supplier: '', brand: '', model: '', serial_number: '', location: '', status: 'active', notes: '' };
 }
 
-function UnitFields({ unit, onChange }) {
+function UnitFields({ unit, onChange, hasError }) {
   const set = (key, val) => onChange({ ...unit, [key]: val });
+  const missing = (field) => hasError && !unit[field]?.trim();
   return (
     <div className="space-y-5">
+      {hasError && (!unit.name?.trim() || !unit.supplier?.trim()) && (
+        <div className="px-3 py-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg">
+          Bu birimde zorunlu alanlar eksik: {[!unit.name?.trim() && 'Birim Adı', !unit.supplier?.trim() && 'Tedarikçi'].filter(Boolean).join(', ')}
+        </div>
+      )}
       <div className="space-y-1.5">
-        <Label className="text-sm font-semibold text-slate-700">Birim Adı</Label>
-        <Input value={unit.name} onChange={e => set('name', e.target.value)} placeholder="örn: Kombi #1" />
+        <Label className="text-sm font-semibold text-slate-700">Birim Adı <span className="text-red-500">*</span></Label>
+        <Input
+          value={unit.name}
+          onChange={e => set('name', e.target.value)}
+          placeholder="örn: Kombi #1"
+          className={missing('name') ? 'border-red-400 focus:ring-red-400' : ''}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-sm font-semibold text-slate-700">Tedarikçi</Label>
-          <Input value={unit.supplier} onChange={e => set('supplier', e.target.value)} placeholder="örn: ABC Teknik Ltd." />
+          <Label className="text-sm font-semibold text-slate-700">Tedarikçi <span className="text-red-500">*</span></Label>
+          <Input
+            value={unit.supplier}
+            onChange={e => set('supplier', e.target.value)}
+            placeholder="örn: ABC Teknik Ltd."
+            className={missing('supplier') ? 'border-red-400 focus:ring-red-400' : ''}
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
@@ -96,6 +112,7 @@ export default function EquipmentFormPage() {
   const toast = useToast();
   const isEdit = Boolean(id);
   const [error, setError] = useState('');
+  const [unitErrors, setUnitErrors] = useState([]);
   const [setupLater, setSetupLater] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('group');
@@ -164,6 +181,19 @@ export default function EquipmentFormPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+
+    if (quantity > 1 && !isEdit) {
+      const errors = unitList.map(u => !u.name?.trim() || !u.supplier?.trim());
+      setUnitErrors(errors);
+      const firstBad = errors.findIndex(Boolean);
+      if (firstBad !== -1) {
+        setActiveTab(firstBad);
+        setError('Tüm birimlerde Birim Adı ve Tedarikçi zorunludur.');
+        return;
+      }
+      setUnitErrors([]);
+    }
+
     try {
       if (isEdit) {
         await api.put(`/equipment/${id}`, form);
@@ -272,13 +302,16 @@ export default function EquipmentFormPage() {
                       key={i}
                       type="button"
                       onClick={() => setActiveTab(i)}
-                      className={`px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                      className={`px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
                         activeTab === i
                           ? 'border-amber-500 text-amber-600 bg-amber-50/50'
+                          : unitErrors[i]
+                          ? 'border-red-300 text-red-500 hover:bg-red-50'
                           : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                       }`}
                     >
                       {u.name || `Birim ${i + 1}`}
+                      {unitErrors[i] && <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -365,7 +398,11 @@ export default function EquipmentFormPage() {
                     /* Birim sekmesi */
                     <UnitFields
                       unit={unitList[activeTab]}
-                      onChange={updated => setUnitList(prev => prev.map((u, i) => i === activeTab ? updated : u))}
+                      onChange={updated => {
+                        setUnitList(prev => prev.map((u, i) => i === activeTab ? updated : u));
+                        setUnitErrors(prev => prev.map((e, i) => i === activeTab ? false : e));
+                      }}
+                      hasError={!!unitErrors[activeTab]}
                     />
                   )}
                 </div>
