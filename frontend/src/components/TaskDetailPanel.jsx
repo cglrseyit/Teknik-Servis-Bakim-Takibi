@@ -43,7 +43,7 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPostponeConfirm, setShowPostponeConfirm] = useState(false);
-  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
@@ -54,6 +54,7 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
     setNextDate(null);
     setSelectedFiles([]);
     setAttachments([]);
+    setBulkMode(false);
     setForm({
       performed_work: '', maintained_by: '', responsible_person: '',
       performed_date: new Date().toISOString().split('T')[0],
@@ -130,6 +131,7 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
     setLoading(true);
     setError('');
     try {
+      // Seçili dosyalar varsa mevcut göreve yükle
       if (selectedFiles.length > 0) {
         const fd = new FormData();
         selectedFiles.forEach(f => fd.append('files', f));
@@ -137,15 +139,37 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }
-      await api.put(`/tasks/${taskId}/status`, {
-        status: 'completed',
-        performed_work: form.performed_work,
-        maintained_by: form.maintained_by,
-        responsible_person: form.responsible_person,
-        performed_date: form.performed_date,
-      });
-      toast?.success('Görev başarıyla tamamlandı');
-      onCompleted?.();
+
+      if (bulkMode && canBulkApply) {
+        // Tüm birimleri aynı bilgilerle tek seferde tamamla
+        const ids = [...bulkTargets]
+          .sort((a, b) => (a.scheduled_date || '').localeCompare(b.scheduled_date || ''))
+          .map(t => t.id);
+        const { data } = await api.post('/tasks/bulk-complete', {
+          task_ids: ids,
+          performed_work: form.performed_work,
+          maintained_by: form.maintained_by,
+          responsible_person: form.responsible_person,
+          performed_date: form.performed_date,
+        });
+        const skippedCount = data.skipped?.length || 0;
+        toast?.success(
+          skippedCount > 0
+            ? `${data.completed} birim tamamlandı, ${skippedCount} birim atlandı`
+            : `${data.completed} birim başarıyla tamamlandı`
+        );
+        (onBulkCompleted || onCompleted)?.();
+      } else {
+        await api.put(`/tasks/${taskId}/status`, {
+          status: 'completed',
+          performed_work: form.performed_work,
+          maintained_by: form.maintained_by,
+          responsible_person: form.responsible_person,
+          performed_date: form.performed_date,
+        });
+        toast?.success('Görev başarıyla tamamlandı');
+        onCompleted?.();
+      }
     } catch (err) {
       const msg = err.response?.data?.error || 'Hata oluştu';
       setError(msg);
@@ -160,53 +184,6 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
     t => !['completed', 'skipped'].includes(t.status)
   );
   const canBulkApply = bulkTargets.length > 1;
-
-  function handleBulkClick() {
-    if (!form.performed_work.trim()) { setError('Yapılan işlemleri yazmanız zorunludur'); return; }
-    if (!form.maintained_by.trim()) { setError('Bakımı yapan kişi/firma zorunludur'); return; }
-    if (!form.responsible_person.trim()) { setError('Sorumlu kişi zorunludur'); return; }
-    setError('');
-    setShowBulkConfirm(true);
-  }
-
-  async function doBulkApply() {
-    setShowBulkConfirm(false);
-    setLoading(true);
-    setError('');
-    try {
-      // Seçili dosyalar varsa mevcut göreve yükle
-      if (selectedFiles.length > 0) {
-        const fd = new FormData();
-        selectedFiles.forEach(f => fd.append('files', f));
-        await api.post(`/tasks/${taskId}/attachments`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
-      const ids = [...bulkTargets]
-        .sort((a, b) => (a.scheduled_date || '').localeCompare(b.scheduled_date || ''))
-        .map(t => t.id);
-      const { data } = await api.post('/tasks/bulk-complete', {
-        task_ids: ids,
-        performed_work: form.performed_work,
-        maintained_by: form.maintained_by,
-        responsible_person: form.responsible_person,
-        performed_date: form.performed_date,
-      });
-      const skippedCount = data.skipped?.length || 0;
-      toast?.success(
-        skippedCount > 0
-          ? `${data.completed} birim tamamlandı, ${skippedCount} birim atlandı`
-          : `${data.completed} birim başarıyla tamamlandı`
-      );
-      (onBulkCompleted || onCompleted)?.();
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Hata oluştu';
-      setError(msg);
-      toast?.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function doPostpone() {
     setShowPostponeConfirm(false);
@@ -448,15 +425,18 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
           </div>
 
           {canBulkApply && (
-            <button
-              type="button"
-              onClick={handleBulkClick}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-50 text-violet-700 font-semibold rounded-xl hover:bg-violet-100 border border-violet-200 transition-colors disabled:opacity-60 text-sm"
-            >
-              <Layers size={15} />
-              Aynı bilgilerle tüm birimleri tamamla ({bulkTargets.length} birim)
-            </button>
+            <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={bulkMode}
+                onChange={e => setBulkMode(e.target.checked)}
+                className="w-4 h-4 accent-violet-600 cursor-pointer"
+              />
+              <span className="text-xs font-medium text-violet-700 flex items-center gap-1">
+                <Layers size={13} />
+                Aynı bilgilerle tüm birimlere uygula ({bulkTargets.length} birim)
+              </span>
+            </label>
           )}
 
           <div className="flex gap-2 pt-1">
@@ -465,7 +445,11 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
               disabled={loading}
               className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors disabled:opacity-60"
             >
-              {loading ? 'Kaydediliyor...' : '✓ Tamamlandı'}
+              {loading
+                ? 'Kaydediliyor...'
+                : bulkMode && canBulkApply
+                  ? `✓ Tümünü Tamamla (${bulkTargets.length})`
+                  : '✓ Tamamlandı'}
             </button>
             <button
               type="button"
@@ -487,16 +471,6 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
         variant="warning"
         onConfirm={doPostpone}
         onCancel={() => setShowPostponeConfirm(false)}
-      />
-
-      <ConfirmModal
-        open={showBulkConfirm}
-        title="Tüm birimlere uygula"
-        message={`Girdiğiniz bakım bilgileri bu gruptaki ${bulkTargets.length} tamamlanmamış birime uygulanacak ve hepsi "Tamamlandı" olarak işaretlenecek. Onaylıyor musunuz?`}
-        confirmLabel="Evet, Hepsini Tamamla"
-        variant="warning"
-        onConfirm={doBulkApply}
-        onCancel={() => setShowBulkConfirm(false)}
       />
 
     </div>
