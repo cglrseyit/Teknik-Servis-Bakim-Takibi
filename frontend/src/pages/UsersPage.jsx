@@ -3,6 +3,7 @@ import { Plus, X, User, Mail, Lock, Shield, Trash2, AlertCircle, Pencil, ToggleL
 import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 
 const ROLES = [
   { value: 'admin',         label: 'Admin' },
@@ -30,6 +31,7 @@ function FieldWrap({ icon: Icon, children }) {
 const EMPTY_FORM = { name: '', email: '', password: '', role: 'order_taker', is_active: true };
 
 export default function UsersPage() {
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -87,8 +89,12 @@ export default function UsersPage() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setDeleteTarget(null);
-    await api.delete(`/users/${id}`);
-    setUsers(u => u.filter(x => x.id !== id));
+    try {
+      await api.delete(`/users/${id}`);
+      setUsers(u => u.filter(x => x.id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Kullanıcı silinemedi');
+    }
   }
 
   return (
@@ -233,13 +239,15 @@ export default function UsersPage() {
                       >
                         <Pencil size={13} />
                       </button>
-                      <button
-                        onClick={() => setDeleteTarget(u)}
-                        title="Sil"
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {u.role !== 'admin' && (
+                        <button
+                          onClick={() => setDeleteTarget(u)}
+                          title="Sil"
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

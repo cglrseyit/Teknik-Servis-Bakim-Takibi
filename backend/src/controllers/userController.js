@@ -37,6 +37,21 @@ async function update(req, res) {
   const { id } = req.params;
   const { name, email, role, is_active, password } = req.body;
   try {
+    const { rows: targetRows } = await pool.query('SELECT role FROM users WHERE id=$1', [id]);
+    if (!targetRows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+
+    // Son aktif admin'in yetkisi alınamaz veya pasifleştirilemez (sistem kilitlenmesin)
+    const losesAdmin = targetRows[0].role === 'admin' &&
+      ((role && role !== 'admin') || is_active === false);
+    if (losesAdmin) {
+      const { rows: cnt } = await pool.query(
+        `SELECT COUNT(*)::int AS c FROM users WHERE role='admin' AND is_active=true`
+      );
+      if (cnt[0].c <= 1) {
+        return res.status(400).json({ error: 'Sistemdeki son admin kullanıcının yetkisi alınamaz veya pasifleştirilemez.' });
+      }
+    }
+
     let query, params;
     if (password) {
       const hashed = await bcrypt.hash(password, 12);
@@ -64,8 +79,12 @@ async function remove(req, res) {
     return res.status(400).json({ error: 'Kendinizi silemezsiniz' });
   }
   try {
-    const { rowCount } = await pool.query('DELETE FROM users WHERE id=$1', [id]);
-    if (!rowCount) return res.status(404).json({ error: 'Bulunamadı' });
+    const { rows } = await pool.query('SELECT role FROM users WHERE id=$1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+    if (rows[0].role === 'admin') {
+      return res.status(403).json({ error: 'Admin kullanıcılar uygulama üzerinden silinemez. Gerekirse veritabanından kaldırın.' });
+    }
+    await pool.query('DELETE FROM users WHERE id=$1', [id]);
     res.json({ message: 'Silindi' });
   } catch (err) {
     console.error(err);
