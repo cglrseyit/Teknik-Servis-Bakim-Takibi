@@ -55,7 +55,7 @@ VITE_API_URL=http://localhost:5000/api
 
 ### Backend — Express + PostgreSQL
 
-- **Entry:** `backend/src/app.js` — registers all routes, mounts two cron jobs (midnight task generation + 08:00 notification push), runs startup fixes (overdue sync + task pre-generation) on every boot.
+- **Entry:** `backend/src/app.js` — registers all routes, mounts two cron jobs (midnight task generation + weekly Friday 08:00 notification push), runs startup fixes (overdue sync + task pre-generation) on every boot.
 - **Auth:** JWT Bearer tokens. `authenticate` middleware validates token; `requireRole(...roles)` enforces RBAC. Three roles: `admin`, `teknik_muduru`, `order_taker`.
 - **Database:** Raw `pg` pool, no ORM. Connection config in `backend/src/config/db.js`. Schema-altering `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` lines in `app.js` run on every startup as a lightweight migration safety net — don't rely on them for new columns, use proper SQL migration files instead.
 - **Task generation logic** (`backend/src/services/taskGenerator.js`): Core business logic. Generates future `maintenance_tasks` from `maintenance_plans`. Month-based frequencies (monthly/quarterly/yearly) snap to **month-end dates**. Yearly plans can be locked to a specific calendar month via `target_month`. One-time plans (`is_one_time=true`) are excluded from auto-generation.
@@ -77,7 +77,7 @@ all entities → audit_logs
 
 ### Cron behavior
 - **00:00 Istanbul:** `generateAllActivePlans()` creates upcoming tasks → then batch-updates pending tasks due today to `in_progress`, and past-due pending to `overdue`.
-- **08:00 Istanbul:** `generateNotifications()` creates 3-day-ahead reminder notifications.
+- **Friday 08:00 Istanbul (weekly):** `generateNotifications()` creates 3-day-ahead reminder notifications.
 - Same overdue fix also runs at server startup.
 
 ## Key business rules

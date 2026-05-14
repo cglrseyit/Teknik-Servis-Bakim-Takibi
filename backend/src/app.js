@@ -96,8 +96,8 @@ cron.schedule('0 0 * * *', async () => {
   );
 }, { timezone: 'Europe/Istanbul' });
 
-// Cron: Her sabah 08:00 Istanbul saatiyle bildirim uret
-cron.schedule('0 8 * * *', async () => {
+// Cron: Haftada bir, Cuma 08:00 Istanbul saatiyle bildirim uret
+cron.schedule('0 8 * * 5', async () => {
   const { generateNotifications } = require('./services/notificationService');
   await generateNotifications();
 }, { timezone: 'Europe/Istanbul' });
