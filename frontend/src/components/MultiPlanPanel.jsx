@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
 function fmt(dateStr) {
@@ -103,6 +104,16 @@ export default function MultiPlanPanel({ plans }) {
           );
         })}
       </div>
+
+      {/* Ekipman özetine git */}
+      {first.parent_equipment_id && (
+        <Link
+          to={`/equipment/${first.parent_equipment_id}`}
+          className="block w-full text-center py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors"
+        >
+          Ekipman Detayına Git →
+        </Link>
+      )}
     </div>
   );
 }
