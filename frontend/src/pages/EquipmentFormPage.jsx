@@ -82,7 +82,7 @@ export default function EquipmentFormPage() {
   return (
     <Layout>
       <div className="p-6 overflow-auto min-h-full">
-        <div className="max-w-3xl mx-auto">
+        <div>
 
           {/* Başlık */}
           <div className="mb-6">
