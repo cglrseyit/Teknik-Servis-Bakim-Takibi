@@ -50,8 +50,10 @@ CREATE TABLE IF NOT EXISTS equipment (
                      CHECK (status IN ('active', 'passive', 'maintenance', 'broken')),
   notes              TEXT,
   maintenance_period VARCHAR(20),                    -- 'monthly', 'quarterly', 'biannual', 'yearly'
+  parent_id          INT REFERENCES equipment(id) ON DELETE CASCADE,  -- dolu = bir grubun alt birimi
   created_at         TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_equipment_parent ON equipment(parent_id);
 
 -- ----------------------------------------------------------------------------
 -- Bakım Planları (tekrarlayan kural tanımları)

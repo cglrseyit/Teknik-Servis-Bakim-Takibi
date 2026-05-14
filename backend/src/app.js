@@ -136,6 +136,9 @@ const AUTO_MIGRATIONS = [
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category TEXT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS notes TEXT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS maintenance_period VARCHAR(20)`,
+  // Grup–birim ilişkisi: parent_id dolu olan satır, o grubun alt birimidir
+  `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS parent_id INT REFERENCES equipment(id) ON DELETE CASCADE`,
+  `CREATE INDEX IF NOT EXISTS idx_equipment_parent ON equipment(parent_id)`,
   `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS approved_by_manager BOOLEAN DEFAULT false`,
   `CREATE TABLE IF NOT EXISTS task_attachments (
      id SERIAL PRIMARY KEY,
