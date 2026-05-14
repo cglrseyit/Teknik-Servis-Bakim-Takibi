@@ -224,7 +224,7 @@ export default function EquipmentFormPage() {
               <div className={`grid gap-4 ${!isEdit ? 'grid-cols-[1fr_auto]' : ''} items-end`}>
                 <div className="space-y-1.5">
                   <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
-                    {isMulti ? 'Grup Adı' : 'Ekipman Adı'} <span className="text-red-500">*</span>
+                    Ekipman Adı <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -233,7 +233,7 @@ export default function EquipmentFormPage() {
                     onChange={e => handleGroupNameChange(e.target.value)}
                     placeholder={isMulti ? 'örn: Kombi' : 'örn: Klima Santrali, Asansör No:2'}
                   />
-                  {isMulti && <p className="text-xs text-slate-400">Birim adları otomatik oluşturulur: {form.name || 'Kombi'} #1, #2…</p>}
+                  {isMulti && <p className="text-xs text-slate-400">Birim adları: {form.name || 'Ekipman'} #1, #2… — her sekmeden düzenlenebilir</p>}
                 </div>
 
                 {!isEdit && (
@@ -265,7 +265,7 @@ export default function EquipmentFormPage() {
                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    Grup Bilgileri
+                    Bakım Periyodu
                   </button>
                   {unitList.map((u, i) => (
                     <button
