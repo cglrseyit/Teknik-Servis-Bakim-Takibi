@@ -11,14 +11,21 @@ const PERIOD_TO_FREQ = {
 
 async function getAll(req, res) {
   const { category, status, search } = req.query;
-  const conditions = [];
+  // Liste yalnızca üst seviye kayıtları gösterir; alt birimler grubun detayında görünür
+  const conditions = ['e.parent_id IS NULL'];
   const params = [];
 
   if (category) { params.push(category);      conditions.push(`e.category = $${params.length}`); }
   if (status)   { params.push(status);         conditions.push(`e.status = $${params.length}`); }
-  if (search)   { params.push(`%${search}%`);  conditions.push(`(e.name ILIKE $${params.length} OR e.serial_number ILIKE $${params.length})`); }
+  if (search)   {
+    params.push(`%${search}%`);
+    // Arama ekipmanın kendisinde ya da alt birimlerinde eşleşince grubu getir
+    conditions.push(`(e.name ILIKE $${params.length} OR e.serial_number ILIKE $${params.length}
+      OR EXISTS (SELECT 1 FROM equipment u WHERE u.parent_id = e.id
+        AND (u.name ILIKE $${params.length} OR u.serial_number ILIKE $${params.length})))`);
+  }
 
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = `WHERE ${conditions.join(' AND ')}`;
 
   try {
     const { rows } = await pool.query(
@@ -30,7 +37,9 @@ async function getAll(req, res) {
          EXISTS (
            SELECT 1 FROM maintenance_plans p
            WHERE p.equipment_id = e.id AND p.is_active = true AND p.is_one_time = false
-         ) AS has_periodic_plan
+         ) AS has_periodic_plan,
+         (SELECT COUNT(*) FROM equipment u WHERE u.parent_id = e.id)::int AS unit_count,
+         (SELECT COUNT(*) FROM equipment u WHERE u.parent_id = e.id AND u.status = 'broken')::int AS broken_unit_count
        FROM equipment e ${where} ORDER BY e.name`,
       params
     );
@@ -49,6 +58,24 @@ async function getOne(req, res) {
       [id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+    const equipment = rows[0];
+
+    // Alt birimler — grup ise dolu gelir, tekil ekipmansa boş dizi
+    const { rows: units } = await pool.query(
+      `SELECT id, name, brand, model, serial_number, location, status, notes, created_at
+       FROM equipment WHERE parent_id = $1 ORDER BY name`,
+      [id]
+    );
+
+    // Bağlı olduğu grup — bu kayıt bir alt birimse dolu gelir
+    let parent = null;
+    if (equipment.parent_id) {
+      const { rows: pr } = await pool.query(
+        `SELECT id, name FROM equipment WHERE id = $1`,
+        [equipment.parent_id]
+      );
+      parent = pr[0] || null;
+    }
 
     const { rows: upcomingTasks } = await pool.query(
       `SELECT t.*
@@ -91,7 +118,7 @@ async function getOne(req, res) {
       [id]
     );
 
-    res.json({ ...rows[0], upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
+    res.json({ ...equipment, units, parent, upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Sunucu hatası' });

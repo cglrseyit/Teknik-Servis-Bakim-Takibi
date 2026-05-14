@@ -36,14 +36,15 @@ export default function EquipmentListPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (filterStatus) params.set('status', filterStatus);
     api.get(`/equipment?${params}`)
-      .then(r => setItems(r.data))
+      .then(r => { if (active) setItems(r.data); })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [search, filterStatus]);
 
   return (
