@@ -19,6 +19,16 @@ const FREQUENCY_LABELS = {
   custom:    'Özel',
 };
 
+// Bakım Planları sayfasındaki periyot renkleriyle aynı tutulur
+const FREQUENCY_COLORS = {
+  monthly:    'bg-amber-50 text-amber-700',
+  quarterly:  'bg-orange-50 text-orange-700',
+  biannual:   'bg-rose-50 text-rose-700',
+  semiannual: 'bg-rose-50 text-rose-700',
+  yearly:     'bg-red-50 text-red-700',
+  custom:     'bg-slate-100 text-slate-600',
+};
+
 export default function EquipmentListPage() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
@@ -127,11 +137,15 @@ export default function EquipmentListPage() {
                   <td className="px-5 py-3.5 text-slate-500">{eq.category || '—'}</td>
                   <td className="px-5 py-3.5 text-slate-500">{eq.supplier || '—'}</td>
                   <td className="px-5 py-3.5">
-                    {(eq.maintenance_period || eq.maintenance_frequency) ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 text-amber-700">
-                        {FREQUENCY_LABELS[eq.maintenance_period || eq.maintenance_frequency] || eq.maintenance_period || eq.maintenance_frequency}
-                      </span>
-                    ) : '—'}
+                    {(() => {
+                      const freq = eq.maintenance_period || eq.maintenance_frequency;
+                      if (!freq) return '—';
+                      return (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold ${FREQUENCY_COLORS[freq] || 'bg-slate-100 text-slate-600'}`}>
+                          {FREQUENCY_LABELS[freq] || freq}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-5 py-3.5">
                     {(() => { const sc = STATUS_CONFIG[eq.status] || STATUS_CONFIG.passive; return (
