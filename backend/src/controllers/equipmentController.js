@@ -198,13 +198,15 @@ async function patchStatus(req, res) {
 
 async function update(req, res) {
   const { id } = req.params;
-  const { name, brand, category, supplier, status, notes, maintenance_period } = req.body;
+  const { name, brand, model, category, supplier, status, notes, maintenance_period, serial_number, location } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE equipment
-       SET name=$1, brand=$2, category=$3, supplier=$4, status=$5, notes=$6, maintenance_period=$7
-       WHERE id=$8 RETURNING *`,
-      [name, brand || null, category || null, supplier || null, status, notes || null, maintenance_period || null, id]
+       SET name=$1, brand=$2, model=$3, category=$4, supplier=$5, status=$6,
+           notes=$7, maintenance_period=$8, serial_number=$9, location=$10
+       WHERE id=$11 RETURNING *`,
+      [name, brand || null, model || null, category || null, supplier || null, status,
+       notes || null, maintenance_period || null, serial_number || null, location || null, id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
     res.json(rows[0]);

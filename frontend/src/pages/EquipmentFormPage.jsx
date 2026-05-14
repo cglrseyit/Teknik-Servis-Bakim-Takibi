@@ -38,8 +38,10 @@ export default function EquipmentFormPage() {
   const [error, setError] = useState('');
   const [setupLater, setSetupLater] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [isUnit, setIsUnit] = useState(false);
   const [form, setForm] = useState({
-    name: '', brand: '', category: '', supplier: '',
+    name: '', brand: '', model: '', category: '', supplier: '',
+    serial_number: '', location: '',
     status: 'active', notes: '', maintenance_period: '',
     maintenance_start_date: '',
   });
@@ -48,11 +50,15 @@ export default function EquipmentFormPage() {
     if (isEdit) {
       api.get(`/equipment/${id}`).then(r => {
         const eq = r.data;
+        setIsUnit(Boolean(eq.parent_id));
         setForm({
           name: eq.name || '',
           brand: eq.brand || '',
+          model: eq.model || '',
           category: eq.category || '',
           supplier: eq.supplier || '',
+          serial_number: eq.serial_number || '',
+          location: eq.location || '',
           status: eq.status || 'active',
           notes: eq.notes || '',
           maintenance_period: eq.maintenance_period || '',
@@ -202,8 +208,8 @@ export default function EquipmentFormPage() {
                 />
               </div>
 
-              {/* Bakım Periyodu */}
-              <div className="space-y-2">
+              {/* Bakım Periyodu — birimde gösterilmez, grup/tekil ekipmanlarda gösterilir */}
+              {!isUnit && <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-1.5">
                     <CalendarDays className="w-4 h-4 text-muted-foreground" />
@@ -306,7 +312,7 @@ export default function EquipmentFormPage() {
                     })()}
                   </>
                 )}
-              </div>
+              </div>}
             </CardContent>
           </Card>
 
@@ -319,14 +325,46 @@ export default function EquipmentFormPage() {
               <CardDescription>İsteğe bağlı ek bilgileri girebilirsiniz</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="brand" className="text-sm font-semibold">Marka</Label>
-                <Input
-                  id="brand"
-                  value={form.brand}
-                  onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
-                  placeholder="örn: Carrier, Siemens"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="brand" className="text-sm font-semibold">Marka</Label>
+                  <Input
+                    id="brand"
+                    value={form.brand}
+                    onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
+                    placeholder="örn: Carrier, Siemens"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="model" className="text-sm font-semibold">Model</Label>
+                  <Input
+                    id="model"
+                    value={form.model}
+                    onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
+                    placeholder="örn: VRF-3000, LG-X12"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="serial_number" className="text-sm font-semibold">Seri Numarası</Label>
+                  <Input
+                    id="serial_number"
+                    value={form.serial_number}
+                    onChange={e => setForm(f => ({ ...f, serial_number: e.target.value }))}
+                    placeholder="örn: SN-20240101-001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-semibold">Lokasyon</Label>
+                  <Input
+                    id="location"
+                    value={form.location}
+                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                    placeholder="örn: 3. Kat, Teknik Oda"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
