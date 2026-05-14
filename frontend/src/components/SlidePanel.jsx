@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-export default function SlidePanel({ open, onClose, title, subtitle, children }) {
+export default function SlidePanel({ open, onClose, title, subtitle, wide, children }) {
   useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -21,7 +21,7 @@ export default function SlidePanel({ open, onClose, title, subtitle, children })
 
       {/* Side panel */}
       <div
-        className={`fixed right-0 top-0 bottom-0 z-50 w-[460px] bg-white border-l border-slate-100 shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-50 ${wide ? 'w-[580px]' : 'w-[460px]'} bg-white border-l border-slate-100 shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

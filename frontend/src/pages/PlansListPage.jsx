@@ -136,6 +136,7 @@ export default function PlansListPage() {
 
       {/* Grup (çoklu birim) paneli */}
       <SlidePanel
+        wide
         open={Boolean(selectedGroup)}
         onClose={() => setSelectedGroup(null)}
         title={selectedGroup?.parentName || ''}
