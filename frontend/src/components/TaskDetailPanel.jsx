@@ -172,7 +172,7 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
 
   const isAlreadyDone = ['completed', 'skipped'].includes(task.status);
   const isPostponed = task.status === 'postponed';
-  const hasEquipmentDetails = task.brand || task.model || task.serial_number || task.category;
+  const hasEquipmentDetails = task.brand || task.model || task.serial_number || task.category || task.supplier;
 
   const isFutureMonth = (() => {
     if (!task.scheduled_date) return false;
@@ -198,6 +198,7 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
             <InfoRow label="Model" value={task.model} />
             <InfoRow label="Seri No" value={task.serial_number} />
             <InfoRow label="Kategori" value={task.category} />
+            <InfoRow label="Tedarikçi" value={task.supplier} />
           </div>
         )}
 

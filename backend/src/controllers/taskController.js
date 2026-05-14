@@ -56,7 +56,7 @@ async function getOne(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT t.*, e.name AS equipment_name, e.location,
-              e.brand, e.model, e.serial_number, e.category
+              e.brand, e.model, e.serial_number, e.category, e.supplier
        FROM maintenance_tasks t
        LEFT JOIN equipment e ON e.id = t.equipment_id
        WHERE t.id = $1`,
