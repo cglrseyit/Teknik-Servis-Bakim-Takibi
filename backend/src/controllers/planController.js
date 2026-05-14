@@ -5,7 +5,10 @@ const { logAction } = require('../services/auditLogger');
 async function getAll(req, res) {
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, e.name AS equipment_name,
+      `SELECT p.*,
+              e.name AS equipment_name,
+              e.parent_id AS parent_equipment_id,
+              ep.name AS parent_equipment_name,
               COUNT(t.id)::int AS task_count,
               COUNT(t.id) FILTER (WHERE t.status = 'completed')::int AS completed_count,
               MAX(CASE WHEN t.status = 'completed' THEN t.completed_at END) AS last_completed_at,
@@ -14,11 +17,18 @@ async function getAll(req, res) {
                   THEN t.completed_at END) AS this_month_completed_at,
               BOOL_OR(t.status IN ('pending','in_progress','overdue')
                       AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
-              ) AS this_month_has_pending
+              ) AS this_month_has_pending,
+              (SELECT t2.id FROM maintenance_tasks t2
+               WHERE t2.plan_id = p.id AND t2.status IN ('pending','in_progress','overdue','postponed')
+               ORDER BY t2.scheduled_date ASC LIMIT 1) AS current_task_id,
+              (SELECT t2.status FROM maintenance_tasks t2
+               WHERE t2.plan_id = p.id AND t2.status IN ('pending','in_progress','overdue','postponed')
+               ORDER BY t2.scheduled_date ASC LIMIT 1) AS current_task_status
        FROM maintenance_plans p
        LEFT JOIN equipment e ON e.id = p.equipment_id
+       LEFT JOIN equipment ep ON ep.id = e.parent_id
        LEFT JOIN maintenance_tasks t ON t.plan_id = p.id
-       GROUP BY p.id, e.name
+       GROUP BY p.id, e.name, e.parent_id, ep.name
        ORDER BY p.created_at DESC`
     );
     res.json(rows);
