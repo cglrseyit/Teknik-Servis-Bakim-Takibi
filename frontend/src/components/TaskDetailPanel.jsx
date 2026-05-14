@@ -18,12 +18,12 @@ function fmt(dateStr) {
   return new Date(dateStr).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-function InfoRow({ label, value }) {
-  if (!value) return null;
+function InfoRow({ label, value, always }) {
+  if (!value && !always) return null;
   return (
     <div>
       <p className="text-xs text-gray-400">{label}</p>
-      <p className="text-xs font-medium text-gray-700 mt-0.5">{value}</p>
+      <p className="text-xs font-medium text-gray-700 mt-0.5">{value || '—'}</p>
     </div>
   );
 }
@@ -172,7 +172,6 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
 
   const isAlreadyDone = ['completed', 'skipped'].includes(task.status);
   const isPostponed = task.status === 'postponed';
-  const hasEquipmentDetails = task.location || task.brand || task.model || task.serial_number || task.category || task.supplier;
 
   const isFutureMonth = (() => {
     if (!task.scheduled_date) return false;
@@ -190,16 +189,14 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
           <p className="font-semibold text-gray-800">{task.equipment_name}</p>
         </div>
 
-        {hasEquipmentDetails && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-2 border-t border-gray-200">
-            <InfoRow label="Konum" value={task.location} />
-            <InfoRow label="Marka" value={task.brand} />
-            <InfoRow label="Model" value={task.model} />
-            <InfoRow label="Seri No" value={task.serial_number} />
-            <InfoRow label="Kategori" value={task.category} />
-            <InfoRow label="Tedarikçi" value={task.supplier} />
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-2 border-t border-gray-200">
+          <InfoRow label="Konum" value={task.location} always />
+          <InfoRow label="Marka" value={task.brand} />
+          <InfoRow label="Model" value={task.model} />
+          <InfoRow label="Seri No" value={task.serial_number} />
+          <InfoRow label="Kategori" value={task.category} />
+          <InfoRow label="Tedarikçi" value={task.supplier} />
+        </div>
 
         {task.description && (
           <div className="pt-2 border-t border-gray-200">
