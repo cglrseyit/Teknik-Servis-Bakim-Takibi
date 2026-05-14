@@ -37,6 +37,7 @@ export default function EquipmentFormPage() {
   const isEdit = Boolean(id);
   const [error, setError] = useState('');
   const [setupLater, setSetupLater] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const [form, setForm] = useState({
     name: '', brand: '', category: '', supplier: '',
     status: 'active', notes: '', maintenance_period: '',
@@ -65,7 +66,7 @@ export default function EquipmentFormPage() {
     setError('');
     try {
       if (isEdit) await api.put(`/equipment/${id}`, form);
-      else await api.post('/equipment', form);
+      else await api.post('/equipment', { ...form, quantity });
       toast?.success(isEdit ? 'Ekipman güncellendi' : 'Ekipman eklendi');
       navigate('/equipment');
     } catch (err) {
@@ -126,6 +127,38 @@ export default function EquipmentFormPage() {
                   placeholder="örn: Klima Santrali, Asansör No:2"
                 />
               </div>
+
+              {!isEdit && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                    Adet
+                    {quantity > 1 && (
+                      <span className="text-xs font-normal text-slate-400">({form.name || 'Ekipman'} #1 … #{quantity} oluşturulacak)</span>
+                    )}
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                      className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 text-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center"
+                    >−</button>
+                    <span className="w-10 text-center text-lg font-semibold text-slate-800">{quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(q => Math.min(100, q + 1))}
+                      className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 text-lg font-bold hover:bg-slate-50 transition-colors flex items-center justify-center"
+                    >+</button>
+                    {quantity > 1 && (
+                      <button type="button" onClick={() => setQuantity(1)} className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">
+                        Tek'e döndür
+                      </button>
+                    )}
+                  </div>
+                  {quantity > 1 && (
+                    <p className="text-xs text-amber-600">Bakım planı grubun kendisine bağlanır, tüm birimleri kapsar.</p>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">

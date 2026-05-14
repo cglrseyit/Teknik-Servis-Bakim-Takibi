@@ -132,7 +132,14 @@ export default function EquipmentListPage() {
                       <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
                         <Wrench size={14} className="text-slate-500" strokeWidth={1.8} />
                       </div>
-                      <span className="font-semibold text-slate-800">{eq.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-800">{eq.name}</span>
+                        {eq.unit_count > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
+                            {eq.unit_count} birim{eq.broken_unit_count > 0 && <span className="ml-1 text-red-500">· {eq.broken_unit_count} arızalı</span>}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-slate-500">{eq.category || '—'}</td>

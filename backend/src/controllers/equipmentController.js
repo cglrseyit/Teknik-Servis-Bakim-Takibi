@@ -126,22 +126,35 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { name, brand, category, supplier, status, notes, maintenance_period, maintenance_start_date } = req.body;
+  const { name, brand, category, supplier, status, notes, maintenance_period, maintenance_start_date, quantity, parent_id } = req.body;
   if (!name) return res.status(400).json({ error: 'Ekipman adı gerekli' });
-  if (!supplier) return res.status(400).json({ error: 'Tedarikçi gerekli' });
+  // Alt birim eklenirken tedarikçi zorunlu değil
+  if (!parent_id && !supplier) return res.status(400).json({ error: 'Tedarikçi gerekli' });
+
+  const qty = Math.min(100, Math.max(1, parseInt(quantity) || 1));
+
   try {
     const { rows } = await pool.query(
-      `INSERT INTO equipment (name, brand, category, supplier, status, notes, maintenance_period)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [name, brand || null, category || null, supplier, status || 'active', notes || null, maintenance_period || null]
+      `INSERT INTO equipment (name, brand, category, supplier, status, notes, maintenance_period, parent_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [name, brand || null, category || null, supplier || null, status || 'active', notes || null, parent_id ? null : (maintenance_period || null), parent_id || null]
     );
     const equipment = rows[0];
 
-    // Bakım periyodu seçildiyse otomatik plan + görev oluştur
-    if (maintenance_period && PERIOD_TO_FREQ[maintenance_period]) {
+    // Birden fazla birim isteniyorsa alt kayıtları oluştur
+    if (qty > 1 && !parent_id) {
+      for (let i = 1; i <= qty; i++) {
+        await pool.query(
+          `INSERT INTO equipment (name, status, parent_id) VALUES ($1,$2,$3)`,
+          [`${name} #${i}`, status || 'active', equipment.id]
+        );
+      }
+    }
+
+    // Bakım periyodu seçildiyse otomatik plan + görev oluştur (gruba bağlı)
+    if (!parent_id && maintenance_period && PERIOD_TO_FREQ[maintenance_period]) {
       try {
         const freq = PERIOD_TO_FREQ[maintenance_period];
-        // Kullanıcı ay seçtiyse o ayın 1'ini, seçmediyse bugünü kullan
         const startDate = maintenance_start_date
           ? `${maintenance_start_date}-01`
           : new Date().toISOString().split('T')[0];
@@ -161,6 +174,24 @@ async function create(req, res) {
     res.status(201).json(equipment);
   } catch (err) {
     console.error('Equipment create error:', err.message);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+}
+
+async function patchStatus(req, res) {
+  const { id } = req.params;
+  const { status } = req.body;
+  const allowed = ['active', 'passive', 'maintenance', 'broken'];
+  if (!allowed.includes(status)) return res.status(400).json({ error: 'Geçersiz durum' });
+  try {
+    const { rows } = await pool.query(
+      `UPDATE equipment SET status=$1 WHERE id=$2 RETURNING *`,
+      [status, id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 }
@@ -233,4 +264,4 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { getAll, getOne, create, update, remove };
+module.exports = { getAll, getOne, create, update, patchStatus, remove };
