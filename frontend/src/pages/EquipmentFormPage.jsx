@@ -8,9 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { SelectTrigger } from '@/components/ui/select';
-
-const CATEGORIES = ['HVAC', 'Elektrik', 'Asansör', 'Su Sistemi', 'Jeneratör', 'Güvenlik', 'Diğer'];
 
 const STATUS_OPTIONS = [
   { value: 'active',      label: 'Aktif',   color: 'text-green-600',  bgColor: 'bg-green-50',  borderColor: 'border-green-500',  icon: CheckCircle2 },
@@ -37,7 +34,7 @@ export default function EquipmentFormPage() {
   const [quantity, setQuantity] = useState(1);
   const [isUnit, setIsUnit] = useState(false);
   const [form, setForm] = useState({
-    name: '', brand: '', model: '', category: '', supplier: '',
+    name: '', brand: '', model: '', supplier: '',
     serial_number: '', location: '',
     status: 'active', notes: '', maintenance_period: '',
     maintenance_start_date: '',
@@ -52,7 +49,6 @@ export default function EquipmentFormPage() {
           name:               eq.name || '',
           brand:              eq.brand || '',
           model:              eq.model || '',
-          category:           eq.category || '',
           supplier:           eq.supplier || '',
           serial_number:      eq.serial_number || '',
           location:           eq.location || '',
@@ -152,30 +148,18 @@ export default function EquipmentFormPage() {
                 )}
               </div>
 
-              {/* Tedarikçi + Kategori */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="supplier" className="text-sm font-semibold text-slate-700">
-                    Tedarikçi {!isUnit && <span className="text-red-500">*</span>}
-                  </Label>
-                  <Input
-                    id="supplier"
-                    required={!isUnit}
-                    value={form.supplier}
-                    onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
-                    placeholder="örn: ABC Teknik Ltd."
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="category" className="text-sm font-semibold text-slate-700">Kategori</Label>
-                  <SelectTrigger
-                    id="category"
-                    value={form.category}
-                    onValueChange={val => setForm(f => ({ ...f, category: val }))}
-                    placeholder="Kategori seçiniz"
-                    options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                  />
-                </div>
+              {/* Tedarikçi */}
+              <div className="space-y-1.5">
+                <Label htmlFor="supplier" className="text-sm font-semibold text-slate-700">
+                  Tedarikçi {!isUnit && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id="supplier"
+                  required={!isUnit}
+                  value={form.supplier}
+                  onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                  placeholder="örn: ABC Teknik Ltd."
+                />
               </div>
 
               {/* Marka + Model */}
