@@ -188,6 +188,42 @@ async function updateStatus(req, res) {
   }
 }
 
+async function getMyTasks(req, res) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT t.*,
+              e.name AS equipment_name,
+              e.location,
+              e.brand,
+              e.model,
+              e.serial_number,
+              e.category,
+              e.parent_id AS parent_equipment_id,
+              ep.name AS parent_equipment_name
+       FROM maintenance_tasks t
+       LEFT JOIN equipment e ON e.id = t.equipment_id
+       LEFT JOIN equipment ep ON ep.id = e.parent_id
+       WHERE t.status IN ('pending','in_progress','overdue','postponed')
+         AND (
+           DATE_TRUNC('month', t.scheduled_date) <= DATE_TRUNC('month', CURRENT_DATE)
+           OR t.status IN ('overdue','in_progress','postponed')
+         )
+       ORDER BY
+         CASE t.status
+           WHEN 'overdue'     THEN 0
+           WHEN 'in_progress' THEN 1
+           WHEN 'postponed'   THEN 2
+           ELSE 3
+         END,
+         t.scheduled_date ASC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+}
+
 async function getSummary(req, res) {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -208,4 +244,4 @@ async function getSummary(req, res) {
   }
 }
 
-module.exports = { getAll, getOne, create, updateStatus, getSummary };
+module.exports = { getAll, getOne, create, updateStatus, getSummary, getMyTasks };
