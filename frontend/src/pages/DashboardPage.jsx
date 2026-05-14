@@ -1,14 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, Layers } from 'lucide-react';
 import Layout from '../components/Layout';
 import Badge from '../components/Badge';
 import ConfirmModal from '../components/ConfirmModal';
 import SlidePanel from '../components/SlidePanel';
 import TaskDetailPanel from '../components/TaskDetailPanel';
+import GroupTaskPanel from '../components/GroupTaskPanel';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
+
+function computeRows(tasks) {
+  const rows = [];
+  const seenParents = new Map();
+  for (const t of tasks) {
+    if (t.parent_equipment_id) {
+      if (seenParents.has(t.parent_equipment_id)) {
+        rows[seenParents.get(t.parent_equipment_id)].tasks.push(t);
+      } else {
+        const idx = rows.length;
+        rows.push({ isGroup: true, parentId: t.parent_equipment_id, parentName: t.parent_equipment_name || t.equipment_name, tasks: [t] });
+        seenParents.set(t.parent_equipment_id, idx);
+      }
+    } else {
+      rows.push({ isGroup: false, task: t, tasks: [t] });
+    }
+  }
+  return rows;
+}
 
 // PDF renk kodlarına uygun:
 // Gerçekleşen (Tamamlandı) = Kırmızı, Ertelenen/Gecikmiş = Mavi, Planlanan = Gri
@@ -178,6 +198,7 @@ export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentYearMonth);
   const [statusFilter, setStatusFilter] = useState('undone');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
   const [updating, setUpdating] = useState(null);
   const [earlyStart, setEarlyStart] = useState(null);
   const [searchInput, setSearchInput] = useState('');
@@ -229,6 +250,13 @@ export default function DashboardPage() {
 
   useEffect(() => { loadSummary(); }, []);
   useEffect(() => { if (user) loadTasks(); }, [selectedMonth, statusFilter, user, search]);
+
+  useEffect(() => {
+    if (!selectedGroup) return;
+    const rows = computeRows(tasks);
+    const updated = rows.find(r => r.isGroup && r.parentId === selectedGroup.parentId);
+    if (updated) setSelectedGroup(updated);
+  }, [tasks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function doStart(id) {
     setUpdating(id);
@@ -310,6 +338,51 @@ export default function DashboardPage() {
           {t.status === 'in_progress' && (
             <span className="text-xs text-green-600 font-semibold">Tamamla →</span>
           )}
+        </td>
+      </tr>
+    );
+  }
+
+  function renderGroupRow(row) {
+    const first = row.tasks[0];
+    const overdueCount    = row.tasks.filter(t => t.status === 'overdue').length;
+    const inProgressCount = row.tasks.filter(t => t.status === 'in_progress').length;
+
+    let badgeVariant, badgeLabel;
+    if (overdueCount > 0) {
+      badgeVariant = 'primary'; badgeLabel = `${overdueCount} Gecikmiş`;
+    } else if (inProgressCount > 0) {
+      badgeVariant = 'warning'; badgeLabel = `${inProgressCount} Devam Ediyor`;
+    } else {
+      badgeVariant = 'secondary'; badgeLabel = `${row.tasks.length} Bekliyor`;
+    }
+
+    return (
+      <tr
+        key={`group-${row.parentId}`}
+        onClick={() => setSelectedGroup(row)}
+        className="hover:bg-violet-50/60 cursor-pointer bg-violet-50/20"
+      >
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Layers size={14} className="text-violet-500 flex-shrink-0" />
+            <span className="text-sm font-medium text-gray-900">{row.parentName}</span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 flex-shrink-0">
+              {row.tasks.length} birim
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4 text-sm text-gray-600">{first.title}</td>
+        <td className="px-6 py-4 text-sm text-gray-600">
+          {first.scheduled_date
+            ? new Date(first.scheduled_date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })
+            : '—'}
+        </td>
+        <td className="px-6 py-4">
+          <Badge variant={badgeVariant} appearance="light">{badgeLabel}</Badge>
+        </td>
+        <td className="px-6 py-4">
+          <ChevronRight size={14} className="text-gray-300" />
         </td>
       </tr>
     );
@@ -430,7 +503,9 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  tasks.map(t => renderTaskRow(t))
+                  computeRows(tasks).map(row =>
+                    row.isGroup ? renderGroupRow(row) : renderTaskRow(row.task)
+                  )
                 )}
               </tbody>
             </table>
@@ -454,6 +529,19 @@ export default function DashboardPage() {
         title={selectedTask?.title || ''}
       >
         <TaskDetailPanel taskId={selectedTask?.id} onCompleted={handleCompleted} />
+      </SlidePanel>
+
+      <SlidePanel
+        wide
+        open={Boolean(selectedGroup)}
+        onClose={() => setSelectedGroup(null)}
+        title={selectedGroup?.parentName || ''}
+        subtitle={selectedGroup ? `${selectedGroup.tasks.length} birim · Bakım Tamamlama` : ''}
+      >
+        <GroupTaskPanel
+          tasks={selectedGroup?.tasks}
+          onCompleted={() => { loadTasks(); loadSummary(); }}
+        />
       </SlidePanel>
     </Layout>
   );

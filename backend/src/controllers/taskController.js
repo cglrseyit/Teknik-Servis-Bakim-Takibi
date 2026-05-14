@@ -32,9 +32,12 @@ async function getAll(req, res) {
 
   try {
     const { rows } = await pool.query(
-      `SELECT t.*, e.name AS equipment_name, e.location, e.category
+      `SELECT t.*, e.name AS equipment_name, e.location, e.category,
+              e.parent_id AS parent_equipment_id,
+              ep.name AS parent_equipment_name
        FROM maintenance_tasks t
        LEFT JOIN equipment e ON e.id = t.equipment_id
+       LEFT JOIN equipment ep ON ep.id = e.parent_id
        LEFT JOIN maintenance_plans p ON p.id = t.plan_id
        ${where}
        ORDER BY t.scheduled_date ASC`,
