@@ -296,8 +296,97 @@ export default function EquipmentDetailPage() {
             </div>
           </div>
 
-          {/* ─── RIGHT: Tamamlanan bakımlar ─── */}
-          <div>
+          {/* ─── RIGHT: Birimler (grup ise) + Bakım Geçmişi ─── */}
+          <div className="space-y-6">
+
+            {/* Birimler */}
+            {isGroup && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-slate-700">
+                    Birimler
+                    <span className="ml-1.5 text-xs font-normal text-slate-400">({units.length})</span>
+                  </h3>
+                  {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
+                    <button
+                      onClick={() => { setAddingUnit(v => !v); setNewUnitName(`${equipment.name} #${units.length + 1}`); }}
+                      className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 font-medium"
+                    >
+                      <Plus size={13} />
+                      Birim Ekle
+                    </button>
+                  )}
+                </div>
+
+                {addingUnit && (
+                  <form onSubmit={handleAddUnit} className="mb-3 flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                    <input
+                      autoFocus
+                      value={newUnitName}
+                      onChange={e => setNewUnitName(e.target.value)}
+                      placeholder="Birim adı"
+                      className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                    <select
+                      value={newUnitStatus}
+                      onChange={e => setNewUnitStatus(e.target.value)}
+                      className="px-2 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none"
+                    >
+                      {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                    </select>
+                    <button type="submit" disabled={savingUnit} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                      {savingUnit ? '…' : 'Kaydet'}
+                    </button>
+                    <button type="button" onClick={() => setAddingUnit(false)} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700">
+                      İptal
+                    </button>
+                  </form>
+                )}
+
+                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/80">
+                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Birim</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Seri No</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lokasyon</th>
+                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Durum</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {units.map(u => (
+                        <tr key={u.id} className="hover:bg-slate-50/60 transition-colors group">
+                          <td className="px-4 py-3 font-medium text-slate-800 text-xs">{u.name}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{u.serial_number || '—'}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{u.location || '—'}</td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={u.status}
+                              onChange={e => handleUnitStatusChange(u.id, e.target.value)}
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 ${STATUS_COLORS[u.status] || 'bg-slate-100 text-slate-500'}`}
+                            >
+                              {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link
+                              to={`/equipment/${u.id}`}
+                              className="text-[11px] text-amber-600 hover:text-amber-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              Detay
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Bakım Geçmişi */}
+            <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3">
               Bakım Geçmişi
               {completedTasks.length > 0 && (
@@ -402,94 +491,9 @@ export default function EquipmentDetailPage() {
                 })}
               </div>
             )}
+            </div>
           </div>
         </div>
-
-        {/* ─── Birimler (sadece grup ise) ─── */}
-        {isGroup && (
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-700">
-                Birimler
-                <span className="ml-1.5 text-xs font-normal text-slate-400">({units.length})</span>
-              </h3>
-              {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
-                <button
-                  onClick={() => { setAddingUnit(v => !v); setNewUnitName(`${equipment.name} #${units.length + 1}`); }}
-                  className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  <Plus size={13} />
-                  Birim Ekle
-                </button>
-              )}
-            </div>
-
-            {addingUnit && (
-              <form onSubmit={handleAddUnit} className="mb-3 flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <input
-                  autoFocus
-                  value={newUnitName}
-                  onChange={e => setNewUnitName(e.target.value)}
-                  placeholder="Birim adı"
-                  className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-                <select
-                  value={newUnitStatus}
-                  onChange={e => setNewUnitStatus(e.target.value)}
-                  className="px-2 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none"
-                >
-                  {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                </select>
-                <button type="submit" disabled={savingUnit} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors">
-                  {savingUnit ? '…' : 'Kaydet'}
-                </button>
-                <button type="button" onClick={() => setAddingUnit(false)} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700">
-                  İptal
-                </button>
-              </form>
-            )}
-
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/80">
-                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Birim</th>
-                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Seri No</th>
-                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lokasyon</th>
-                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Durum</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {units.map(u => (
-                    <tr key={u.id} className="hover:bg-slate-50/60 transition-colors group">
-                      <td className="px-4 py-3 font-medium text-slate-800 text-xs">{u.name}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{u.serial_number || '—'}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{u.location || '—'}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={u.status}
-                          onChange={e => handleUnitStatusChange(u.id, e.target.value)}
-                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 ${STATUS_COLORS[u.status] || 'bg-slate-100 text-slate-500'}`}
-                        >
-                          {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          to={`/equipment/${u.id}`}
-                          className="text-[11px] text-amber-600 hover:text-amber-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          Detay
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
 
     </Layout>
