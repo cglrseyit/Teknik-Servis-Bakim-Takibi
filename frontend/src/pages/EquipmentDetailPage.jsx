@@ -386,22 +386,25 @@ export default function EquipmentDetailPage() {
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Seri No</th>
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lokasyon</th>
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Durum</th>
-                        <th className="px-4 py-3" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {unitListRows.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-6 text-slate-400 text-xs">
+                          <td colSpan={4} className="text-center py-6 text-slate-400 text-xs">
                             {isGroup ? 'Başka birim yok' : 'Bu grupta başka birim yok'}
                           </td>
                         </tr>
                       ) : unitListRows.map(u => (
-                        <tr key={u.id} className="hover:bg-slate-50/60 transition-colors group">
+                        <tr
+                          key={u.id}
+                          onClick={() => navigate(`/equipment/${u.id}`)}
+                          className="hover:bg-amber-50/60 transition-colors cursor-pointer"
+                        >
                           <td className="px-4 py-3 font-medium text-slate-800 text-xs">{u.name}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{u.serial_number || '—'}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{u.location || '—'}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                             <select
                               value={u.status}
                               onChange={e => handleUnitStatusChange(u.id, e.target.value)}
@@ -409,14 +412,6 @@ export default function EquipmentDetailPage() {
                             >
                               {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                             </select>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Link
-                              to={`/equipment/${u.id}`}
-                              className="text-[11px] text-amber-600 hover:text-amber-700 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              Detay
-                            </Link>
                           </td>
                         </tr>
                       ))}
