@@ -77,14 +77,13 @@ async function getOne(req, res) {
       parent = pr[0] || null;
     }
 
-    // Grup ise üst kayıt + tüm birimlerin görevlerini birlikte göster
-    // (gruba plan eklendiğinde görevler her birime ayrı ayrı bağlanıyor)
-    const taskScopeIds = [Number(id), ...units.map(u => u.id)];
+    // Grup ise üst kayıt + öne çıkan birimin (ilk birim) görevlerini göster
+    // — diğer birimlerin görevleri kendi detay sayfalarında görünür
+    const taskScopeIds = [Number(id), ...(units[0] ? [units[0].id] : [])];
 
     const { rows: upcomingTasks } = await pool.query(
-      `SELECT t.*, eq.name AS equipment_name
+      `SELECT t.*
        FROM maintenance_tasks t
-       LEFT JOIN equipment eq ON eq.id = t.equipment_id
        WHERE t.equipment_id = ANY($1)
          AND t.status IN ('pending','in_progress','overdue','postponed')
        ORDER BY t.scheduled_date ASC`,
@@ -92,7 +91,7 @@ async function getOne(req, res) {
     );
 
     const { rows: completedTasks } = await pool.query(
-      `SELECT t.*, eq.name AS equipment_name,
+      `SELECT t.*,
               COALESCE(
                 (SELECT json_agg(json_build_object(
                           'id', a.id,
@@ -105,7 +104,6 @@ async function getOne(req, res) {
                 '[]'::json
               ) AS attachments
        FROM maintenance_tasks t
-       LEFT JOIN equipment eq ON eq.id = t.equipment_id
        WHERE t.equipment_id = ANY($1)
          AND t.status IN ('completed','skipped')
        ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC
