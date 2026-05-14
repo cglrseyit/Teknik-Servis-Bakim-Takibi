@@ -62,7 +62,7 @@ async function getOne(req, res) {
 
     // Alt birimler — grup ise dolu gelir, tekil ekipmansa boş dizi
     const { rows: units } = await pool.query(
-      `SELECT id, name, brand, model, serial_number, location, status, notes, created_at
+      `SELECT id, name, brand, model, supplier, serial_number, location, status, notes, created_at
        FROM equipment WHERE parent_id = $1 ORDER BY name`,
       [id]
     );

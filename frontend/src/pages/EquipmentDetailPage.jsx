@@ -135,6 +135,18 @@ export default function EquipmentDetailPage() {
   const completedTasks = equipment.completed_tasks || [];
   const isGroup = units.length > 0;
   const isUnit = Boolean(equipment.parent_id);
+  // Grup ise ilk birimi "ana ekipman" olarak ön panelde göster, kalanları Birimler listesinde bırak
+  const mainUnit = isGroup ? units[0] : null;
+  const restUnits = isGroup ? units.slice(1) : [];
+  const info = {
+    brand:              mainUnit?.brand         || equipment.brand,
+    location:           mainUnit?.location      || equipment.location,
+    supplier:           mainUnit?.supplier      || equipment.supplier,
+    model:              mainUnit?.model         || equipment.model,
+    serial_number:      mainUnit?.serial_number || equipment.serial_number,
+    notes:              mainUnit?.notes         || equipment.notes,
+    maintenance_period: equipment.maintenance_period || mainUnit?.maintenance_period,
+  };
 
   return (
     <Layout>
@@ -168,7 +180,7 @@ export default function EquipmentDetailPage() {
                 </span>
               )}
             </div>
-            {equipment.brand && <p className="text-sm text-slate-400 mt-0.5">{equipment.brand}</p>}
+            {info.brand && <p className="text-sm text-slate-400 mt-0.5">{info.brand}</p>}
           </div>
           <div className="flex gap-2">
             <button
@@ -206,17 +218,31 @@ export default function EquipmentDetailPage() {
 
             {/* Ekipman bilgileri + Bir sonraki bakım */}
             <div className="bg-white rounded-xl border border-amber-100/60 shadow-sm p-5">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700/50 mb-4">Ekipman Bilgileri</p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <InfoRow label="Konum"           value={equipment.location} />
-                <InfoRow label="Tedarikçi"       value={equipment.supplier} />
-                <InfoRow label="Model"           value={equipment.model} />
-                <InfoRow label="Seri No"         value={equipment.serial_number} />
-                <InfoRow label="Bakım Periyodu"  value={PERIOD_LABELS[equipment.maintenance_period] || equipment.maintenance_period} />
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700/50">Ekipman Bilgileri</p>
+                {mainUnit && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-700">{mainUnit.name}</span>
+                    <select
+                      value={mainUnit.status}
+                      onChange={e => handleUnitStatusChange(mainUnit.id, e.target.value)}
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 ${STATUS_COLORS[mainUnit.status] || 'bg-slate-100 text-slate-500'}`}
+                    >
+                      {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
-              {equipment.notes && (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <InfoRow label="Konum"           value={info.location} />
+                <InfoRow label="Tedarikçi"       value={info.supplier} />
+                <InfoRow label="Model"           value={info.model} />
+                <InfoRow label="Seri No"         value={info.serial_number} />
+                <InfoRow label="Bakım Periyodu"  value={PERIOD_LABELS[info.maintenance_period] || info.maintenance_period} />
+              </div>
+              {info.notes && (
                 <p className="mt-4 pt-4 border-t border-slate-100 text-sm text-slate-500 leading-relaxed">
-                  {equipment.notes}
+                  {info.notes}
                 </p>
               )}
 
@@ -307,8 +333,8 @@ export default function EquipmentDetailPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-slate-700">
-                    Birimler
-                    <span className="ml-1.5 text-xs font-normal text-slate-400">({units.length})</span>
+                    Diğer Birimler
+                    <span className="ml-1.5 text-xs font-normal text-slate-400">({restUnits.length})</span>
                   </h3>
                   {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
                     <button
@@ -358,7 +384,11 @@ export default function EquipmentDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {units.map(u => (
+                      {restUnits.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="text-center py-6 text-slate-400 text-xs">Başka birim yok</td>
+                        </tr>
+                      ) : restUnits.map(u => (
                         <tr key={u.id} className="hover:bg-slate-50/60 transition-colors group">
                           <td className="px-4 py-3 font-medium text-slate-800 text-xs">{u.name}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{u.serial_number || '—'}</td>
