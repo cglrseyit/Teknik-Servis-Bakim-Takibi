@@ -1,115 +1,107 @@
-import { useState } from 'react';
-import { CalendarCheck } from 'lucide-react';
-import TaskDetailPanel from './TaskDetailPanel';
+import { CheckCircle2 } from 'lucide-react';
 
-const STATUS_DOT = {
-  overdue:    'bg-red-500',
-  in_progress: 'bg-blue-500',
-  pending:    'bg-amber-500',
-  postponed:  'bg-orange-400',
+function fmt(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+const STATUS_CLS = {
+  overdue:    'bg-red-100 text-red-700',
+  in_progress: 'bg-blue-100 text-blue-700',
+  pending:    'bg-amber-100 text-amber-700',
+  postponed:  'bg-orange-100 text-orange-700',
+};
+const STATUS_LABEL = {
+  overdue: 'Gecikmiş', in_progress: 'Devam Ediyor', pending: 'Bekliyor', postponed: 'Ertelendi',
+};
+const FREQ_LABELS = {
+  monthly: 'Aylık', quarterly: '3 Aylık', semiannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel',
 };
 
-const STATUS_PRIORITY = { overdue: 0, in_progress: 1, postponed: 2, pending: 3 };
+export default function MultiPlanPanel({ plans }) {
+  if (!plans?.length) return null;
 
-export default function MultiPlanPanel({ plans, onCompleted }) {
-  const sorted = [...(plans || [])].sort((a, b) => {
-    const ap = STATUS_PRIORITY[a.current_task_status] ?? 4;
-    const bp = STATUS_PRIORITY[b.current_task_status] ?? 4;
-    return ap - bp;
-  });
-
-  const [activeIdx, setActiveIdx] = useState(0);
-  // Bu oturumda tamamlanan görev ID'leri — yeniden yüklemeyi beklemeden geçiş yapmak için
-  const [localDone, setLocalDone] = useState(new Set());
-
-  if (!sorted.length) return null;
-
-  const active = sorted[Math.min(activeIdx, sorted.length - 1)];
-
-  function isTabDone(plan) {
-    return !plan.current_task_id || localDone.has(plan.current_task_id);
-  }
-
-  function handleTaskCompleted() {
-    const taskId = sorted[activeIdx]?.current_task_id;
-
-    // Kapanmadan önce tamamlananı işaretle
-    const newDone = new Set(localDone);
-    if (taskId) newDone.add(taskId);
-
-    setLocalDone(newDone);
-
-    // Sıradaki tamamlanmamış sekmeye geç
-    for (let i = activeIdx + 1; i < sorted.length; i++) {
-      const p = sorted[i];
-      if (p.current_task_id && !newDone.has(p.current_task_id)) {
-        setTimeout(() => setActiveIdx(i), 600);
-        break;
-      }
-    }
-
-    onCompleted?.();
-  }
+  const first = plans[0];
+  const doneCount    = plans.filter(p => p.this_month_completed_at).length;
+  const pendingCount = plans.filter(p => p.this_month_has_pending && !p.this_month_completed_at).length;
+  const overdueCount = plans.filter(p => p.current_task_status === 'overdue').length;
 
   return (
-    <div className="flex gap-3 min-h-0">
-      {/* Sol: dikey sekme listesi */}
-      <div className="flex-shrink-0 w-[120px] space-y-0.5">
-        {sorted.map((plan, i) => {
-          const done = isTabDone(plan);
-          const isActive = activeIdx === i;
-          const dot = STATUS_DOT[plan.current_task_status] || 'bg-slate-300';
-
-          return (
-            <button
-              key={plan.id}
-              onClick={() => setActiveIdx(i)}
-              className={`w-full text-left px-2.5 py-2.5 rounded-lg text-xs font-medium transition-all border-l-[3px] ${
-                isActive
-                  ? 'bg-amber-50 text-amber-700 border-l-amber-500'
-                  : done
-                  ? 'text-emerald-600 border-l-emerald-400 bg-emerald-50/40'
-                  : 'text-slate-500 border-l-transparent hover:bg-slate-50 hover:text-slate-700'
-              }`}
-            >
-              <div className="flex items-center gap-1 mb-1">
-                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${done ? 'bg-emerald-500' : dot}`} />
-                {done && <span className="text-[9px] font-bold text-emerald-600 leading-none">✓</span>}
-              </div>
-              <span className="block truncate leading-snug">{plan.equipment_name}</span>
-            </button>
-          );
-        })}
+    <div className="space-y-4">
+      {/* Plan bilgisi */}
+      <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm">
+        <p className="font-semibold text-slate-700">{first.title}</p>
+        {!first.is_one_time && (
+          <p className="text-xs text-slate-400 mt-0.5">
+            {FREQ_LABELS[first.frequency_type] || first.frequency_type}
+            {first.frequency_type === 'custom' ? ` (${first.frequency_days} günde bir)` : ''}
+            {' · '}{plans.length} birim
+          </p>
+        )}
       </div>
 
-      {/* Dikey ayırıcı */}
-      <div className="w-px bg-slate-100 flex-shrink-0 self-stretch" />
+      {/* Özet sayaçlar */}
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="bg-emerald-50 rounded-xl py-3">
+          <p className="text-xl font-bold text-emerald-700">{doneCount}</p>
+          <p className="text-[10px] text-emerald-500 mt-0.5">Tamamlandı</p>
+        </div>
+        <div className="bg-amber-50 rounded-xl py-3">
+          <p className="text-xl font-bold text-amber-700">{pendingCount}</p>
+          <p className="text-[10px] text-amber-500 mt-0.5">Bekliyor</p>
+        </div>
+        <div className="bg-red-50 rounded-xl py-3">
+          <p className="text-xl font-bold text-red-700">{overdueCount}</p>
+          <p className="text-[10px] text-red-500 mt-0.5">Gecikmiş</p>
+        </div>
+      </div>
 
-      {/* Sağ: içerik */}
-      <div className="flex-1 min-w-0">
-        {!isTabDone(active) && active.current_task_id ? (
-          <TaskDetailPanel
-            key={active.current_task_id}
-            taskId={active.current_task_id}
-            onCompleted={handleTaskCompleted}
-          />
-        ) : isTabDone(active) && active.current_task_id ? (
-          <div className="flex flex-col items-center justify-center py-14 text-center">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
-              <span className="text-emerald-500 text-lg">✓</span>
+      {/* Birim listesi */}
+      <div className="space-y-2">
+        {plans.map(plan => {
+          const doneThisMonth = plan.this_month_completed_at;
+          const statusCls   = STATUS_CLS[plan.current_task_status];
+          const statusLabel = STATUS_LABEL[plan.current_task_status];
+
+          return (
+            <div
+              key={plan.id}
+              className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                doneThisMonth
+                  ? 'bg-emerald-50/50 border-emerald-100'
+                  : plan.current_task_status === 'overdue'
+                  ? 'bg-red-50/30 border-red-100'
+                  : 'bg-white border-slate-100'
+              }`}
+            >
+              <div className="min-w-0 mr-3">
+                <p className="text-sm font-medium text-slate-700 truncate">{plan.equipment_name}</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {doneThisMonth
+                    ? `${fmt(plan.this_month_completed_at)}`
+                    : plan.last_completed_at
+                    ? `Son bakım: ${fmt(plan.last_completed_at)}`
+                    : 'Henüz tamamlanmadı'}
+                </p>
+              </div>
+
+              {doneThisMonth ? (
+                <span className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 size={11} />
+                  Tamamlandı
+                </span>
+              ) : statusCls ? (
+                <span className={`flex-shrink-0 px-2 py-1 rounded-lg text-[11px] font-semibold ${statusCls}`}>
+                  {statusLabel}
+                </span>
+              ) : (
+                <span className="flex-shrink-0 px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-400">
+                  Görev Yok
+                </span>
+              )}
             </div>
-            <p className="text-sm font-medium text-emerald-600">Bu birim tamamlandı</p>
-            <p className="text-xs text-slate-400 mt-1">Sol listeden başka bir birime geçebilirsiniz.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-14 text-center">
-            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center mb-3">
-              <CalendarCheck size={18} className="text-slate-300" />
-            </div>
-            <p className="text-sm font-medium text-slate-500">Bu birim için aktif görev yok</p>
-            <p className="text-xs text-slate-400 mt-1">Bakım görevi oluşturulduğunda buraya gelecek.</p>
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );

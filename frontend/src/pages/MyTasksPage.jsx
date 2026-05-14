@@ -103,6 +103,7 @@ export default function MyTasksPage() {
 
       {/* Grup görev paneli */}
       <SlidePanel
+        wide
         open={Boolean(selectedGroup)}
         onClose={() => setSelectedGroup(null)}
         title={selectedGroup?.parentName || ''}
