@@ -106,7 +106,48 @@ async function create(req, res) {
     }
   }
   try {
-    // Periyodik plan icin: ekipmanin baska aktif periyodik plani olmamali
+    // Seçilen ekipmanın child birimleri var mı?
+    const { rows: children } = await pool.query(
+      `SELECT id, name FROM equipment WHERE parent_id = $1 ORDER BY name`,
+      [equipment_id]
+    );
+
+    // Child birimleri olan parent ekipman → her birim için ayrı plan oluştur
+    if (children.length > 0 && !is_one_time) {
+      const created = [];
+      const skipped = [];
+
+      for (const child of children) {
+        const { rows: dup } = await pool.query(
+          `SELECT id FROM maintenance_plans
+           WHERE equipment_id = $1 AND is_one_time = false AND is_active = true
+           LIMIT 1`,
+          [child.id]
+        );
+        if (dup[0]) { skipped.push(child.name); continue; }
+
+        const { rows } = await pool.query(
+          `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+          [child.id, title, description, frequency_type || 'monthly', frequency_days || null, advance_notice_days || 3, start_date, false, target_month || null]
+        );
+        await generateTasksForPlan(rows[0], 365);
+        created.push(rows[0]);
+      }
+
+      if (created.length === 0) {
+        return res.status(400).json({
+          error: skipped.length > 0
+            ? `Tüm birimlerin zaten aktif bakım planı var: ${skipped.join(', ')}`
+            : 'Hiçbir birim için plan oluşturulamadı'
+        });
+      }
+
+      await logAction(req.user.id, 'plan_created', 'plan', created[0].id, title);
+      return res.status(201).json({ count: created.length, skipped: skipped.length, plan: created[0] });
+    }
+
+    // Tekil ekipman (child yoksa veya tek seferlik)
     if (!is_one_time) {
       const { rows: dup } = await pool.query(
         `SELECT id FROM maintenance_plans
@@ -139,7 +180,7 @@ async function create(req, res) {
     }
 
     await logAction(req.user.id, 'plan_created', 'plan', plan.id, plan.title);
-    res.status(201).json(plan);
+    res.status(201).json({ count: 1, plan });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Sunucu hatası' });

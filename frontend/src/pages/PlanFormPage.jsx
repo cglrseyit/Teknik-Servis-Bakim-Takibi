@@ -96,8 +96,16 @@ export default function PlanFormPage() {
         await api.put(`/plans/${id}`, payload);
         toast?.success('Plan güncellendi');
       } else {
-        await api.post('/plans', payload);
-        toast?.success(isOneTime ? 'Görev oluşturuldu' : 'Bakım planı oluşturuldu');
+        const res = await api.post('/plans', payload);
+        const count = res.data?.count ?? 1;
+        const skipped = res.data?.skipped ?? 0;
+        if (isOneTime) {
+          toast?.success('Görev oluşturuldu');
+        } else if (count > 1) {
+          toast?.success(`${count} birim için bakım planı oluşturuldu${skipped > 0 ? ` (${skipped} birim atlandı)` : ''}`);
+        } else {
+          toast?.success('Bakım planı oluşturuldu');
+        }
       }
       navigate('/plans');
     } catch (err) {
@@ -108,6 +116,8 @@ export default function PlanFormPage() {
   }
 
   const fieldCls = "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white";
+  const selectedEquipment = equipment.find(e => String(e.id) === String(form.equipment_id));
+  const unitCount = selectedEquipment?.unit_count || 0;
 
   return (
     <Layout>
@@ -173,7 +183,12 @@ export default function PlanFormPage() {
                 );
               })}
             </select>
-            {!isEdit && !isOneTime && (
+            {!isEdit && !isOneTime && unitCount > 0 && (
+              <div className="mt-1.5 px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700">
+                Bu ekipmanın <strong>{unitCount} birimi</strong> var — her birim için otomatik olarak ayrı plan oluşturulacak.
+              </div>
+            )}
+            {!isEdit && !isOneTime && unitCount === 0 && (
               <p className="text-xs text-gray-400 mt-1">Bir ekipman aynı anda yalnızca bir periyodik bakım planına sahip olabilir</p>
             )}
           </div>
