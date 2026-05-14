@@ -3,6 +3,14 @@ const nodemailer = require('nodemailer');
 let transport = null;
 let configWarningLogged = false;
 
+// Resend kullanılıyorsa SMTP yerine HTTP API (port 443) üzerinden gönderilir.
+// Railway gibi outbound SMTP portlarını (25/465/587) engelleyen ortamlarda
+// SMTP "connection timeout" verir; HTTP API bu engelden etkilenmez.
+// Kendi sunucumuza + Exchange'e geçince SMTP_HOST değişir, aşağıdaki SMTP yolu devreye girer.
+function isResendApi() {
+  return /resend/i.test(process.env.SMTP_HOST || '') && !!process.env.SMTP_PASS;
+}
+
 function getTransport() {
   if (transport) return transport;
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
@@ -28,11 +36,35 @@ function getTransport() {
   return transport;
 }
 
+async function sendViaResendApi({ from, to, subject, html }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.SMTP_PASS}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      detail = body.message || body.name || detail;
+    } catch { /* yanıt JSON değilse status kodu yeterli */ }
+    throw new Error(detail);
+  }
+}
+
 async function sendMail({ to, subject, html }) {
-  const t = getTransport();
-  if (!t) return { ok: false, error: 'SMTP yapılandırılmamış' };
   const from = process.env.SMTP_FROM || `Bellis Teknik Servis <${process.env.SMTP_USER}>`;
   try {
+    if (isResendApi()) {
+      await sendViaResendApi({ from, to, subject, html });
+      return { ok: true };
+    }
+    const t = getTransport();
+    if (!t) return { ok: false, error: 'SMTP yapılandırılmamış' };
     await t.sendMail({ from, to, subject, html });
     return { ok: true };
   } catch (err) {
