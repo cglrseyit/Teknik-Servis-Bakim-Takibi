@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS maintenance_tasks (
   completed_at        TIMESTAMP,
   completed_by        INT REFERENCES users(id) ON DELETE SET NULL,
   notes               TEXT,
+  performed_work      TEXT,                          -- yapılan işlem açıklaması
   maintained_by       TEXT,                          -- işi yapan firma/teknisyen (text)
   responsible_person  TEXT,                          -- otel tarafı sorumlu (text)
   is_one_time         BOOLEAN DEFAULT false,
