@@ -53,6 +53,7 @@ export default function EquipmentDetailPage() {
   const [equipment, setEquipment] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [units, setUnits] = useState([]);
+  const [siblings, setSiblings] = useState([]);
   const [addingUnit, setAddingUnit] = useState(false);
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitStatus, setNewUnitStatus] = useState('active');
@@ -62,6 +63,7 @@ export default function EquipmentDetailPage() {
     api.get(`/equipment/${id}`).then(r => {
       setEquipment(r.data);
       setUnits(r.data.units || []);
+      setSiblings(r.data.siblings || []);
     }).catch(() => navigate('/equipment'));
   }
 
@@ -69,6 +71,7 @@ export default function EquipmentDetailPage() {
 
   async function handleUnitStatusChange(unitId, status) {
     setUnits(prev => prev.map(u => u.id === unitId ? { ...u, status } : u));
+    setSiblings(prev => prev.map(u => u.id === unitId ? { ...u, status } : u));
     try {
       await api.patch(`/equipment/${unitId}/status`, { status });
     } catch {
@@ -138,6 +141,9 @@ export default function EquipmentDetailPage() {
   // Grup ise ilk birimi "ana ekipman" olarak ön panelde göster, kalanları Birimler listesinde bırak
   const mainUnit = isGroup ? units[0] : null;
   const restUnits = isGroup ? units.slice(1) : [];
+  // Birim detayında: aynı gruptaki diğer birimler — "Diğer Birimler" kutusu burada da görünsün
+  const otherUnits = isUnit ? siblings.filter(u => u.id !== equipment.id) : [];
+  const unitListRows = isGroup ? restUnits : otherUnits;
   const info = {
     brand:              mainUnit?.brand         || equipment.brand,
     location:           mainUnit?.location      || equipment.location,
@@ -329,14 +335,14 @@ export default function EquipmentDetailPage() {
           <div className="space-y-6">
 
             {/* Birimler */}
-            {isGroup && (
+            {(isGroup || isUnit) && (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-slate-700">
                     Diğer Birimler
-                    <span className="ml-1.5 text-xs font-normal text-slate-400">({restUnits.length})</span>
+                    <span className="ml-1.5 text-xs font-normal text-slate-400">({unitListRows.length})</span>
                   </h3>
-                  {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
+                  {isGroup && ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
                     <button
                       onClick={() => { setAddingUnit(v => !v); setNewUnitName(`${equipment.name} #${units.length + 1}`); }}
                       className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 font-medium"
@@ -347,7 +353,7 @@ export default function EquipmentDetailPage() {
                   )}
                 </div>
 
-                {addingUnit && (
+                {isGroup && addingUnit && (
                   <form onSubmit={handleAddUnit} className="mb-3 flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                     <input
                       autoFocus
@@ -384,11 +390,13 @@ export default function EquipmentDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {restUnits.length === 0 ? (
+                      {unitListRows.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-6 text-slate-400 text-xs">Başka birim yok</td>
+                          <td colSpan={5} className="text-center py-6 text-slate-400 text-xs">
+                            {isGroup ? 'Başka birim yok' : 'Bu grupta başka birim yok'}
+                          </td>
                         </tr>
-                      ) : restUnits.map(u => (
+                      ) : unitListRows.map(u => (
                         <tr key={u.id} className="hover:bg-slate-50/60 transition-colors group">
                           <td className="px-4 py-3 font-medium text-slate-800 text-xs">{u.name}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{u.serial_number || '—'}</td>

@@ -69,12 +69,21 @@ async function getOne(req, res) {
 
     // Bağlı olduğu grup — bu kayıt bir alt birimse dolu gelir
     let parent = null;
+    let siblings = [];
     if (equipment.parent_id) {
       const { rows: pr } = await pool.query(
         `SELECT id, name FROM equipment WHERE id = $1`,
         [equipment.parent_id]
       );
       parent = pr[0] || null;
+
+      // Aynı gruba bağlı tüm birimler — birim detayındaki "Diğer Birimler" kutusu için
+      const { rows: sib } = await pool.query(
+        `SELECT id, name, brand, model, supplier, serial_number, location, status, notes, created_at
+         FROM equipment WHERE parent_id = $1 ORDER BY name`,
+        [equipment.parent_id]
+      );
+      siblings = sib;
     }
 
     // Grup ise üst kayıt + öne çıkan birimin (ilk birim) görevlerini göster
@@ -122,7 +131,7 @@ async function getOne(req, res) {
       [taskScopeIds]
     );
 
-    res.json({ ...equipment, units, parent, upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
+    res.json({ ...equipment, units, parent, siblings, upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Sunucu hatası' });
