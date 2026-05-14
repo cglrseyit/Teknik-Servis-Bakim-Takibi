@@ -541,6 +541,7 @@ export default function DashboardPage() {
         <GroupTaskPanel
           tasks={selectedGroup?.tasks}
           onCompleted={() => { loadTasks(); loadSummary(); }}
+          onBulkCompleted={() => { setSelectedGroup(null); loadTasks(); loadSummary(); }}
         />
       </SlidePanel>
     </Layout>

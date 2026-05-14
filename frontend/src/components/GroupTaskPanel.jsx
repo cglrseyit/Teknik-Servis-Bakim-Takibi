@@ -10,7 +10,7 @@ const STATUS_DOT = {
 
 const STATUS_PRIORITY = { overdue: 0, in_progress: 1, postponed: 2, pending: 3 };
 
-export default function GroupTaskPanel({ tasks, onCompleted }) {
+export default function GroupTaskPanel({ tasks, onCompleted, onBulkCompleted }) {
   const sorted = [...(tasks || [])].sort((a, b) => {
     const ap = STATUS_PRIORITY[a.status] ?? 5;
     const bp = STATUS_PRIORITY[b.status] ?? 5;
@@ -86,7 +86,9 @@ export default function GroupTaskPanel({ tasks, onCompleted }) {
           <TaskDetailPanel
             key={active.id}
             taskId={active.id}
+            groupTasks={sorted}
             onCompleted={handleTaskCompleted}
+            onBulkCompleted={onBulkCompleted}
           />
         ) : (
           <div className="flex flex-col items-center justify-center py-14 text-center">

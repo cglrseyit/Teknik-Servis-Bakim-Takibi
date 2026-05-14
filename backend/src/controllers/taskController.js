@@ -191,6 +191,80 @@ async function updateStatus(req, res) {
   }
 }
 
+// Bir gruptaki birden çok görevi aynı bakım bilgileriyle tek seferde tamamlar
+async function bulkComplete(req, res) {
+  const { task_ids, performed_work, maintained_by, responsible_person, performed_date } = req.body;
+
+  if (!Array.isArray(task_ids) || task_ids.length === 0) {
+    return res.status(400).json({ error: 'Görev listesi boş' });
+  }
+  if (!maintained_by?.trim())      return res.status(400).json({ error: 'Bakımı yapan kişi/firma zorunludur' });
+  if (!responsible_person?.trim()) return res.status(400).json({ error: 'Sorumlu kişi zorunludur' });
+
+  const completed_at = performed_date ? new Date(performed_date + 'T12:00:00') : new Date();
+  const completed_by = req.user.id;
+  const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+  const curYM = istanbulNow.getFullYear() * 12 + istanbulNow.getMonth();
+
+  const completed = [];
+  const skipped = [];
+
+  try {
+    // Eski tarihliden yeniye doğru işle — aynı plana ait görevlerde sıra korunur
+    for (const id of task_ids) {
+      const { rows: existing } = await pool.query(
+        'SELECT id, scheduled_date, plan_id, status, title FROM maintenance_tasks WHERE id = $1',
+        [id]
+      );
+      if (!existing[0]) { skipped.push({ id, reason: 'Görev bulunamadı' }); continue; }
+      const cur = existing[0];
+      if (['completed', 'skipped'].includes(cur.status)) {
+        skipped.push({ id, reason: 'Zaten tamamlanmış' }); continue;
+      }
+      // Gelecek aya ait görev tamamlanamaz
+      if (cur.scheduled_date) {
+        const sd = new Date(cur.scheduled_date);
+        if (sd.getFullYear() * 12 + sd.getMonth() > curYM) {
+          skipped.push({ id, reason: 'Zamanı gelmedi' }); continue;
+        }
+      }
+
+      const { rows } = await pool.query(
+        `UPDATE maintenance_tasks
+         SET status='completed',
+             performed_work=COALESCE($1,performed_work),
+             maintained_by=$2, responsible_person=$3,
+             completed_at=$4, completed_by=$5
+         WHERE id=$6 RETURNING *`,
+        [performed_work || null, maintained_by, responsible_person, completed_at, completed_by, id]
+      );
+
+      await logAction(req.user.id, 'task_completed', 'task', rows[0].id, rows[0].title);
+
+      // Sonraki görevi üret (tek seferlik plansa planı temizle)
+      if (rows[0].plan_id) {
+        const { rows: plans } = await pool.query('SELECT * FROM maintenance_plans WHERE id = $1', [rows[0].plan_id]);
+        if (plans[0]) {
+          if (plans[0].is_one_time) {
+            await pool.query(
+              `DELETE FROM maintenance_tasks WHERE plan_id=$1 AND status IN ('pending','in_progress','postponed','overdue')`,
+              [plans[0].id]
+            );
+            await pool.query('DELETE FROM maintenance_plans WHERE id=$1', [plans[0].id]);
+          } else {
+            await generateTasksForPlan(plans[0], 365);
+          }
+        }
+      }
+      completed.push(id);
+    }
+    res.json({ completed: completed.length, skipped });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+}
+
 async function getMyTasks(req, res) {
   try {
     const { rows } = await pool.query(
@@ -247,4 +321,4 @@ async function getSummary(req, res) {
   }
 }
 
-module.exports = { getAll, getOne, create, updateStatus, getSummary, getMyTasks };
+module.exports = { getAll, getOne, create, updateStatus, bulkComplete, getSummary, getMyTasks };

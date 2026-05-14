@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Paperclip, X, Download, Trash2 } from 'lucide-react';
+import { Paperclip, X, Download, Trash2, Layers } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from './ConfirmModal';
@@ -30,7 +30,7 @@ function InfoRow({ label, value, always }) {
 
 const MAINTAINER_SUGGESTIONS = ['FORM AŞ', 'ISIEVİ'];
 
-export default function TaskDetailPanel({ taskId, onCompleted }) {
+export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBulkCompleted }) {
   const toast = useToast();
   const [task, setTask] = useState(null);
   const [nextDate, setNextDate] = useState(null);
@@ -43,6 +43,7 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPostponeConfirm, setShowPostponeConfirm] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
@@ -145,6 +146,59 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
       });
       toast?.success('Görev başarıyla tamamlandı');
       onCompleted?.();
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Hata oluştu';
+      setError(msg);
+      toast?.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Aynı gruptaki tamamlanmamış görevler (mevcut görev dahil)
+  const bulkTargets = (groupTasks || []).filter(
+    t => !['completed', 'skipped'].includes(t.status)
+  );
+  const canBulkApply = bulkTargets.length > 1;
+
+  function handleBulkClick() {
+    if (!form.performed_work.trim()) { setError('Yapılan işlemleri yazmanız zorunludur'); return; }
+    if (!form.maintained_by.trim()) { setError('Bakımı yapan kişi/firma zorunludur'); return; }
+    if (!form.responsible_person.trim()) { setError('Sorumlu kişi zorunludur'); return; }
+    setError('');
+    setShowBulkConfirm(true);
+  }
+
+  async function doBulkApply() {
+    setShowBulkConfirm(false);
+    setLoading(true);
+    setError('');
+    try {
+      // Seçili dosyalar varsa mevcut göreve yükle
+      if (selectedFiles.length > 0) {
+        const fd = new FormData();
+        selectedFiles.forEach(f => fd.append('files', f));
+        await api.post(`/tasks/${taskId}/attachments`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+      const ids = [...bulkTargets]
+        .sort((a, b) => (a.scheduled_date || '').localeCompare(b.scheduled_date || ''))
+        .map(t => t.id);
+      const { data } = await api.post('/tasks/bulk-complete', {
+        task_ids: ids,
+        performed_work: form.performed_work,
+        maintained_by: form.maintained_by,
+        responsible_person: form.responsible_person,
+        performed_date: form.performed_date,
+      });
+      const skippedCount = data.skipped?.length || 0;
+      toast?.success(
+        skippedCount > 0
+          ? `${data.completed} birim tamamlandı, ${skippedCount} birim atlandı`
+          : `${data.completed} birim başarıyla tamamlandı`
+      );
+      (onBulkCompleted || onCompleted)?.();
     } catch (err) {
       const msg = err.response?.data?.error || 'Hata oluştu';
       setError(msg);
@@ -393,6 +447,18 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
             )}
           </div>
 
+          {canBulkApply && (
+            <button
+              type="button"
+              onClick={handleBulkClick}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-50 text-violet-700 font-semibold rounded-xl hover:bg-violet-100 border border-violet-200 transition-colors disabled:opacity-60 text-sm"
+            >
+              <Layers size={15} />
+              Aynı bilgilerle tüm birimleri tamamla ({bulkTargets.length} birim)
+            </button>
+          )}
+
           <div className="flex gap-2 pt-1">
             <button
               type="submit"
@@ -421,6 +487,16 @@ export default function TaskDetailPanel({ taskId, onCompleted }) {
         variant="warning"
         onConfirm={doPostpone}
         onCancel={() => setShowPostponeConfirm(false)}
+      />
+
+      <ConfirmModal
+        open={showBulkConfirm}
+        title="Tüm birimlere uygula"
+        message={`Girdiğiniz bakım bilgileri bu gruptaki ${bulkTargets.length} tamamlanmamış birime uygulanacak ve hepsi "Tamamlandı" olarak işaretlenecek. Onaylıyor musunuz?`}
+        confirmLabel="Evet, Hepsini Tamamla"
+        variant="warning"
+        onConfirm={doBulkApply}
+        onCancel={() => setShowBulkConfirm(false)}
       />
 
     </div>

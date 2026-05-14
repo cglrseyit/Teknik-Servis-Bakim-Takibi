@@ -112,6 +112,7 @@ export default function MyTasksPage() {
         <GroupTaskPanel
           tasks={selectedGroup?.tasks}
           onCompleted={loadTasks}
+          onBulkCompleted={() => { setSelectedGroup(null); loadTasks(); }}
         />
       </SlidePanel>
     </Layout>
