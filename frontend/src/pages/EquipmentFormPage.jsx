@@ -145,8 +145,6 @@ export default function EquipmentFormPage() {
 
   // Yeni birim ekleme
   const [activePlan, setActivePlan] = useState(null);
-  const [addingNewUnits, setAddingNewUnits] = useState(false);
-  const [newUnitCount, setNewUnitCount] = useState(1);
   const [savingNewUnits, setSavingNewUnits] = useState(false);
 
   function changeQuantity(delta) {
@@ -357,26 +355,23 @@ export default function EquipmentFormPage() {
     }
   }
 
-  async function handleAddNewUnits() {
-    if (newUnitCount < 1) return;
+  async function handleAddNewUnit() {
     setSavingNewUnits(true);
     try {
       const currentCount = editUnits.length;
-      for (let i = 0; i < newUnitCount; i++) {
-        const unitName = `${form.name} #${currentCount + i + 1}`;
-        const { data: newUnit } = await api.post('/equipment', { name: unitName, status: 'active', parent_id: id });
-        if (activePlan) {
-          await api.post('/plans', {
-            equipment_id: newUnit.id,
-            title: activePlan.title,
-            description: activePlan.description || '',
-            frequency_type: activePlan.frequency_type,
-            frequency_days: activePlan.frequency_days || null,
-            advance_notice_days: activePlan.advance_notice_days || 3,
-            start_date: new Date().toISOString().split('T')[0],
-            is_one_time: false,
-          });
-        }
+      const unitName = `${form.name} #${currentCount + 1}`;
+      const { data: newUnit } = await api.post('/equipment', { name: unitName, status: 'active', parent_id: id });
+      if (activePlan) {
+        await api.post('/plans', {
+          equipment_id: newUnit.id,
+          title: activePlan.title,
+          description: activePlan.description || '',
+          frequency_type: activePlan.frequency_type,
+          frequency_days: activePlan.frequency_days || null,
+          advance_notice_days: activePlan.advance_notice_days || 3,
+          start_date: new Date().toISOString().split('T')[0],
+          is_one_time: false,
+        });
       }
       const r = await api.get(`/equipment/${id}`);
       const updated = r.data;
@@ -389,9 +384,7 @@ export default function EquipmentFormPage() {
       setUnitForms(newForms);
       setOriginalUnitForms(newForms);
       setSelectedUnitIdx(currentCount);
-      setAddingNewUnits(false);
-      setNewUnitCount(1);
-      toast?.success(`${newUnitCount} yeni birim eklendi`);
+      toast?.success('Yeni birim eklendi');
     } catch {
       toast?.error('Birim eklenemedi');
     } finally {
@@ -609,44 +602,15 @@ export default function EquipmentFormPage() {
 
                 {/* Yeni birim ekle */}
                 <div className="border-t border-slate-100 p-3">
-                  {!addingNewUnits ? (
-                    <button
-                      type="button"
-                      onClick={() => setAddingNewUnits(true)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                    >
-                      <Plus size={13} />
-                      Birim Ekle
-                    </button>
-                  ) : (
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-600">Kaç birim eklensin?</span>
-                        <div className="flex items-center gap-1.5">
-                          <button type="button" onClick={() => setNewUnitCount(n => Math.max(1, n - 1))}
-                            className="w-6 h-6 rounded border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 flex items-center justify-center">−</button>
-                          <span className="w-5 text-center text-sm font-semibold text-slate-800">{newUnitCount}</span>
-                          <button type="button" onClick={() => setNewUnitCount(n => Math.min(20, n + 1))}
-                            className="w-6 h-6 rounded border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs hover:bg-slate-100 flex items-center justify-center">+</button>
-                        </div>
-                      </div>
-                      {activePlan && (
-                        <p className="text-[10px] text-green-600 bg-green-50 px-2 py-1 rounded">
-                          Bakım planı otomatik uygulanacak
-                        </p>
-                      )}
-                      <div className="flex gap-1.5">
-                        <button type="button" onClick={() => { setAddingNewUnits(false); setNewUnitCount(1); }}
-                          className="flex-1 py-1.5 text-xs font-medium text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                          İptal
-                        </button>
-                        <button type="button" onClick={handleAddNewUnits} disabled={savingNewUnits}
-                          className="flex-1 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors disabled:opacity-60">
-                          {savingNewUnits ? '…' : 'Ekle'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleAddNewUnit}
+                    disabled={savingNewUnits}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Plus size={13} />
+                    {savingNewUnits ? 'Ekleniyor…' : 'Birim Ekle'}
+                  </button>
                 </div>
               </div>
 
