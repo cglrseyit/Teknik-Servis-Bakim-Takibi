@@ -132,6 +132,8 @@ export default function EquipmentFormPage() {
   const [selectedUnitIdx, setSelectedUnitIdx] = useState(0);
   const [unitForms, setUnitForms] = useState([]);
   const [savingUnitId, setSavingUnitId] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   function changeQuantity(delta) {
     setQuantity(q => {
@@ -269,14 +271,18 @@ export default function EquipmentFormPage() {
 
   // Grup düzenleme – tek birim kaydet
   async function handleSaveUnit(idx) {
+    if (isDirty && !isConfirmed) {
+      setError('Değişikliklerinizi onaylamadan kaydedemezsiniz.');
+      return;
+    }
     const unit     = editUnits[idx];
     const unitForm = unitForms[idx];
     setSavingUnitId(unit.id);
     setError('');
     try {
       await api.put(`/equipment/${unit.id}`, unitForm);
-      setEditUnits(prev => prev.map((u, i) => i === idx ? { ...u, ...unitForm } : u));
       toast?.success(`${unitForm.name} güncellendi`);
+      navigate('/equipment');
     } catch (err) {
       const msg = err.response?.data?.error || 'Hata oluştu';
       setError(msg);
@@ -288,6 +294,8 @@ export default function EquipmentFormPage() {
 
   function setUnitField(idx, key, val) {
     setUnitForms(prev => prev.map((f, i) => i === idx ? { ...f, [key]: val } : f));
+    setIsDirty(true);
+    setIsConfirmed(false);
   }
 
   // Bakım başlangıç ayı seçici (Adım 2)
@@ -397,7 +405,16 @@ export default function EquipmentFormPage() {
                     <button
                       key={u.id}
                       type="button"
-                      onClick={() => setSelectedUnitIdx(i)}
+                      onClick={() => {
+                        if (isDirty && !isConfirmed) {
+                          setError('Değişikliklerinizi onaylamadan başka bir birime geçemezsiniz.');
+                          return;
+                        }
+                        setSelectedUnitIdx(i);
+                        setIsDirty(false);
+                        setIsConfirmed(false);
+                        setError('');
+                      }}
                       className={`w-full px-4 py-3.5 text-left transition-colors ${
                         selectedUnitIdx === i ? 'bg-amber-50' : 'hover:bg-slate-50'
                       }`}
@@ -505,12 +522,22 @@ export default function EquipmentFormPage() {
                         className="resize-none"
                       />
                     </div>
+
+                    {isDirty && !isConfirmed && (
+                      <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <span className="text-sm text-amber-700">Değişiklikler onaylanmadı</span>
+                        <button
+                          type="button"
+                          onClick={() => { setIsConfirmed(true); setError(''); }}
+                          className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                        >
+                          Onayla
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-4 flex gap-3 justify-between">
-                    <Button type="button" variant="outline" size="lg" onClick={() => navigate(`/equipment/${id}`)}>
-                      ← Ekipman Detayına Dön
-                    </Button>
+                  <div className="mt-4 flex justify-end">
                     <Button
                       type="submit"
                       size="lg"
