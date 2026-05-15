@@ -83,7 +83,7 @@ async function equipmentHistory(req, res) {
     wb.creator = 'Bellis Deluxe Hotel · Teknik Servis';
     wb.created = new Date();
     const ws = wb.addWorksheet('Bakım Geçmişi', {
-      views: [{ state: 'frozen', ySplit: 7, showGridLines: false }],
+      views: [{ state: 'frozen', ySplit: 3, showGridLines: false }],
       properties: { defaultRowHeight: 18 },
     });
 
@@ -92,27 +92,23 @@ async function equipmentHistory(req, res) {
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-    // Logo ekle — sol üst
+    // Satır 1: logo + başlık, Satır 2: alt başlık, Satır 3: tablo başlığı
+    ws.getRow(1).height = 34;
+    ws.getRow(2).height = 18;
+
+    // Logo — daha büyük
     try {
-      const imgId = wb.addImage({
-        filename: LOGO_PATH,
-        extension: 'png',
-      });
+      const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
       ws.addImage(imgId, {
-        tl: { col: 0.1, row: 0.2 },
-        ext: { width: 140, height: 50 },
+        tl: { col: 0.1, row: 0.1 },
+        ext: { width: 175, height: 65 },
         editAs: 'oneCell',
       });
     } catch (e) {
       console.warn('Logo eklenemedi:', e.message);
     }
 
-    // Satır 1-2: logo + başlık
-    ws.getRow(1).height = 22;
-    ws.getRow(2).height = 16;
-    ws.getRow(3).height = 6;  // küçük boşluk
-
-    // Başlık metni — logo'nun sağında, ortalı
+    // Başlık metni
     ws.mergeCells(1, 3, 1, totalCols);
     const titleCell = ws.getCell('C1');
     titleCell.value = displayName;
@@ -125,35 +121,7 @@ async function equipmentHistory(req, res) {
     subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.primary } };
     subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Satır 4: boş (turuncu çizgi kaldırıldı)
-    ws.getRow(4).height = 2;
-
-    // Satır 5: meta bilgiler
-    ws.getRow(5).height = 18;
-    const metaItems = [];
-    if (eq.brand)    metaItems.push(['Marka', eq.brand]);
-    if (eq.category) metaItems.push(['Kategori', eq.category]);
-
-    let col = 1;
-    metaItems.forEach(([label, value], i) => {
-      const labelCell = ws.getCell(5, col);
-      labelCell.value = label.toUpperCase();
-      labelCell.font = { name: 'Calibri', size: 8, bold: true, color: { argb: COLORS.textLight } };
-      labelCell.alignment = { horizontal: 'left', vertical: 'bottom' };
-
-      const valueCell = ws.getCell(6, col);
-      valueCell.value = value;
-      valueCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.textDark } };
-      valueCell.alignment = { horizontal: 'left', vertical: 'top' };
-
-      // 5. ve 6. satırı birleştir
-      ws.mergeCells(5, col, 5, col + 1);
-      ws.mergeCells(6, col, 6, col + 1);
-      col += 2;
-    });
-    ws.getRow(6).height = 20;
-
-    // Satır 7: tablo başlıkları
+    // Satır 3: tablo başlıkları
     const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
     const headerRow = ws.getRow(7);
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
