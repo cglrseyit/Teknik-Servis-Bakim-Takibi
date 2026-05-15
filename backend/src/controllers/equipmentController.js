@@ -103,26 +103,58 @@ async function getOne(req, res) {
       [taskScopeIds]
     );
 
-    const { rows: completedTasks } = await pool.query(
-      `SELECT t.*,
-              COALESCE(
-                (SELECT json_agg(json_build_object(
-                          'id', a.id,
-                          'filename', a.filename,
-                          'mime_type', a.mime_type,
-                          'size_bytes', a.size_bytes,
-                          'uploaded_at', a.uploaded_at
-                        ) ORDER BY a.uploaded_at DESC)
-                 FROM task_attachments a WHERE a.task_id = t.id),
-                '[]'::json
-              ) AS attachments
-       FROM maintenance_tasks t
-       WHERE t.equipment_id = ANY($1)
-         AND t.status IN ('completed','skipped')
-       ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC
-       LIMIT 50`,
-      [taskScopeIds]
-    );
+    const allUnitIds = units.map(u => u.id);
+    let completedTasks;
+    if (units.length > 0) {
+      // Grup: sadece TÜM birimler tamamladıysa o periyot görünür
+      const { rows } = await pool.query(
+        `SELECT DISTINCT ON (t.scheduled_date) t.*,
+                COALESCE(
+                  (SELECT json_agg(json_build_object(
+                            'id', a.id, 'filename', a.filename,
+                            'mime_type', a.mime_type, 'size_bytes', a.size_bytes,
+                            'uploaded_at', a.uploaded_at
+                          ) ORDER BY a.uploaded_at DESC)
+                   FROM task_attachments a WHERE a.task_id = t.id),
+                  '[]'::json
+                ) AS attachments
+         FROM maintenance_tasks t
+         WHERE t.equipment_id = ANY($1)
+           AND t.status IN ('completed','skipped')
+           AND t.scheduled_date IN (
+             SELECT scheduled_date
+             FROM maintenance_tasks
+             WHERE equipment_id = ANY($1)
+               AND status IN ('completed','skipped')
+             GROUP BY scheduled_date
+             HAVING COUNT(DISTINCT equipment_id) = $2
+           )
+         ORDER BY t.scheduled_date DESC, COALESCE(t.completed_at, t.scheduled_date) DESC NULLS LAST
+         LIMIT 50`,
+        [allUnitIds, allUnitIds.length]
+      );
+      completedTasks = rows;
+    } else {
+      const { rows } = await pool.query(
+        `SELECT t.*,
+                COALESCE(
+                  (SELECT json_agg(json_build_object(
+                            'id', a.id, 'filename', a.filename,
+                            'mime_type', a.mime_type, 'size_bytes', a.size_bytes,
+                            'uploaded_at', a.uploaded_at
+                          ) ORDER BY a.uploaded_at DESC)
+                   FROM task_attachments a WHERE a.task_id = t.id),
+                  '[]'::json
+                ) AS attachments
+         FROM maintenance_tasks t
+         WHERE t.equipment_id = ANY($1)
+           AND t.status IN ('completed','skipped')
+         ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC
+         LIMIT 50`,
+        [taskScopeIds]
+      );
+      completedTasks = rows;
+    }
 
     const { rows: nextRows } = await pool.query(
       `SELECT t.*, mp.title AS plan_title
