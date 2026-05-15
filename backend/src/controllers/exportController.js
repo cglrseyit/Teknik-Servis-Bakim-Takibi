@@ -115,7 +115,7 @@ async function equipmentHistory(req, res) {
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    ws.getRow(2).height = 4; // alt başlık kaldırıldı, küçük boşluk
+    ws.getRow(2).height = 25;
 
     // Satır 3: tablo başlıkları
     const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
