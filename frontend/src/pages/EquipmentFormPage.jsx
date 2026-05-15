@@ -480,7 +480,7 @@ export default function EquipmentFormPage() {
     )}
 
     <Layout>
-      <div className="p-6 overflow-auto min-h-full">
+      <div className="min-h-full">
         <div className={isEdit && isGroupEdit ? 'max-w-5xl' : 'max-w-4xl'}>
 
           {/* Başlık */}
