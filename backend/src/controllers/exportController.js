@@ -94,7 +94,7 @@ async function equipmentHistory(req, res) {
 
     // Satır 1: logo + başlık, Satır 2: alt başlık, Satır 3: tablo başlığı
     ws.getRow(1).height = 34;
-    ws.getRow(2).height = 18;
+    ws.getRow(2).height = 25;
 
     // Logo — daha büyük
     try {
