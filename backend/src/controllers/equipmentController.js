@@ -36,7 +36,8 @@ async function getAll(req, res) {
           ORDER BY p.created_at DESC LIMIT 1) AS maintenance_frequency,
          EXISTS (
            SELECT 1 FROM maintenance_plans p
-           WHERE p.equipment_id = e.id AND p.is_active = true AND p.is_one_time = false
+           WHERE (p.equipment_id = e.id OR p.equipment_id IN (SELECT id FROM equipment WHERE parent_id = e.id))
+             AND p.is_active = true AND p.is_one_time = false
          ) AS has_periodic_plan,
          (SELECT COUNT(*) FROM equipment u WHERE u.parent_id = e.id)::int AS unit_count,
          (SELECT COUNT(*) FROM equipment u WHERE u.parent_id = e.id AND u.status = 'broken')::int AS broken_unit_count
