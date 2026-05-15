@@ -92,7 +92,7 @@ export default function PlansListPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80">
-              {['Başlık', 'Ekipman', 'Periyot', 'Son Bakım', 'Durum', ''].map(h => (
+              {['Ekipman', 'Plan Başlığı', 'Periyot', 'Son Bakım', 'Durum', ''].map(h => (
                 <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">{h}</th>
               ))}
             </tr>
@@ -157,18 +157,16 @@ function PlanRow({ p, onClick, onEdit }) {
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
-            <ClipboardList size={14} className="text-amber-500" strokeWidth={1.8} />
+            <Wrench size={14} className="text-amber-500" strokeWidth={1.8} />
           </div>
-          <span className="font-semibold text-slate-800">{p.title}</span>
+          <span className="font-semibold text-slate-800">{p.equipment_name || '—'}</span>
         </div>
       </td>
       <td className="px-5 py-3.5">
-        {p.equipment_name ? (
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <Wrench size={12} className="text-slate-400" />
-            {p.equipment_name}
-          </span>
-        ) : '—'}
+        <span className="flex items-center gap-1.5 text-slate-500">
+          <ClipboardList size={12} className="text-slate-400" />
+          {p.title}
+        </span>
       </td>
       <td className="px-5 py-3.5">
         <FreqBadge plan={p} />
@@ -208,7 +206,7 @@ function GroupRow({ row, onClick, onEdit = () => {} }) {
             <Layers size={14} className="text-violet-500" strokeWidth={1.8} />
           </div>
           <div>
-            <span className="font-semibold text-slate-800">{first.title}</span>
+            <span className="font-semibold text-slate-800">{row.parentName}</span>
             <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-50 text-violet-600">
               {row.plans.length} birim
             </span>
@@ -217,8 +215,8 @@ function GroupRow({ row, onClick, onEdit = () => {} }) {
       </td>
       <td className="px-5 py-3.5">
         <span className="flex items-center gap-1.5 text-slate-500">
-          <Wrench size={12} className="text-slate-400" />
-          {row.parentName}
+          <ClipboardList size={12} className="text-slate-400" />
+          {first.title}
         </span>
       </td>
       <td className="px-5 py-3.5">
