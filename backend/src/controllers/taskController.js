@@ -4,7 +4,8 @@ const { logAction } = require('../services/auditLogger');
 
 async function getAll(req, res) {
   const { status, date_from, date_to, equipment_id, search } = req.query;
-  const conditions = [];
+  // Pasif ekipmanların görevleri listelenmez
+  const conditions = ['e.status != \'passive\''];
   const params = [];
 
   if (status)             { params.push(status);       conditions.push(`t.status = $${params.length}`); }
@@ -56,7 +57,8 @@ async function getOne(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT t.*, e.name AS equipment_name, e.location,
-              e.brand, e.model, e.serial_number, e.category, e.supplier
+              e.brand, e.model, e.serial_number, e.category, e.supplier,
+              e.status AS equipment_status
        FROM maintenance_tasks t
        LEFT JOIN equipment e ON e.id = t.equipment_id
        WHERE t.id = $1`,

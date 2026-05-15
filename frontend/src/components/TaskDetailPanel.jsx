@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Paperclip, X, Download, Trash2, Layers } from 'lucide-react';
+import { Paperclip, X, Download, Trash2, Layers, AlertTriangle } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from './ConfirmModal';
@@ -302,6 +302,12 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {task.equipment_status === 'broken' && (
+            <div className="flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+              <AlertTriangle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 font-medium">Bu ekipman <span className="font-bold">Arızalı</span> olarak işaretlenmiş. Bakımı tamamladıktan sonra durumu güncellemeyi unutmayın.</p>
+            </div>
+          )}
           <p className="text-sm font-semibold text-gray-600">Bakım Raporu</p>
 
           {error && (
