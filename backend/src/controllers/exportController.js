@@ -107,10 +107,10 @@ async function equipmentHistory(req, res) {
       console.warn('Logo eklenemedi:', e.message);
     }
 
-    // Satır 1-3: Üst başlık alanı (logo yüksekliği ~60px, satır başına ~20px)
-    ws.getRow(1).height = 20;
-    ws.getRow(2).height = 20;
-    ws.getRow(3).height = 20;
+    // Satır 1-2: logo + başlık
+    ws.getRow(1).height = 22;
+    ws.getRow(2).height = 16;
+    ws.getRow(3).height = 6;  // küçük boşluk
 
     // Başlık metni — logo'nun sağında, ortalı
     ws.mergeCells(1, 3, 1, totalCols);
@@ -125,20 +125,14 @@ async function equipmentHistory(req, res) {
     subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.primary } };
     subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Satır 4: ince ayraç (amber çizgi)
-    ws.getRow(4).height = 4;
-    for (let c = 1; c <= totalCols; c++) {
-      ws.getCell(4, c).fill = {
-        type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.primary },
-      };
-    }
+    // Satır 4: boş (turuncu çizgi kaldırıldı)
+    ws.getRow(4).height = 2;
 
     // Satır 5: meta bilgiler
-    ws.getRow(5).height = 22;
+    ws.getRow(5).height = 18;
     const metaItems = [];
     if (eq.brand)    metaItems.push(['Marka', eq.brand]);
     if (eq.category) metaItems.push(['Kategori', eq.category]);
-    metaItems.push(['Çıktı Tarihi', fmtDate(new Date())]);
 
     let col = 1;
     metaItems.forEach(([label, value], i) => {
@@ -243,14 +237,24 @@ async function equipmentHistory(req, res) {
       ws.mergeCells(emptyRow.number, 1, emptyRow.number, totalCols);
     }
 
-    // Sayfa altı: footer notu
+    // Sayfa altı: footer
     const footerRow = ws.addRow([]);
-    footerRow.height = 30;
-    const footerCell = ws.getCell(footerRow.number + 1, 1);
-    ws.mergeCells(footerRow.number + 1, 1, footerRow.number + 1, totalCols);
+    footerRow.height = 20;
+    const footerNum = footerRow.number + 1;
+
+    // Sol: kayıt sayısı
+    ws.mergeCells(footerNum, 1, footerNum, totalCols - 2);
+    const footerCell = ws.getCell(footerNum, 1);
     footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${displayTasks.length} kayıt`;
     footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Sağ: çıktı tarihi
+    ws.mergeCells(footerNum, totalCols - 1, footerNum, totalCols);
+    const dateCell = ws.getCell(footerNum, totalCols - 1);
+    dateCell.value = `Çıktı Tarihi: ${fmtDate(new Date())}`;
+    dateCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
+    dateCell.alignment = { horizontal: 'right', vertical: 'middle' };
 
     // Print ayarları — A4 dikey
     ws.pageSetup = {
