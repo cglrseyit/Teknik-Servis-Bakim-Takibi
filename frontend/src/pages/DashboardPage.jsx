@@ -213,7 +213,10 @@ export default function DashboardPage() {
     if (!user) return;
 
     if (search) {
-      api.get(`/tasks?search=${encodeURIComponent(search)}`).then(r => setTasks(r.data)).catch(() => {});
+      const firstDay = `${selectedMonth}-01`;
+      const lastDay = lastDayOfMonth(selectedMonth);
+      api.get(`/tasks?search=${encodeURIComponent(search)}&date_from=${firstDay}&date_to=${lastDay}`)
+        .then(r => setTasks(r.data)).catch(() => {});
       return;
     }
 
