@@ -28,6 +28,7 @@ export default function PlanFormPage() {
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
   const [isOneTime, setIsOneTime] = useState(false);
   const [form, setForm] = useState({
     equipment_id: searchParams.get('equipment_id') || '',
@@ -77,41 +78,61 @@ export default function PlanFormPage() {
     }
   }
 
+  function buildPayload(extra = {}) {
+    const payload = { ...form, is_one_time: isOneTime, ...extra };
+    if (form.start_date && form.start_date.length === 7) {
+      payload.start_date = form.start_date + '-01';
+    }
+    const usesTargetMonth = !isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type);
+    payload.target_month = (usesTargetMonth && form.target_month) ? Number(form.target_month) : null;
+    if (usesTargetMonth && form.target_month) {
+      const tm = Number(form.target_month);
+      const now = new Date();
+      const year = tm >= now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
+      payload.start_date = `${year}-${String(tm).padStart(2, '0')}-01`;
+    }
+    return payload;
+  }
+
+  async function submitPlan(payload) {
+    if (isEdit) {
+      await api.put(`/plans/${id}`, payload);
+      toast?.success('Plan güncellendi');
+    } else {
+      const res = await api.post('/plans', payload);
+      const count = res.data?.count ?? 1;
+      if (isOneTime) {
+        toast?.success('Görev oluşturuldu');
+      } else if (count > 1) {
+        toast?.success(`${count} birim için bakım planı oluşturuldu`);
+      } else {
+        toast?.success('Bakım planı oluşturuldu');
+      }
+    }
+    navigate('/plans');
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     try {
-      // Convert "YYYY-MM" month picker value to first day of that month for the API
-      const payload = { ...form, is_one_time: isOneTime };
-      if (form.start_date && form.start_date.length === 7) {
-        payload.start_date = form.start_date + '-01';
+      await submitPlan(buildPayload());
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setShowReplaceConfirm(true);
+        return;
       }
-      const usesTargetMonth = !isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type);
-      payload.target_month = (usesTargetMonth && form.target_month)
-        ? Number(form.target_month) : null;
-      // Ay-bazli periyotlarda (3/6 aylik, yillik) start_date'i target_month'tan otomatik turet
-      if (usesTargetMonth && form.target_month) {
-        const tm = Number(form.target_month);
-        const now = new Date();
-        const year = tm >= now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
-        payload.start_date = `${year}-${String(tm).padStart(2, '0')}-01`;
-      }
-      if (isEdit) {
-        await api.put(`/plans/${id}`, payload);
-        toast?.success('Plan güncellendi');
-      } else {
-        const res = await api.post('/plans', payload);
-        const count = res.data?.count ?? 1;
-        const skipped = res.data?.skipped ?? 0;
-        if (isOneTime) {
-          toast?.success('Görev oluşturuldu');
-        } else if (count > 1) {
-          toast?.success(`${count} birim için bakım planı oluşturuldu${skipped > 0 ? ` (${skipped} birim atlandı)` : ''}`);
-        } else {
-          toast?.success('Bakım planı oluşturuldu');
-        }
-      }
-      navigate('/plans');
+      const msg = err.response?.data?.error || 'Hata oluştu';
+      setError(msg);
+      toast?.error(msg);
+    }
+  }
+
+  async function handleForceSubmit() {
+    setShowReplaceConfirm(false);
+    setError('');
+    try {
+      await submitPlan(buildPayload({ force: true }));
     } catch (err) {
       const msg = err.response?.data?.error || 'Hata oluştu';
       setError(msg);
@@ -189,11 +210,10 @@ export default function PlanFormPage() {
             <select required value={form.equipment_id} onChange={set('equipment_id')} className={fieldCls}>
               <option value="">Seçin</option>
               {equipment.map(e => {
-                // Yeni periyodik plan olusturulurken, periyodik plani olan ekipmanlar secilemez
-                const blocked = !isEdit && !isOneTime && e.has_periodic_plan;
+                const hasplan = !isEdit && !isOneTime && e.has_periodic_plan;
                 return (
-                  <option key={e.id} value={e.id} disabled={blocked}>
-                    {e.name}{blocked ? ' (zaten bakım planı var)' : ''}
+                  <option key={e.id} value={e.id}>
+                    {e.name}{hasplan ? ' (mevcut plan var)' : ''}
                   </option>
                 );
               })}
@@ -319,6 +339,15 @@ export default function PlanFormPage() {
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+      <ConfirmModal
+        open={showReplaceConfirm}
+        title="Mevcut bakım planı değiştirilecek"
+        message={"Seçili ekipmanın mevcut bakım planı silinecek ve yeni plan oluşturulacak. Onaylıyor musunuz?\n\nBakım geçmişiniz silinmez."}
+        confirmLabel="Evet, Değiştir"
+        variant="warning"
+        onConfirm={handleForceSubmit}
+        onCancel={() => setShowReplaceConfirm(false)}
       />
     </Layout>
   );

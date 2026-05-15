@@ -90,7 +90,7 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month } = req.body;
+  const { equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month, force } = req.body;
   if (!equipment_id || !title) {
     return res.status(400).json({ error: 'Ekipman ve başlık zorunlu' });
   }
@@ -116,18 +116,39 @@ async function create(req, res) {
 
     // Child birimleri olan parent ekipman → her birim için ayrı plan oluştur
     if (children.length > 0 && !is_one_time) {
-      const created = [];
-      const skipped = [];
-
+      // Mevcut plan kontrolü
+      const existing = [];
       for (const child of children) {
         const { rows: dup } = await pool.query(
-          `SELECT id FROM maintenance_plans
-           WHERE equipment_id = $1 AND is_one_time = false AND is_active = true
-           LIMIT 1`,
+          `SELECT id FROM maintenance_plans WHERE equipment_id = $1 AND is_one_time = false AND is_active = true LIMIT 1`,
           [child.id]
         );
-        if (dup[0]) { skipped.push(child.name); continue; }
+        if (dup[0]) existing.push(child.name);
+      }
 
+      if (existing.length > 0 && !force) {
+        return res.status(409).json({ error: 'existing_plans', names: existing });
+      }
+
+      // force=true ise mevcut planları ve bekleyen görevleri sil
+      if (force) {
+        for (const child of children) {
+          const { rows: oldPlans } = await pool.query(
+            `SELECT id FROM maintenance_plans WHERE equipment_id = $1 AND is_one_time = false AND is_active = true`,
+            [child.id]
+          );
+          for (const op of oldPlans) {
+            await pool.query(
+              `DELETE FROM maintenance_tasks WHERE plan_id=$1 AND status IN ('pending','in_progress','postponed','overdue')`,
+              [op.id]
+            );
+            await pool.query(`DELETE FROM maintenance_plans WHERE id=$1`, [op.id]);
+          }
+        }
+      }
+
+      const created = [];
+      for (const child of children) {
         const { rows } = await pool.query(
           `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
@@ -137,16 +158,8 @@ async function create(req, res) {
         created.push(rows[0]);
       }
 
-      if (created.length === 0) {
-        return res.status(400).json({
-          error: skipped.length > 0
-            ? `Tüm birimlerin zaten aktif bakım planı var: ${skipped.join(', ')}`
-            : 'Hiçbir birim için plan oluşturulamadı'
-        });
-      }
-
       await logAction(req.user.id, 'plan_created', 'plan', created[0].id, title);
-      return res.status(201).json({ count: created.length, skipped: skipped.length, plan: created[0] });
+      return res.status(201).json({ count: created.length, skipped: 0, plan: created[0] });
     }
 
     // Tekil ekipman (child yoksa veya tek seferlik)
@@ -157,10 +170,15 @@ async function create(req, res) {
          LIMIT 1`,
         [equipment_id]
       );
-      if (dup[0]) {
-        return res.status(400).json({
-          error: 'Bu ekipmanın zaten aktif bir bakım planı var. Yeni plan oluşturmak için mevcut planı silin veya pasifleştirin.'
-        });
+      if (dup[0] && !force) {
+        return res.status(409).json({ error: 'existing_plans', names: [] });
+      }
+      if (dup[0] && force) {
+        await pool.query(
+          `DELETE FROM maintenance_tasks WHERE plan_id=$1 AND status IN ('pending','in_progress','postponed','overdue')`,
+          [dup[0].id]
+        );
+        await pool.query(`DELETE FROM maintenance_plans WHERE id=$1`, [dup[0].id]);
       }
     }
 

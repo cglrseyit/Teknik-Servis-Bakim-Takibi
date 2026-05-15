@@ -17,7 +17,7 @@ export default function ConfirmModal({ open, title, message, confirmLabel = 'Eve
             <AlertTriangle className={`w-6 h-6 ${v.icon}`} />
           </div>
           <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
-          {message && <p className="text-sm text-slate-500 mb-6">{message}</p>}
+          {message && <p className="text-sm text-slate-500 mb-6 whitespace-pre-line">{message}</p>}
         </div>
         <div className="flex gap-3">
           <button
