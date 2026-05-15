@@ -67,30 +67,12 @@ export default function EquipmentListPage() {
   return (
     <Layout>
       {/* Başlık */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Ekipmanlar</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{items.length} kayıt listeleniyor</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={exportList}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-xl transition-colors"
-          >
-            <FileSpreadsheet size={15} />
-            Excel'e Aktar
-          </button>
-          <Link
-            to="/equipment/new"
-            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            Ekipman Ekle
-          </Link>
-        </div>
+      <div className="mb-5">
+        <h1 className="text-xl font-bold text-slate-900">Ekipmanlar</h1>
+        <p className="text-sm text-slate-500 mt-0.5">{items.length} kayıt listeleniyor</p>
       </div>
 
-      {/* Filtreler */}
+      {/* Filtreler + Butonlar aynı satırda */}
       <div className="flex items-center gap-3 mb-5">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -114,6 +96,24 @@ export default function EquipmentListPage() {
               <option key={v} value={v}>{label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Butonlar — arama satırının sağına hizalı */}
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={exportList}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-xl transition-colors"
+          >
+            <FileSpreadsheet size={15} />
+            Excel'e Aktar
+          </button>
+          <Link
+            to="/equipment/new"
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            Ekipman Ekle
+          </Link>
         </div>
       </div>
 
