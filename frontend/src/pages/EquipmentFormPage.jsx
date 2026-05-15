@@ -134,6 +134,7 @@ export default function EquipmentFormPage() {
   const [savingUnitId, setSavingUnitId] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
 
   function changeQuantity(delta) {
     setQuantity(q => {
@@ -363,6 +364,24 @@ export default function EquipmentFormPage() {
   }
 
   return (
+    <>
+    {showSwitchWarning && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-auto bg-white border border-amber-200 shadow-xl rounded-2xl px-6 py-5 flex flex-col items-center gap-3 min-w-[320px]">
+          <AlertTriangle className="w-6 h-6 text-amber-500" />
+          <p className="text-sm font-semibold text-slate-700 text-center">
+            Değişikliklerinizi onaylamadan<br />başka bir birime geçemezsiniz.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowSwitchWarning(false)}
+            className="mt-1 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            Tamam
+          </button>
+        </div>
+      </div>
+    )}
     <Layout>
       <div className="p-6 overflow-auto min-h-full">
         <div className={isEdit && isGroupEdit ? 'max-w-5xl' : 'max-w-4xl'}>
@@ -407,7 +426,7 @@ export default function EquipmentFormPage() {
                       type="button"
                       onClick={() => {
                         if (isDirty && !isConfirmed) {
-                          setError('Değişikliklerinizi onaylamadan başka bir birime geçemezsiniz.');
+                          setShowSwitchWarning(true);
                           return;
                         }
                         setSelectedUnitIdx(i);
@@ -752,5 +771,6 @@ export default function EquipmentFormPage() {
         </div>
       </div>
     </Layout>
+    </>
   );
 }
