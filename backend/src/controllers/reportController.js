@@ -58,7 +58,8 @@ async function getStatusDistribution(req, res) {
 
 async function getAuditLogs(req, res) {
   try {
-    const { type } = req.query;
+    const isAdmin = req.user?.role === 'admin';
+    const type = isAdmin ? req.query.type : 'completed';
     const params = [];
     let where = '';
     if (type === 'completed') {
@@ -91,6 +92,7 @@ async function getAuditLogs(req, res) {
 
 async function getAuditLogDetail(req, res) {
   const { id } = req.params;
+  const isAdmin = req.user?.role === 'admin';
   try {
     const { rows } = await pool.query(
       `SELECT a.*, u.name AS user_name FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id WHERE a.id = $1`,
@@ -98,6 +100,7 @@ async function getAuditLogDetail(req, res) {
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
     const log = rows[0];
+    if (!isAdmin && log.action !== 'task_completed') return res.status(403).json({ error: 'Yetkisiz' });
 
     let equipment = null;
     let last_task = null;

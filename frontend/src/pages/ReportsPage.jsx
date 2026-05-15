@@ -162,10 +162,13 @@ export default function ReportsPage() {
     }
   }
 
+  const isAdmin = user?.role === 'admin';
+
   useEffect(() => {
-    if (user?.role !== 'admin') return;
-    api.get(`/reports/audit-logs?type=${auditTab}`).then(r => setAuditLogs(r.data)).catch(() => {});
-  }, [user, auditTab]);
+    if (!user || !['admin', 'teknik_muduru', 'order_taker'].includes(user.role)) return;
+    const tab = isAdmin ? auditTab : 'completed';
+    api.get(`/reports/audit-logs?type=${tab}`).then(r => setAuditLogs(r.data)).catch(() => {});
+  }, [user, auditTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function monthTrend(curr, prev) {
     if (prev === 0) return curr > 0 ? { dir: 'up', label: 'Yeni', bg: 'bg-emerald-50', text: 'text-emerald-600' } : null;
@@ -332,8 +335,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Audit Log — sadece admin */}
-      {user?.role === 'admin' && (
+      {/* Son İşlemler — tamamlananlar tüm roller, denetimler sadece admin */}
+      {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100">
             <div className="flex items-center justify-between mb-3">
@@ -342,46 +345,52 @@ export default function ReportsPage() {
                 <p className="text-xs text-slate-400 mt-0.5">Denetim kaydı — son 50 işlem</p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={handleTestEmail}
-                  disabled={testingEmail}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
-                  title="Resend bağlantısı doğrulama maili"
-                >
-                  <Mail size={12} strokeWidth={2} />
-                  {testingEmail ? '...' : 'Test E-posta'}
-                </button>
-                <button
-                  onClick={handleTestDigestEmail}
-                  disabled={testingEmail}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50"
-                  title="Örnek bakım hatırlatma maili — kayıtlı e-postana gider"
-                >
-                  <Mail size={12} strokeWidth={2} />
-                  {testingEmail ? '...' : 'Örnek Bakım Maili'}
-                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={handleTestEmail}
+                      disabled={testingEmail}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                      title="Resend bağlantısı doğrulama maili"
+                    >
+                      <Mail size={12} strokeWidth={2} />
+                      {testingEmail ? '...' : 'Test E-posta'}
+                    </button>
+                    <button
+                      onClick={handleTestDigestEmail}
+                      disabled={testingEmail}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                      title="Örnek bakım hatırlatma maili — kayıtlı e-postana gider"
+                    >
+                      <Mail size={12} strokeWidth={2} />
+                      {testingEmail ? '...' : 'Örnek Bakım Maili'}
+                    </button>
+                  </>
+                )}
                 <span className="text-[11px] text-slate-400 font-medium">{auditLogs.length} kayıt</span>
               </div>
             </div>
-            {/* Sekmeler */}
-            <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
-              {[
-                { value: 'completed', label: 'Tamamlananlar' },
-                { value: 'audit',     label: 'Denetimler' },
-              ].map(t => (
-                <button
-                  key={t.value}
-                  onClick={() => setAuditTab(t.value)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    auditTab === t.value
-                      ? 'bg-white text-slate-800 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+            {/* Sekmeler — Denetimler sadece admin */}
+            {isAdmin && (
+              <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+                {[
+                  { value: 'completed', label: 'Tamamlananlar' },
+                  { value: 'audit',     label: 'Denetimler' },
+                ].map(t => (
+                  <button
+                    key={t.value}
+                    onClick={() => setAuditTab(t.value)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      auditTab === t.value
+                        ? 'bg-white text-slate-800 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {auditLogs.length === 0 ? (
             <div className="py-14 text-center">
