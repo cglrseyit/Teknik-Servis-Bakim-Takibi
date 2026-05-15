@@ -143,7 +143,7 @@ export default function PlansListPage() {
       >
         <MultiPlanPanel
           plans={selectedGroup?.plans}
-          onCompleted={loadPlans}
+          onRefresh={loadPlans}
         />
       </SlidePanel>
     </Layout>

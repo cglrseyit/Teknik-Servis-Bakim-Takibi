@@ -226,6 +226,45 @@ async function update(req, res) {
       }
     }
 
+    // Kardeş birimlerin planlarını da güncelle (aynı parent ekipmana bağlıysa)
+    const { rows: eqInfo } = await pool.query(
+      'SELECT parent_id FROM equipment WHERE id=$1',
+      [plan.equipment_id]
+    );
+    if (eqInfo[0]?.parent_id) {
+      const { rows: siblings } = await pool.query(
+        `SELECT mp.* FROM maintenance_plans mp
+         JOIN equipment e ON e.id = mp.equipment_id
+         WHERE e.parent_id=$1 AND mp.id!=$2 AND mp.is_one_time=false`,
+        [eqInfo[0].parent_id, id]
+      );
+      for (const sib of siblings) {
+        const { rows: updSib } = await pool.query(
+          `UPDATE maintenance_plans
+           SET title=$1, description=$2, frequency_type=$3, frequency_days=$4,
+               advance_notice_days=$5, is_active=$6,
+               start_date=COALESCE($7::date, start_date), target_month=$8
+           WHERE id=$9 RETURNING *`,
+          [title, description, frequency_type, frequency_days || null,
+           advance_notice_days || 3, is_active !== false,
+           start_date || null, target_month || null, sib.id]
+        );
+        if (freqChanged || startChanged) {
+          await pool.query(
+            `DELETE FROM maintenance_tasks WHERE plan_id=$1 AND status IN ('pending','in_progress') AND scheduled_date>=$2`,
+            [sib.id, today]
+          );
+          await generateTasksForPlan(updSib[0]);
+        } else {
+          await pool.query(
+            `UPDATE maintenance_tasks SET title=$1, description=$2
+             WHERE plan_id=$3 AND status IN ('pending','in_progress') AND scheduled_date>=$4`,
+            [title, description || null, sib.id, today]
+          );
+        }
+      }
+    }
+
     await logAction(req.user.id, 'plan_updated', 'plan', plan.id, plan.title);
     res.json(plan);
   } catch (err) {
