@@ -170,8 +170,29 @@ async function equipmentHistory(req, res) {
     });
     headerRow.height = 26;
 
+    // Grup ise aynı scheduled_date'teki görevleri tek satıra indir
+    let displayTasks = tasks;
+    if (isGroup) {
+      const byPeriod = new Map();
+      for (const t of tasks) {
+        const key = t.scheduled_date
+          ? new Date(t.scheduled_date).toISOString().split('T')[0]
+          : `no-date-${t.id}`;
+        if (!byPeriod.has(key)) {
+          byPeriod.set(key, { ...t });
+        } else {
+          const existing = byPeriod.get(key);
+          if (t.attachment_names) {
+            existing.attachment_names = [existing.attachment_names, t.attachment_names]
+              .filter(Boolean).join(', ');
+          }
+        }
+      }
+      displayTasks = Array.from(byPeriod.values());
+    }
+
     // Veri satırları
-    tasks.forEach((t, idx) => {
+    displayTasks.forEach((t, idx) => {
       const row = ws.addRow([
         idx + 1,
         t.title || '',
@@ -216,7 +237,7 @@ async function equipmentHistory(req, res) {
     footerRow.height = 30;
     const footerCell = ws.getCell(footerRow.number + 1, 1);
     ws.mergeCells(footerRow.number + 1, 1, footerRow.number + 1, totalCols);
-    footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${tasks.length} kayıt`;
+    footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${displayTasks.length} kayıt`;
     footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
