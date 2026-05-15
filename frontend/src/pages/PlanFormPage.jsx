@@ -11,7 +11,6 @@ const FREQ_OPTIONS = [
   { value: 'quarterly', label: '3 Aylık' },
   { value: 'semiannual', label: '6 Aylık' },
   { value: 'yearly', label: 'Yıllık' },
-  { value: 'custom', label: 'Özel (gün sayısı gir)' },
 ];
 
 const MONTH_BASED_FREQS = ['monthly', 'quarterly', 'semiannual', 'yearly'];
@@ -279,12 +278,6 @@ export default function PlanFormPage() {
                   {FREQ_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
-              {form.frequency_type === 'custom' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gün Sayısı *</label>
-                  <input type="number" min="1" required value={form.frequency_days} onChange={set('frequency_days')} className={fieldCls} />
-                </div>
-              )}
             </div>
           )}
 
@@ -309,15 +302,6 @@ export default function PlanFormPage() {
             </div>
           )}
 
-          {!isOneTime && form.frequency_type === 'custom' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {isEdit ? 'Referans Tarihi *' : 'İlk Bakım Tarihi *'}
-              </label>
-              <input required type="date" value={form.start_date} onChange={set('start_date')} className={fieldCls} />
-              <p className="text-xs text-gray-400 mt-1">İlk bakım bu tarihte yapılır, sonrakiler {form.frequency_days || 'N'} gün arayla devam eder</p>
-            </div>
-          )}
 
           {isOneTime && (
             <div>
