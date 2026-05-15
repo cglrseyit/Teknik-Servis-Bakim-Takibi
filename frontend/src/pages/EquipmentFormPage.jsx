@@ -507,9 +507,9 @@ export default function EquipmentFormPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex gap-3 justify-end">
+                  <div className="mt-4 flex gap-3 justify-between">
                     <Button type="button" variant="outline" size="lg" onClick={() => navigate(`/equipment/${id}`)}>
-                      Vazgeç
+                      ← Ekipman Detayına Dön
                     </Button>
                     <Button
                       type="submit"
