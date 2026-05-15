@@ -75,8 +75,19 @@ async function equipmentHistory(req, res) {
        LEFT JOIN users u ON u.id = t.completed_by
        WHERE t.equipment_id = ANY($1)
          AND t.status IN ('completed', 'skipped')
+         AND (
+           NOT $2
+           OR t.scheduled_date IN (
+             SELECT scheduled_date
+             FROM maintenance_tasks
+             WHERE equipment_id = ANY($1)
+               AND status IN ('completed','skipped')
+             GROUP BY scheduled_date
+             HAVING COUNT(DISTINCT equipment_id) = $3
+           )
+         )
        ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC`,
-      [targetIds]
+      [targetIds, isGroup, isGroup ? targetIds.length : 0]
     );
 
     const wb = new ExcelJS.Workbook();
