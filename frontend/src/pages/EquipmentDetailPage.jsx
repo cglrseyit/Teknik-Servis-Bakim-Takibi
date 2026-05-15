@@ -126,8 +126,10 @@ export default function EquipmentDetailPage() {
   }
 
   async function exportHistory() {
+    // Birim sayfasındaysa grubu (parent) export et — her zaman toplu aktarım
+    const exportId = equipment?.parent_id || id;
     try {
-      const r = await api.get(`/exports/equipment/${id}/history.xlsx`, { responseType: 'blob' });
+      const r = await api.get(`/exports/equipment/${exportId}/history.xlsx`, { responseType: 'blob' });
       const cd = r.headers['content-disposition'] || '';
       const match = cd.match(/filename\*=UTF-8''([^;]+)/i);
       const filename = match ? decodeURIComponent(match[1]) : `${equipment?.name || 'ekipman'}-bakim-gecmisi.xlsx`;
