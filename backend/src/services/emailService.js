@@ -90,13 +90,22 @@ function escapeHtml(s) {
 
 function buildDigestHtml({ userName, overdue, upcoming }) {
   // Tek satırlık kompakt görev satırı — çok sayıda görevde mail kısa kalsın
-  const taskRow = (t) => `
+  const taskRow = (t) => {
+    // "(2 birim)" veya "(1/3 bekliyor)" gibi parantez içi bold
+    const equipRaw = escapeHtml(t.equipment_name || '');
+    const equipHtml = equipRaw.replace(
+      /(\(\d[^)]*\))/g,
+      '<strong style="color:#475569;font-weight:700;">$1</strong>'
+    );
+    const locationPart = t.location ? ' &middot; ' + escapeHtml(t.location) : '';
+    return `
       <tr>
         <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;font-size:13px;line-height:1.4;">
-          <strong style="color:#1e293b;font-weight:600;">${escapeHtml(t.title)}</strong><span style="color:#94a3b8;"> &middot; ${escapeHtml(t.equipment_name || '')}${t.location ? ' &middot; ' + escapeHtml(t.location) : ''}</span>
+          <strong style="color:#1e293b;font-weight:600;">${escapeHtml(t.title)}</strong><span style="color:#94a3b8;"> &middot; ${equipHtml}${locationPart}</span>
         </td>
         <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;color:#64748b;font-size:12px;white-space:nowrap;text-align:right;">${fmtMonth(t.scheduled_date)}</td>
       </tr>`;
+  };
 
   const section = (label, color, border, items) => items.length === 0 ? '' : `
           <p style="margin:0 0 6px;color:${color};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">${label} (${items.length})</p>
