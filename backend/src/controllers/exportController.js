@@ -114,6 +114,8 @@ async function equipmentHistory(req, res) {
     titleCell.value = `${eq.name.toUpperCase()} Bakım Geçmişi Raporu`;
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    // Sağ kenar satır 1'den kapansın
+    ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
     ws.getRow(2).height = 25;
 
@@ -201,24 +203,20 @@ async function equipmentHistory(req, res) {
       ws.mergeCells(emptyRow.number, 1, emptyRow.number, totalCols);
     }
 
-    // Sayfa altı: footer
-    const footerRow = ws.addRow([]);
-    footerRow.height = 20;
-    const footerNum = footerRow.number + 1;
-
-    // Sol: kayıt sayısı
-    ws.mergeCells(footerNum, 1, footerNum, totalCols - 2);
-    const footerCell = ws.getCell(footerNum, 1);
-    footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${displayTasks.length} kayıt`;
-    footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
-    footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-
-    // Sağ: çıktı tarihi
-    ws.mergeCells(footerNum, totalCols - 1, footerNum, totalCols);
-    const dateCell = ws.getCell(footerNum, totalCols - 1);
-    dateCell.value = `Çıktı Tarihi: ${fmtDate(new Date())}`;
-    dateCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
-    dateCell.alignment = { horizontal: 'right', vertical: 'middle' };
+    // Footer — tablo içinde, kenarlıklı
+    const fRow = ws.addRow(Array(totalCols).fill(''));
+    fRow.height = 22;
+    ws.mergeCells(fRow.number, 1, fRow.number, totalCols);
+    ws.getCell(fRow.number, 1).value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${displayTasks.length} kayıt`;
+    ws.getCell(fRow.number, 1).font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
+    ws.getCell(fRow.number, 1).alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let c = 1; c <= totalCols; c++) {
+      ws.getCell(fRow.number, c).border = {
+        bottom: borderAccent,
+        left:  c === 1          ? borderThin  : undefined,
+        right: c === totalCols  ? borderRight : undefined,
+      };
+    }
 
     // Print ayarları — A4 dikey
     ws.pageSetup = {
@@ -295,6 +293,8 @@ async function equipmentList(req, res) {
     titleCell.value = 'EKİPMAN LİSTESİ';
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    // Sağ kenar satır 1'den kapansın
+    ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
@@ -346,19 +346,20 @@ async function equipmentList(req, res) {
       emptyRow.getCell(1).font = { italic: true, color: { argb: COLORS.textLight }, size: 11 };
     }
 
-    const footerRow = ws.addRow([]);
-    footerRow.height = 20;
-    const footerNum = footerRow.number + 1;
-    ws.mergeCells(footerNum, 1, footerNum, totalCols - 2);
-    const footerCell = ws.getCell(footerNum, 1);
-    footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${equipment.length} ekipman`;
-    footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
-    footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    ws.mergeCells(footerNum, totalCols - 1, footerNum, totalCols);
-    const dateCell = ws.getCell(footerNum, totalCols - 1);
-    dateCell.value = `Çıktı Tarihi: ${fmtDate(new Date())}`;
-    dateCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
-    dateCell.alignment = { horizontal: 'right', vertical: 'middle' };
+    // Footer — tablo içinde, kenarlıklı
+    const fRow = ws.addRow(Array(totalCols).fill(''));
+    fRow.height = 22;
+    ws.mergeCells(fRow.number, 1, fRow.number, totalCols);
+    ws.getCell(fRow.number, 1).value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${equipment.length} ekipman`;
+    ws.getCell(fRow.number, 1).font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
+    ws.getCell(fRow.number, 1).alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let c = 1; c <= totalCols; c++) {
+      ws.getCell(fRow.number, c).border = {
+        bottom: borderAccent,
+        left:  c === 1          ? borderThin  : undefined,
+        right: c === totalCols  ? borderRight : undefined,
+      };
+    }
 
     ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0,
       margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } };
