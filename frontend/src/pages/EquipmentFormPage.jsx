@@ -276,7 +276,7 @@ export default function EquipmentFormPage() {
   // Grup düzenleme – tek birim kaydet
   async function handleSaveUnit(idx) {
     if (isDirty && !isConfirmed) {
-      setError('Değişikliklerinizi onaylamadan kaydedemezsiniz.');
+      setShowSwitchWarning('Değişikliklerinizi onaylamadan\nkaydedemezsiniz.');
       return;
     }
     const unit     = editUnits[idx];
@@ -372,8 +372,8 @@ export default function EquipmentFormPage() {
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
         <div className="pointer-events-auto bg-white border border-amber-200 shadow-xl rounded-2xl px-6 py-5 flex flex-col items-center gap-3 min-w-[320px]">
           <AlertTriangle className="w-6 h-6 text-amber-500" />
-          <p className="text-sm font-semibold text-slate-700 text-center">
-            Değişikliklerinizi onaylamadan<br />başka bir birime geçemezsiniz.
+          <p className="text-sm font-semibold text-slate-700 text-center whitespace-pre-line">
+            {showSwitchWarning}
           </p>
           <button
             type="button"
@@ -429,7 +429,7 @@ export default function EquipmentFormPage() {
                       type="button"
                       onClick={() => {
                         if (isDirty && !isConfirmed) {
-                          setShowSwitchWarning(true);
+                          setShowSwitchWarning('Değişikliklerinizi onaylamadan\nbaşka bir birime geçemezsiniz.');
                           return;
                         }
                         setSelectedUnitIdx(i);
