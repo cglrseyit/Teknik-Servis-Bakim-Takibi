@@ -118,7 +118,6 @@ export default function EquipmentListPage() {
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80">
               <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Ekipman</th>
-              <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Kategori</th>
               <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Tedarikçi</th>
               <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Bakım Periyodu</th>
               <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Durum</th>
@@ -129,7 +128,7 @@ export default function EquipmentListPage() {
             {loading ? (
               [...Array(5)].map((_, i) => (
                 <tr key={i}>
-                  {[...Array(6)].map((_, j) => (
+                  {[...Array(5)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
                       <div className={`h-4 bg-slate-100 rounded-md animate-pulse ${j === 0 ? 'w-[70%]' : j === 5 ? 'w-10' : 'w-[60%]'}`} />
                     </td>
@@ -138,7 +137,7 @@ export default function EquipmentListPage() {
               ))
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-14 text-center">
+                <td colSpan={5} className="py-14 text-center">
                   <div className="flex flex-col items-center text-slate-400">
                     <Wrench size={32} className="mb-3 opacity-30" />
                     <p className="text-sm font-medium">Ekipman bulunamadı</p>
@@ -163,7 +162,6 @@ export default function EquipmentListPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-slate-500">{eq.category || '—'}</td>
                   <td className="px-5 py-3.5 text-slate-500">{eq.supplier || '—'}</td>
                   <td className="px-5 py-3.5">
                     {(() => {

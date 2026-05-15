@@ -30,6 +30,7 @@ async function getAll(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT e.*,
+         COALESCE(e.supplier, (SELECT u.supplier FROM equipment u WHERE u.parent_id = e.id AND u.supplier IS NOT NULL ORDER BY u.name LIMIT 1)) AS supplier,
          (SELECT p.frequency_type
           FROM maintenance_plans p
           WHERE p.equipment_id = e.id AND p.is_active = true
