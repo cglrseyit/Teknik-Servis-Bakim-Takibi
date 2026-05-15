@@ -133,7 +133,15 @@ async function getOne(req, res) {
       [taskScopeIds]
     );
 
-    res.json({ ...equipment, units, parent, siblings, upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null });
+    const { rows: planRows } = await pool.query(
+      `SELECT id, title FROM maintenance_plans
+       WHERE (equipment_id = $1 OR equipment_id IN (SELECT id FROM equipment WHERE parent_id = $1))
+         AND is_active = true AND is_one_time = false
+       ORDER BY created_at DESC LIMIT 1`,
+      [id]
+    );
+
+    res.json({ ...equipment, units, parent, siblings, upcoming_tasks: upcomingTasks, completed_tasks: completedTasks, next_task: nextRows[0] || null, active_plan: planRows[0] || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Sunucu hatası' });

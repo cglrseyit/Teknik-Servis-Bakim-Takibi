@@ -319,9 +319,9 @@ export default function EquipmentDetailPage() {
                   )}
                 </h3>
                 {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
-                  <Link to={`/plans/new?equipment_id=${id}`} className="text-xs text-amber-600 hover:text-amber-700 font-medium">
-                    + Bakım Planı Ekle
-                  </Link>
+                  equipment.active_plan
+                    ? <Link to={`/plans/${equipment.active_plan.id}/edit`} className="text-xs text-amber-600 hover:text-amber-700 font-medium">Bakım Planını Düzenle</Link>
+                    : <Link to={`/plans/new?equipment_id=${id}`} className="text-xs text-amber-600 hover:text-amber-700 font-medium">+ Bakım Planı Ekle</Link>
                 )}
               </div>
               <div className="bg-white rounded-xl border border-amber-100/60 shadow-sm overflow-hidden">
