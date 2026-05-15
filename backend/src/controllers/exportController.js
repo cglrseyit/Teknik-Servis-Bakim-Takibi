@@ -87,8 +87,8 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Sıra | Ekipman | Görev Başlığı | Tedarikçi | Planlanan | Yapılma | Bakımı Yapan | Sorumlu | Yapılan İşlem | Notlar | Ek Dosyalar
-    const widths = [5, 20, 22, 15, 14, 11, 15, 15, 24, 18, 18];
+    // Sıra | Ekipman | Görev Başlığı | Tedarikçi | Bakımı Yapan | Sorumlu | Yapılan İşlem | Planlanan | Yapılma | Notlar | Ek Dosyalar
+    const widths = [5, 20, 22, 15, 15, 15, 24, 14, 11, 18, 18];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -109,7 +109,7 @@ async function equipmentHistory(req, res) {
     ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
     // Satır 2: tablo başlıkları (spacer kaldırıldı)
-    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
+    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Planlanan', 'Yapılma', 'Notlar', 'Ek Dosyalar'];
     const headerRow = ws.getRow(2);
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
@@ -156,11 +156,11 @@ async function equipmentHistory(req, res) {
         displayName,                  // Ekipman
         t.title || '',                // Görev Başlığı
         eq.supplier || '',            // Tedarikçi
+        t.maintained_by || '',        // Bakımı Yapan
+        t.responsible_person || '',   // Sorumlu Kişi
+        t.performed_work || '',       // Yapılan İşlem
         fmtMonth(t.scheduled_date),   // Planlanan → "Mayıs 2026"
         fmtDate(t.completed_at),      // Yapılma
-        t.maintained_by || '',
-        t.responsible_person || '',
-        t.performed_work || '',
         t.notes || '',
         t.attachment_names || '',
       ]);
