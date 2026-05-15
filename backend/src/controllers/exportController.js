@@ -31,6 +31,11 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function fmtMonth(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+}
+
 function safeFilename(s) {
   return String(s || 'ekipman').replace(/[^\p{L}\p{N}\s\-_]/gu, '').replace(/\s+/g, '_').slice(0, 80);
 }
