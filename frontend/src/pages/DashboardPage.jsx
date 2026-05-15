@@ -344,17 +344,19 @@ export default function DashboardPage() {
     const completedCount  = row.tasks.filter(t => t.status === 'completed' || t.status === 'skipped').length;
     const pendingCount    = row.tasks.filter(t => t.status === 'pending').length;
 
+    const activeCount = inProgressCount + pendingCount;
+
     let badgeVariant, badgeLabel;
     if (overdueCount > 0) {
       badgeVariant = 'primary'; badgeLabel = `${overdueCount} Gecikmiş`;
-    } else if (inProgressCount > 0) {
-      badgeVariant = 'warning'; badgeLabel = `${inProgressCount} Devam Ediyor`;
     } else if (completedCount === total) {
       badgeVariant = 'danger'; badgeLabel = `${completedCount} Gerçekleşti`;
     } else if (completedCount > 0) {
       badgeVariant = 'warning'; badgeLabel = `${completedCount}/${total} Tamamlandı`;
+    } else if (activeCount > 0) {
+      badgeVariant = 'warning'; badgeLabel = 'Devam Ediyor';
     } else {
-      badgeVariant = 'secondary'; badgeLabel = `${pendingCount} Bekliyor`;
+      badgeVariant = 'secondary'; badgeLabel = 'Bekliyor';
     }
 
     return (
@@ -382,7 +384,10 @@ export default function DashboardPage() {
           <Badge variant={badgeVariant} appearance="light">{badgeLabel}</Badge>
         </td>
         <td className="px-6 py-4">
-          <ChevronRight size={14} className="text-gray-300" />
+          {completedCount < total
+            ? <span className="text-xs text-green-600 font-semibold">Tamamla →</span>
+            : <ChevronRight size={14} className="text-gray-300" />
+          }
         </td>
       </tr>
     );
