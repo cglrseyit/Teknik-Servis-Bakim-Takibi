@@ -29,6 +29,7 @@ export default function PlanFormPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [isOneTime, setIsOneTime] = useState(false);
   const [form, setForm] = useState({
     equipment_id: searchParams.get('equipment_id') || '',
@@ -115,6 +116,11 @@ export default function PlanFormPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    // Edit modunda (periyodik plan) önce onay iste
+    if (isEdit && !isOneTime) {
+      setShowEditConfirm(true);
+      return;
+    }
     try {
       await submitPlan(buildPayload());
     } catch (err) {
@@ -122,6 +128,18 @@ export default function PlanFormPage() {
         setShowReplaceConfirm(true);
         return;
       }
+      const msg = err.response?.data?.error || 'Hata oluştu';
+      setError(msg);
+      toast?.error(msg);
+    }
+  }
+
+  async function handleConfirmedSave() {
+    setShowEditConfirm(false);
+    setError('');
+    try {
+      await submitPlan(buildPayload());
+    } catch (err) {
       const msg = err.response?.data?.error || 'Hata oluştu';
       setError(msg);
       toast?.error(msg);
@@ -185,11 +203,6 @@ export default function PlanFormPage() {
           </div>
         )}
 
-        {isEdit && !isOneTime && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs rounded-lg">
-            Periyot veya başlangıç tarihi değiştirilirse mevcut bekleyen görevler silinip yeni periyoda göre yeniden oluşturulur.
-          </div>
-        )}
 
         {isEdit && groupInfo && (
           <div className="mb-4 p-3 bg-violet-50 border border-violet-200 text-violet-700 text-xs rounded-lg">
@@ -348,6 +361,15 @@ export default function PlanFormPage() {
         variant="warning"
         onConfirm={handleForceSubmit}
         onCancel={() => setShowReplaceConfirm(false)}
+      />
+      <ConfirmModal
+        open={showEditConfirm}
+        title="Bakım planı güncellenecek"
+        message={"Değişiklikler kaydedilecek. Periyot veya tarih değiştirildiyse bekleyen görevler yeniden oluşturulacak.\n\nBakım geçmişiniz silinmez."}
+        confirmLabel="Evet, Kaydet"
+        variant="warning"
+        onConfirm={handleConfirmedSave}
+        onCancel={() => setShowEditConfirm(false)}
       />
     </Layout>
   );
