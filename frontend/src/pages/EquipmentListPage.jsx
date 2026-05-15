@@ -167,7 +167,7 @@ export default function EquipmentListPage() {
                   <td className="px-5 py-3.5 text-slate-500">{eq.supplier || '—'}</td>
                   <td className="px-5 py-3.5">
                     {(() => {
-                      const freq = eq.maintenance_period || eq.maintenance_frequency;
+                      const freq = eq.has_periodic_plan ? (eq.maintenance_frequency || eq.maintenance_period) : null;
                       if (!freq) return '—';
                       return (
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold ${FREQUENCY_COLORS[freq] || 'bg-slate-100 text-slate-600'}`}>
