@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2 } from 'lucide-react';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 const STATUS_COLORS = {
@@ -52,6 +52,7 @@ export default function EquipmentDetailPage() {
   const navigate = useNavigate();
   const [equipment, setEquipment] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteUnitConfirm, setDeleteUnitConfirm] = useState(null);
   const [units, setUnits] = useState([]);
   const [siblings, setSiblings] = useState([]);
   const [addingUnit, setAddingUnit] = useState(false);
@@ -99,6 +100,15 @@ export default function EquipmentDetailPage() {
   async function handleDelete() {
     await api.delete(`/equipment/${id}`);
     navigate('/equipment');
+  }
+
+  async function handleDeleteUnit() {
+    if (!deleteUnitConfirm) return;
+    try {
+      await api.delete(`/equipment/${deleteUnitConfirm.id}`);
+      setDeleteUnitConfirm(null);
+      reload();
+    } catch { /* ignore */ }
   }
 
   async function downloadAttachment(att) {
@@ -164,6 +174,14 @@ export default function EquipmentDetailPage() {
         confirmLabel="Evet, Sil"
         onConfirm={handleDelete}
         onCancel={() => setShowConfirm(false)}
+      />
+      <ConfirmModal
+        open={Boolean(deleteUnitConfirm)}
+        title="Birimi Sil"
+        message={`"${deleteUnitConfirm?.name}" birimini kalıcı olarak silmek istediğinize emin misiniz?`}
+        confirmLabel="Evet, Sil"
+        onConfirm={handleDeleteUnit}
+        onCancel={() => setDeleteUnitConfirm(null)}
       />
 
       <div className="p-6">
@@ -237,6 +255,15 @@ export default function EquipmentDetailPage() {
                     >
                       {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                     </select>
+                    {user?.role === 'admin' && (
+                      <button
+                        onClick={() => setDeleteUnitConfirm({ id: mainUnit.id, name: mainUnit.name })}
+                        className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                        title="Bu birimi sil"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -387,12 +414,13 @@ export default function EquipmentDetailPage() {
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Seri No</th>
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lokasyon</th>
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Durum</th>
+                        {user?.role === 'admin' && <th className="px-2 py-3" />}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {unitListRows.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="text-center py-6 text-slate-400 text-xs">
+                          <td colSpan={user?.role === 'admin' ? 5 : 4} className="text-center py-6 text-slate-400 text-xs">
                             {isGroup ? 'Başka birim yok' : 'Bu grupta başka birim yok'}
                           </td>
                         </tr>
@@ -414,6 +442,17 @@ export default function EquipmentDetailPage() {
                               {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                             </select>
                           </td>
+                          {user?.role === 'admin' && (
+                            <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
+                              <button
+                                onClick={() => setDeleteUnitConfirm({ id: u.id, name: u.name })}
+                                className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                                title="Bu birimi sil"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

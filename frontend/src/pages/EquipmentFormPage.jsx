@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, WrenchIcon, Clock, AlertTriangle, CalendarDays, ArrowLeft, Layers } from 'lucide-react';
+import { CheckCircle2, WrenchIcon, Clock, AlertTriangle, CalendarDays, ArrowLeft, Layers, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -107,6 +108,7 @@ export default function EquipmentFormPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
+  const { user } = useAuth();
   const isEdit = Boolean(id);
 
   // Ortak
@@ -136,6 +138,7 @@ export default function EquipmentFormPage() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showSwitchWarning, setShowSwitchWarning] = useState(false);
   const [originalUnitForms, setOriginalUnitForms] = useState([]);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   function changeQuantity(delta) {
     setQuantity(q => {
@@ -296,6 +299,41 @@ export default function EquipmentFormPage() {
     }
   }
 
+  async function handleDeleteSelected() {
+    const unit = editUnits[selectedUnitIdx];
+    try {
+      await api.delete(`/equipment/${unit.id}`);
+      const newUnits = editUnits.filter((_, i) => i !== selectedUnitIdx);
+      if (newUnits.length === 0) {
+        navigate('/equipment');
+        return;
+      }
+      const newForms = unitForms.filter((_, i) => i !== selectedUnitIdx);
+      const newOriginals = originalUnitForms.filter((_, i) => i !== selectedUnitIdx);
+      setEditUnits(newUnits);
+      setUnitForms(newForms);
+      setOriginalUnitForms(newOriginals);
+      setSelectedUnitIdx(Math.min(selectedUnitIdx, newUnits.length - 1));
+      setIsDirty(false);
+      setIsConfirmed(false);
+      setDeleteConfirm(null);
+      toast?.success(`${unit.name} silindi`);
+    } catch {
+      toast?.error('Silinemedi');
+    }
+  }
+
+  async function handleDeleteAll() {
+    try {
+      await api.delete(`/equipment/${id}`);
+      setDeleteConfirm(null);
+      toast?.success('Ekipman silindi');
+      navigate('/equipment');
+    } catch {
+      toast?.error('Silinemedi');
+    }
+  }
+
   function setUnitField(idx, key, val) {
     setUnitForms(prev => prev.map((f, i) => i === idx ? { ...f, [key]: val } : f));
     setIsDirty(true);
@@ -368,36 +406,65 @@ export default function EquipmentFormPage() {
 
   return (
     <>
+    <style>{`
+      @keyframes modalPop {
+        from { opacity: 0; transform: scale(0.9) translateY(-12px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+      }
+    `}</style>
+
     {showSwitchWarning && (
-      <>
-        <style>{`
-          @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.9) translateY(-12px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-          }
-        `}</style>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div
-            className="bg-white border-2 border-amber-300 shadow-2xl rounded-2xl px-8 py-7 flex flex-col items-center gap-4 min-w-[340px]"
-            style={{ animation: 'modalPop 0.2s ease-out' }}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div
+          className="bg-white border-2 border-amber-300 shadow-2xl rounded-2xl px-8 py-7 flex flex-col items-center gap-4 min-w-[340px]"
+          style={{ animation: 'modalPop 0.2s ease-out' }}
+        >
+          <div className="p-3 bg-amber-100 rounded-full">
+            <AlertTriangle className="w-7 h-7 text-amber-500" />
+          </div>
+          <p className="text-sm font-semibold text-slate-700 text-center whitespace-pre-line leading-relaxed">
+            {showSwitchWarning}
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowSwitchWarning(false)}
+            className="mt-1 px-6 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all"
           >
-            <div className="p-3 bg-amber-100 rounded-full">
-              <AlertTriangle className="w-7 h-7 text-amber-500" />
-            </div>
-            <p className="text-sm font-semibold text-slate-700 text-center whitespace-pre-line leading-relaxed">
-              {showSwitchWarning}
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowSwitchWarning(false)}
-              className="mt-1 px-6 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all"
-            >
-              Tamam
+            Tamam
+          </button>
+        </div>
+      </div>
+    )}
+
+    {deleteConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div
+          className="bg-white border-2 border-red-200 shadow-2xl rounded-2xl px-8 py-7 flex flex-col items-center gap-4 min-w-[340px]"
+          style={{ animation: 'modalPop 0.2s ease-out' }}
+        >
+          <div className="p-3 bg-red-100 rounded-full">
+            <Trash2 className="w-7 h-7 text-red-500" />
+          </div>
+          <p className="text-sm font-semibold text-slate-700 text-center leading-relaxed">
+            {deleteConfirm === 'unit'
+              ? `"${unitForms[selectedUnitIdx]?.name}" birimini kalıcı olarak silmek istediğinize emin misiniz?`
+              : 'Tüm birimleri ve ekipmanı kalıcı olarak silmek istediğinize emin misiniz?'}
+          </p>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setDeleteConfirm(null)}
+              className="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors">
+              İptal
+            </button>
+            <button type="button"
+              onClick={deleteConfirm === 'unit' ? handleDeleteSelected : handleDeleteAll}
+              className="px-5 py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all">
+              Evet, Sil
             </button>
           </div>
         </div>
-      </>
+      </div>
     )}
+
     <Layout>
       <div className="p-6 overflow-auto min-h-full">
         <div className={isEdit && isGroupEdit ? 'max-w-5xl' : 'max-w-4xl'}>
@@ -586,7 +653,23 @@ export default function EquipmentFormPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex items-center justify-between">
+                    {user?.role === 'admin' ? (
+                      <div className="flex gap-2">
+                        <button type="button"
+                          onClick={() => setDeleteConfirm('unit')}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors">
+                          <Trash2 size={13} />
+                          Birimi Sil
+                        </button>
+                        <button type="button"
+                          onClick={() => setDeleteConfirm('all')}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors">
+                          <Trash2 size={13} />
+                          Tümünü Sil
+                        </button>
+                      </div>
+                    ) : <div />}
                     <Button
                       type="submit"
                       size="lg"
