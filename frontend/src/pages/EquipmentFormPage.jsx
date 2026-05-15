@@ -135,6 +135,7 @@ export default function EquipmentFormPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showSwitchWarning, setShowSwitchWarning] = useState(false);
+  const [originalUnitForms, setOriginalUnitForms] = useState([]);
 
   function changeQuantity(delta) {
     setQuantity(q => {
@@ -190,7 +191,7 @@ export default function EquipmentFormPage() {
             : 0;
           setSelectedUnitIdx(initialIdx >= 0 ? initialIdx : 0);
           setEditUnits(eq.units);
-          setUnitForms(eq.units.map(u => ({
+          const forms = eq.units.map(u => ({
             name:          u.name          || '',
             brand:         u.brand         || '',
             model:         u.model         || '',
@@ -199,7 +200,9 @@ export default function EquipmentFormPage() {
             location:      u.location      || '',
             status:        u.status        || 'active',
             notes:         u.notes         || '',
-          })));
+          }));
+          setUnitForms(forms);
+          setOriginalUnitForms(forms);
         }
 
         setForm({
@@ -545,13 +548,27 @@ export default function EquipmentFormPage() {
                     {isDirty && !isConfirmed && (
                       <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
                         <span className="text-sm text-amber-700">Değişiklikleri onayla</span>
-                        <button
-                          type="button"
-                          onClick={() => { setIsConfirmed(true); setError(''); }}
-                          className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
-                        >
-                          Onayla
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUnitForms(prev => prev.map((f, i) => i === selectedUnitIdx ? { ...originalUnitForms[selectedUnitIdx] } : f));
+                              setIsDirty(false);
+                              setIsConfirmed(false);
+                              setError('');
+                            }}
+                            className="px-4 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 text-sm font-semibold rounded-lg transition-colors"
+                          >
+                            Geri Al
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setIsConfirmed(true); setError(''); }}
+                            className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                          >
+                            Onayla
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
