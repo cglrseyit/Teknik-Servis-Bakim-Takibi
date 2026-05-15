@@ -25,6 +25,7 @@ export default function PlanFormPage() {
 
   const [equipment, setEquipment] = useState([]);
   const [groupInfo, setGroupInfo] = useState(null); // edit modunda grup planı bilgisi
+  const [originalForm, setOriginalForm] = useState(null); // edit modunda orijinal değerler
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -56,6 +57,10 @@ export default function PlanFormPage() {
         frequency_type: p.frequency_type || 'monthly',
         frequency_days: p.frequency_days || '',
         start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
+        target_month: p.target_month ? String(p.target_month) : '',
+      });
+      setOriginalForm({
+        frequency_type: p.frequency_type || 'monthly',
         target_month: p.target_month ? String(p.target_month) : '',
       });
       if (p.parent_equipment_id) {
@@ -162,6 +167,14 @@ export default function PlanFormPage() {
   const selectedEquipment = equipment.find(e => String(e.id) === String(form.equipment_id));
   const unitCount = selectedEquipment?.unit_count || 0;
 
+  // Edit modunda zorunluluk mantığı:
+  // - Periyot değiştiyse → Bakım Ayı zorunlu
+  // - Bakım Ayı seçildiyse → Periyot zorunlu (label için)
+  const freqChanged = isEdit && originalForm !== null && form.frequency_type !== originalForm.frequency_type;
+  const monthSelected = Boolean(form.target_month);
+  const bakimAyiRequired = !isEdit || freqChanged;
+  const periyotLabelRequired = !isEdit || monthSelected;
+
   return (
     <Layout>
       <div className="max-w-xl mx-auto px-6 py-6">
@@ -261,8 +274,8 @@ export default function PlanFormPage() {
           {!isOneTime && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Periyot *</label>
-                <select required value={form.frequency_type} onChange={set('frequency_type')} className={fieldCls}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Periyot {periyotLabelRequired ? '*' : ''}</label>
+                <select value={form.frequency_type} onChange={set('frequency_type')} className={fieldCls}>
                   {FREQ_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
@@ -277,8 +290,8 @@ export default function PlanFormPage() {
 
           {!isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Ayı *</label>
-              <select required value={form.target_month} onChange={set('target_month')} className={fieldCls}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Ayı {bakimAyiRequired ? '*' : ''}</label>
+              <select required={bakimAyiRequired} value={form.target_month} onChange={set('target_month')} className={fieldCls}>
                 <option value="">Seçin</option>
                 {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
                   <option key={i+1} value={i+1}>{m}</option>
