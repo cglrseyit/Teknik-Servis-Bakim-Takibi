@@ -240,8 +240,8 @@ export default function EquipmentDetailPage() {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <InfoRow label="Konum"           value={info.location} />
                 <InfoRow label="Tedarikçi"       value={info.supplier} />
+                <InfoRow label="Konum"           value={info.location} />
                 <InfoRow label="Model"           value={info.model} />
                 <InfoRow label="Seri No"         value={info.serial_number} />
                 <InfoRow label="Bakım Periyodu"  value={PERIOD_LABELS[info.maintenance_period] || info.maintenance_period} />
