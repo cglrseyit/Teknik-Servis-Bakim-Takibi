@@ -346,8 +346,8 @@ export default function PlanFormPage() {
         open={showDeleteConfirm}
         title={groupInfo ? 'Tüm grup planları silinecek' : 'Planı silmek istiyor musunuz?'}
         message={groupInfo
-          ? `"${groupInfo.parentName}" grubundaki tüm birimlerin bakım planı silinecek.\n\nGeçmiş bakımlarınız silinmez.`
-          : 'Bu bakım planı ve bekleyen görevler silinecek.\n\nGeçmiş bakımlarınız silinmez.'}
+          ? `"${groupInfo.parentName}" grubundaki tüm birimlerin bakım planı silinecek.\n\nTamamlanmış bakımlarınız silinmez.`
+          : 'Bu bakım planı ve bekleyen görevler silinecek.\n\nTamamlanmış bakımlarınız silinmez.'}
         confirmLabel="Evet, Sil"
         variant="danger"
         onConfirm={handleDelete}
