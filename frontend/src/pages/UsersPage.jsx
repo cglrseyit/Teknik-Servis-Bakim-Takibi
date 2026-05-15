@@ -100,10 +100,7 @@ export default function UsersPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Kullanıcılar</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{users.length} kullanıcı kayıtlı</p>
-        </div>
+        <p className="text-sm text-slate-500">{users.length} kullanıcı kayıtlı</p>
         <button
           onClick={() => showForm ? closeForm() : openCreate()}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-colors shadow-md ${

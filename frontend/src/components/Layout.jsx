@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Wrench, ClipboardList, BarChart3,
-  Users, Bell, LogOut, User, X
+  Users, Bell, LogOut, User, X, ChevronRight
 } from 'lucide-react';
 import Badge from './Badge';
 import { useAuth } from '../context/AuthContext';
@@ -38,7 +38,9 @@ export default function Layout({ children }) {
   const ref = useRef(null);
 
   const unread = notifications.filter(n => !n.is_read).length;
-  const pageTitle = PAGE_TITLES[location.pathname] ?? 'Sayfa';
+  const pageTitle = PAGE_TITLES[location.pathname]
+    ?? Object.entries(PAGE_TITLES).find(([k]) => location.pathname.startsWith(k + '/'))?.[1]
+    ?? null;
 
   function loadNotifications() {
     api.get('/notifications').then(r => setNotifications(r.data)).catch(() => {});
@@ -153,8 +155,22 @@ export default function Layout({ children }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <header className="h-12 bg-white border-b border-amber-100/70 flex items-center justify-end px-6 flex-shrink-0">
-          <div className="relative" ref={ref}>
+        <header className="h-12 bg-white border-b border-amber-100/70 flex items-center justify-between px-6 flex-shrink-0">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 select-none">
+            <span>Panel</span>
+            {pageTitle && (
+              <>
+                <ChevronRight className="w-3 h-3" />
+                <span className="font-medium text-slate-600">{pageTitle}</span>
+              </>
+            )}
+          </div>
+
+          {/* Sağ: kullanıcı adı + bildirim */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500 hidden sm:block">{user?.name}</span>
+            <div className="relative" ref={ref}>
             <button
               onClick={handleOpen}
               className="relative p-2.5 rounded-xl hover:bg-amber-50 transition-colors"
@@ -220,6 +236,7 @@ export default function Layout({ children }) {
                 </div>
               </div>
             )}
+          </div>
           </div>
         </header>
 

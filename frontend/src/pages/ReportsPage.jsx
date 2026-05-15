@@ -218,11 +218,6 @@ export default function ReportsPage() {
 
   return (
     <Layout>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-slate-900">Raporlar</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Bakım operasyonu özeti ve geçmiş kayıtlar</p>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <KpiCard

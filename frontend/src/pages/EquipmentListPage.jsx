@@ -67,12 +67,6 @@ export default function EquipmentListPage() {
 
   return (
     <Layout>
-      {/* Başlık */}
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-slate-900">Ekipmanlar</h1>
-        <p className="text-sm text-slate-500 mt-0.5">{items.length} kayıt listeleniyor</p>
-      </div>
-
       {/* Filtreler + Butonlar aynı satırda */}
       <div className="flex items-center gap-3 mb-5">
         <div className="relative flex-1 max-w-xs">

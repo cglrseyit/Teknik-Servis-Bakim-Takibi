@@ -73,11 +73,6 @@ export default function PlansListPage() {
 
   return (
     <Layout>
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-slate-900">Bakım Planları</h1>
-        <p className="text-sm text-slate-500 mt-0.5">{plans.length} plan tanımlı</p>
-      </div>
-
       <div className="flex justify-end mb-4">
         <Link
           to="/plans/new"
