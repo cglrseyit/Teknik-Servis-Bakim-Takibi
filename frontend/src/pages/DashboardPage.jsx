@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, Layers } from 'lucide-react';
 import Layout from '../components/Layout';
 import Badge from '../components/Badge';
-import ConfirmModal from '../components/ConfirmModal';
 import SlidePanel from '../components/SlidePanel';
 import TaskDetailPanel from '../components/TaskDetailPanel';
 import GroupTaskPanel from '../components/GroupTaskPanel';
@@ -200,7 +199,6 @@ export default function DashboardPage() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [updating, setUpdating] = useState(null);
-  const [earlyStart, setEarlyStart] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const taskParamHandled = useRef(false);
@@ -277,14 +275,6 @@ export default function DashboardPage() {
 
   function handleStart(e, task) {
     e.stopPropagation();
-    const scheduledDate = task.scheduled_date?.split('T')[0];
-    if (scheduledDate) {
-      const daysLeft = Math.ceil((new Date(scheduledDate) - new Date(today)) / (1000 * 60 * 60 * 24));
-      if (daysLeft > 10) {
-        setEarlyStart({ id: task.id, daysLeft });
-        return;
-      }
-    }
     doStart(task.id);
   }
 
@@ -520,15 +510,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <ConfirmModal
-        open={Boolean(earlyStart)}
-        title="Erken Başlatma Uyarısı"
-        message={`Bu bakımın planlanmış tarihine ${earlyStart?.daysLeft} gün kaldı. Yine de şimdi başlatmak istiyor musunuz?`}
-        confirmLabel="Evet, Başlat"
-        variant="warning"
-        onConfirm={() => { doStart(earlyStart.id); setEarlyStart(null); }}
-        onCancel={() => setEarlyStart(null)}
-      />
 
       <SlidePanel
         open={Boolean(selectedTask)}
