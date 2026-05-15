@@ -179,7 +179,7 @@ async function create(req, res) {
               `INSERT INTO maintenance_plans
                  (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active)
                VALUES ($1,$2,$3,$4,$5,$6,false,true) RETURNING *`,
-              [child.id, `${name} Periyodik Bakımı`, freq.frequency_type, freq.frequency_days, 3, startDate]
+              [child.id, `Periyodik Bakım`, freq.frequency_type, freq.frequency_days, 3, startDate]
             );
             await generateTasksForPlan(planRows[0], 365);
           }
@@ -230,7 +230,7 @@ async function create(req, res) {
             `INSERT INTO maintenance_plans
                (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active)
              VALUES ($1,$2,$3,$4,$5,$6,false,true) RETURNING *`,
-            [eqId, `${name} Periyodik Bakımı`, freq.frequency_type, freq.frequency_days, 3, startDate]
+            [eqId, `Periyodik Bakım`, freq.frequency_type, freq.frequency_days, 3, startDate]
           );
           await generateTasksForPlan(planRows[0], 365);
         }
