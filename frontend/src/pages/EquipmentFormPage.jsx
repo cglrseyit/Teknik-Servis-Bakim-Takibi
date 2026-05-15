@@ -369,21 +369,34 @@ export default function EquipmentFormPage() {
   return (
     <>
     {showSwitchWarning && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-        <div className="pointer-events-auto bg-white border border-amber-200 shadow-xl rounded-2xl px-6 py-5 flex flex-col items-center gap-3 min-w-[320px]">
-          <AlertTriangle className="w-6 h-6 text-amber-500" />
-          <p className="text-sm font-semibold text-slate-700 text-center whitespace-pre-line">
-            {showSwitchWarning}
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowSwitchWarning(false)}
-            className="mt-1 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors"
+      <>
+        <style>{`
+          @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.9) translateY(-12px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+          }
+        `}</style>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div
+            className="bg-white border-2 border-amber-300 shadow-2xl rounded-2xl px-8 py-7 flex flex-col items-center gap-4 min-w-[340px]"
+            style={{ animation: 'modalPop 0.2s ease-out' }}
           >
-            Tamam
-          </button>
+            <div className="p-3 bg-amber-100 rounded-full">
+              <AlertTriangle className="w-7 h-7 text-amber-500" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700 text-center whitespace-pre-line leading-relaxed">
+              {showSwitchWarning}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSwitchWarning(false)}
+              className="mt-1 px-6 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all"
+            >
+              Tamam
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     )}
     <Layout>
       <div className="p-6 overflow-auto min-h-full">
