@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, WrenchIcon, Clock, AlertTriangle, CalendarDays, ArrowLeft, Layers, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -139,6 +139,9 @@ export default function EquipmentFormPage() {
   const [showSwitchWarning, setShowSwitchWarning] = useState(false);
   const [originalUnitForms, setOriginalUnitForms] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteTargetIdx, setDeleteTargetIdx] = useState(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef(null);
 
   function changeQuantity(delta) {
     setQuantity(q => {
@@ -223,6 +226,15 @@ export default function EquipmentFormPage() {
     }
   }, [id, isEdit]);
 
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    function handleOutside(e) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) setShowMoreMenu(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showMoreMenu]);
+
   // Yeni ekipman – Adım 1 doğrulama
   function handleFormNext(e) {
     e.preventDefault();
@@ -299,24 +311,26 @@ export default function EquipmentFormPage() {
     }
   }
 
-  async function handleDeleteSelected() {
-    const unit = editUnits[selectedUnitIdx];
+  async function handleDeleteSelected(idx) {
+    const target = idx ?? selectedUnitIdx;
+    const unit = editUnits[target];
     try {
       await api.delete(`/equipment/${unit.id}`);
-      const newUnits = editUnits.filter((_, i) => i !== selectedUnitIdx);
+      const newUnits = editUnits.filter((_, i) => i !== target);
       if (newUnits.length === 0) {
         navigate('/equipment');
         return;
       }
-      const newForms = unitForms.filter((_, i) => i !== selectedUnitIdx);
-      const newOriginals = originalUnitForms.filter((_, i) => i !== selectedUnitIdx);
+      const newForms = unitForms.filter((_, i) => i !== target);
+      const newOriginals = originalUnitForms.filter((_, i) => i !== target);
       setEditUnits(newUnits);
       setUnitForms(newForms);
       setOriginalUnitForms(newOriginals);
-      setSelectedUnitIdx(Math.min(selectedUnitIdx, newUnits.length - 1));
+      setSelectedUnitIdx(Math.min(target, newUnits.length - 1));
       setIsDirty(false);
       setIsConfirmed(false);
       setDeleteConfirm(null);
+      setDeleteTargetIdx(null);
       toast?.success(`${unit.name} silindi`);
     } catch {
       toast?.error('Silinemedi');
@@ -447,16 +461,16 @@ export default function EquipmentFormPage() {
           </div>
           <p className="text-sm font-semibold text-slate-700 text-center leading-relaxed">
             {deleteConfirm === 'unit'
-              ? `"${unitForms[selectedUnitIdx]?.name}" birimini kalıcı olarak silmek istediğinize emin misiniz?`
+              ? `"${unitForms[deleteTargetIdx ?? selectedUnitIdx]?.name}" birimini kalıcı olarak silmek istediğinize emin misiniz?`
               : 'Tüm birimleri ve ekipmanı kalıcı olarak silmek istediğinize emin misiniz?'}
           </p>
           <div className="flex gap-3">
-            <button type="button" onClick={() => setDeleteConfirm(null)}
+            <button type="button" onClick={() => { setDeleteConfirm(null); setDeleteTargetIdx(null); }}
               className="px-5 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors">
               İptal
             </button>
             <button type="button"
-              onClick={deleteConfirm === 'unit' ? handleDeleteSelected : handleDeleteAll}
+              onClick={deleteConfirm === 'unit' ? () => handleDeleteSelected(deleteTargetIdx) : handleDeleteAll}
               className="px-5 py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all">
               Evet, Sil
             </button>
@@ -504,30 +518,41 @@ export default function EquipmentFormPage() {
                 </div>
                 <div className="divide-y divide-slate-50">
                   {editUnits.map((u, i) => (
-                    <button
+                    <div
                       key={u.id}
-                      type="button"
-                      onClick={() => {
-                        if (isDirty && !isConfirmed) {
-                          setShowSwitchWarning('Değişikliklerinizi onaylamadan\nbaşka bir birime geçemezsiniz.');
-                          return;
-                        }
-                        setSelectedUnitIdx(i);
-                        setIsDirty(false);
-                        setIsConfirmed(false);
-                        setError('');
-                      }}
-                      className={`w-full px-4 py-3.5 text-left transition-colors ${
+                      className={`group relative transition-colors ${
                         selectedUnitIdx === i ? 'bg-amber-50' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <div className={`text-sm font-medium truncate ${selectedUnitIdx === i ? 'text-amber-700' : 'text-slate-700'}`}>
-                        {editUnits[i] ? unitForms[i]?.name || u.name : u.name}
+                      <div
+                        className="px-4 py-3.5 pr-9 cursor-pointer"
+                        onClick={() => {
+                          if (isDirty && !isConfirmed) {
+                            setShowSwitchWarning('Değişikliklerinizi onaylamadan\nbaşka bir birime geçemezsiniz.');
+                            return;
+                          }
+                          setSelectedUnitIdx(i);
+                          setIsDirty(false);
+                          setIsConfirmed(false);
+                          setError('');
+                        }}
+                      >
+                        <div className={`text-sm font-medium truncate ${selectedUnitIdx === i ? 'text-amber-700' : 'text-slate-700'}`}>
+                          {editUnits[i] ? unitForms[i]?.name || u.name : u.name}
+                        </div>
+                        <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[unitForms[i]?.status || u.status] || 'bg-slate-100 text-slate-400'}`}>
+                          {STATUS_LABELS[unitForms[i]?.status || u.status] || u.status}
+                        </span>
                       </div>
-                      <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[unitForms[i]?.status || u.status] || 'bg-slate-100 text-slate-400'}`}>
-                        {STATUS_LABELS[unitForms[i]?.status || u.status] || u.status}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => { setDeleteTargetIdx(i); setDeleteConfirm('unit'); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Bu birimi sil"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -541,7 +566,17 @@ export default function EquipmentFormPage() {
                   <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
 
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-semibold text-slate-700">Birim Adı</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold text-slate-700">Birim Adı</Label>
+                        <button
+                          type="button"
+                          onClick={() => { setDeleteTargetIdx(selectedUnitIdx); setDeleteConfirm('unit'); }}
+                          className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                          title="Bu birimi sil"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                       <Input
                         value={unitForms[selectedUnitIdx].name}
                         onChange={e => setUnitField(selectedUnitIdx, 'name', e.target.value)}
@@ -653,23 +688,33 @@ export default function EquipmentFormPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) ? (
-                      <div className="flex gap-2">
-                        <button type="button"
-                          onClick={() => setDeleteConfirm('unit')}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors">
-                          <Trash2 size={13} />
-                          Birimi Sil
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
+                      <div className="relative" ref={moreMenuRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowMoreMenu(v => !v)}
+                          className="px-3 py-2.5 bg-white border border-slate-200 text-slate-500 text-base font-bold leading-none rounded-xl hover:bg-slate-50 transition-colors tracking-widest"
+                          title="Daha fazla"
+                        >
+                          ···
                         </button>
-                        <button type="button"
-                          onClick={() => setDeleteConfirm('all')}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors">
-                          <Trash2 size={13} />
-                          Tümünü Sil
-                        </button>
+                        {showMoreMenu && (
+                          <div className="absolute right-0 bottom-full mb-2 w-44 bg-white border border-slate-100 shadow-xl rounded-xl overflow-hidden z-10">
+                            <div className="border-t border-slate-100">
+                              <button
+                                type="button"
+                                onClick={() => { setShowMoreMenu(false); setDeleteConfirm('all'); }}
+                                className="w-full flex items-center gap-2.5 px-4 py-3 text-red-600 hover:bg-red-50 text-sm font-medium transition-colors"
+                              >
+                                <Trash2 size={14} />
+                                Tümünü Sil
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : <div />}
+                    )}
                     <Button
                       type="submit"
                       size="lg"
