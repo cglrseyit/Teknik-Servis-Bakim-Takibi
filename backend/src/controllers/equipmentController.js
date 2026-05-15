@@ -33,7 +33,8 @@ async function getAll(req, res) {
          COALESCE(e.supplier, (SELECT u.supplier FROM equipment u WHERE u.parent_id = e.id AND u.supplier IS NOT NULL ORDER BY u.name LIMIT 1)) AS supplier,
          (SELECT p.frequency_type
           FROM maintenance_plans p
-          WHERE p.equipment_id = e.id AND p.is_active = true
+          WHERE (p.equipment_id = e.id OR p.equipment_id IN (SELECT id FROM equipment WHERE parent_id = e.id))
+            AND p.is_active = true
           ORDER BY p.created_at DESC LIMIT 1) AS maintenance_frequency,
          EXISTS (
            SELECT 1 FROM maintenance_plans p
