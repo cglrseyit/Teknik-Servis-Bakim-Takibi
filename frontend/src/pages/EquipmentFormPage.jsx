@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, WrenchIcon, Clock, AlertTriangle, CalendarDays, ArrowLeft, Layers } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
@@ -105,6 +105,7 @@ function UnitFields({ unit, onChange, hasError }) {
 export default function EquipmentFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
   const isEdit = Boolean(id);
 
@@ -168,11 +169,23 @@ export default function EquipmentFormPage() {
     if (isEdit) {
       api.get(`/equipment/${id}`).then(r => {
         const eq = r.data;
+
+        // Bu bir alt birimse → parent'ın edit sayfasına yönlendir, birimi query param ile taşı
+        if (eq.parent_id) {
+          navigate(`/equipment/${eq.parent_id}/edit?unit=${id}`, { replace: true });
+          return;
+        }
+
         const hasUnits = eq.units && eq.units.length > 0;
-        setIsUnit(Boolean(eq.parent_id));
+        setIsUnit(false);
         setIsGroupEdit(hasUnits);
 
         if (hasUnits) {
+          const unitIdParam = searchParams.get('unit');
+          const initialIdx = unitIdParam
+            ? eq.units.findIndex(u => String(u.id) === unitIdParam)
+            : 0;
+          setSelectedUnitIdx(initialIdx >= 0 ? initialIdx : 0);
           setEditUnits(eq.units);
           setUnitForms(eq.units.map(u => ({
             name:          u.name          || '',
