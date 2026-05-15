@@ -123,7 +123,7 @@ async function equipmentHistory(req, res) {
 
     // Satır 3: tablo başlıkları
     const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
-    const headerRow = ws.getRow(7);
+    const headerRow = ws.getRow(3);
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
     const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } }; // tablonun sağ bitişi
