@@ -82,10 +82,7 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Kolon genişlikleri — grup için "Birim" kolonu eklenip 12 kolon olur
-    const widths = isGroup
-      ? [5, 16, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18]
-      : [5, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18];
+    const widths = [5, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -158,9 +155,7 @@ async function equipmentHistory(req, res) {
     ws.getRow(6).height = 20;
 
     // Satır 7: tablo başlıkları
-    const headers = isGroup
-      ? ['Sıra', 'Birim', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar']
-      : ['Sıra', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar'];
+    const headers = ['Sıra', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar'];
     const headerRow = ws.getRow(7);
     headers.forEach((h, i) => {
       const cell = headerRow.getCell(i + 1);
@@ -176,24 +171,28 @@ async function equipmentHistory(req, res) {
     headerRow.height = 26;
 
     // Veri satırları
-    const statusColIdx = isGroup ? 6 : 5;  // durum kolonu indeksi
-    const approvalColIdx = isGroup ? 11 : 10;
-
     tasks.forEach((t, idx) => {
-      const rowData = isGroup
-        ? [idx + 1, t.unit_name || '', t.title || '', fmtDate(t.scheduled_date), fmtDate(t.completed_at), STATUS_LABELS[t.status] || t.status, t.maintained_by || '', t.responsible_person || '', t.performed_work || '', t.notes || '', t.approved_by_manager ? '✓' : '', t.attachment_names || '']
-        : [idx + 1, t.title || '', fmtDate(t.scheduled_date), fmtDate(t.completed_at), STATUS_LABELS[t.status] || t.status, t.maintained_by || '', t.responsible_person || '', t.performed_work || '', t.notes || '', t.approved_by_manager ? '✓' : '', t.attachment_names || ''];
-
-      const row = ws.addRow(rowData);
+      const row = ws.addRow([
+        idx + 1,
+        t.title || '',
+        fmtDate(t.scheduled_date),
+        fmtDate(t.completed_at),
+        STATUS_LABELS[t.status] || t.status,
+        t.maintained_by || '',
+        t.responsible_person || '',
+        t.performed_work || '',
+        t.notes || '',
+        t.approved_by_manager ? '✓' : '',
+        t.attachment_names || '',
+      ]);
       row.height = 28;
       row.eachCell((cell, colNum) => {
-        const isCenterCol = colNum === 1 || colNum === approvalColIdx;
-        cell.alignment = { vertical: 'top', wrapText: true, horizontal: isCenterCol ? 'center' : 'left' };
+        cell.alignment = { vertical: 'top', wrapText: true, horizontal: colNum === 1 || colNum === 10 ? 'center' : 'left' };
         cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
         cell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
         if (colNum === 1) cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
-        if (colNum === statusColIdx) cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
-        if (colNum === approvalColIdx && t.approved_by_manager) cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: COLORS.primary } };
+        if (colNum === 5) cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
+        if (colNum === 10 && t.approved_by_manager) cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: COLORS.primary } };
       });
       if (idx % 2 === 1) {
         row.eachCell(cell => {
@@ -203,8 +202,7 @@ async function equipmentHistory(req, res) {
     });
 
     if (tasks.length === 0) {
-      const emptyRow = ws.addRow(Array(totalCols).fill(''));
-      emptyRow.getCell(isGroup ? 3 : 2).value = 'Henüz tamamlanmış bakım kaydı yok';
+      const emptyRow = ws.addRow(['', 'Henüz tamamlanmış bakım kaydı yok', '', '', '', '', '', '', '', '', '']);
       emptyRow.height = 40;
       emptyRow.eachCell(cell => {
         cell.font = { italic: true, color: { argb: COLORS.textLight }, size: 11 };
