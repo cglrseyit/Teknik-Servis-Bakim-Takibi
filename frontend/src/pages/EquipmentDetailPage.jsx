@@ -247,27 +247,31 @@ export default function EquipmentDetailPage() {
             <div className="bg-white rounded-xl border border-amber-100/60 shadow-sm p-5">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700/50">Ekipman Bilgileri</p>
-                {mainUnit && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-700">{mainUnit.name}</span>
-                    <select
-                      value={mainUnit.status}
-                      onChange={e => handleUnitStatusChange(mainUnit.id, e.target.value)}
-                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 ${STATUS_COLORS[mainUnit.status] || 'bg-slate-100 text-slate-500'}`}
-                    >
-                      {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                    </select>
-                    {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
-                      <button
-                        onClick={() => setDeleteUnitConfirm({ id: mainUnit.id, name: mainUnit.name })}
-                        className="p-1 text-slate-300 hover:text-red-500 transition-colors"
-                        title="Bu birimi sil"
+                {(() => {
+                  const displayUnit = mainUnit || (isUnit ? equipment : null);
+                  if (!displayUnit) return null;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-700">{displayUnit.name}</span>
+                      <select
+                        value={displayUnit.status}
+                        onChange={e => handleUnitStatusChange(displayUnit.id, e.target.value)}
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 ${STATUS_COLORS[displayUnit.status] || 'bg-slate-100 text-slate-500'}`}
                       >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
-                )}
+                        {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                      </select>
+                      {mainUnit && ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
+                        <button
+                          onClick={() => setDeleteUnitConfirm({ id: mainUnit.id, name: mainUnit.name })}
+                          className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                          title="Bu birimi sil"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <InfoRow label="Tedarikçi"       value={info.supplier} />
