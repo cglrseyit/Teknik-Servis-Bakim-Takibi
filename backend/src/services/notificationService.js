@@ -67,43 +67,81 @@ async function generateNotifications() {
   }
 }
 
+// Görevleri parent ekipmana göre grupla, mail satırı için display_name üret
+function groupTasksForEmail(tasks) {
+  const groups = new Map();
+
+  for (const t of tasks) {
+    const key = t.parent_equipment_id ? `p-${t.parent_equipment_id}` : `t-${t.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: t.id,
+        title: t.title,
+        scheduled_date: t.scheduled_date,
+        _baseName: t.parent_equipment_id
+          ? (t.parent_equipment_name || t.equipment_name)
+          : t.equipment_name,
+        _siblingCount: t.sibling_count ? parseInt(t.sibling_count, 10) : null,
+        _pendingCount: 0,
+        // Tekil ekipman için lokasyon göster, grup için gerek yok
+        location: t.parent_equipment_id ? null : t.location,
+      });
+    }
+    groups.get(key)._pendingCount++;
+  }
+
+  return Array.from(groups.values()).map(g => {
+    let equipment_name = g._baseName;
+    if (g._siblingCount) {
+      equipment_name = g._pendingCount < g._siblingCount
+        ? `${g._baseName} (${g._pendingCount}/${g._siblingCount} bekliyor)`
+        : `${g._baseName} (${g._pendingCount} birim)`;
+    }
+    return { id: g.id, title: g.title, scheduled_date: g.scheduled_date, equipment_name, location: g.location };
+  });
+}
+
 async function sendDailyDigestEmails() {
   // Tek bir grup adresine gönder, dağıtımı mail sunucusu yapsın
   const to = process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
 
+  // Parent ekipman adı + toplam birim sayısı için JOIN
+  const taskQuery = (extraWhere) => `
+    SELECT t.id, t.title, t.scheduled_date,
+           e.name AS equipment_name, e.location,
+           e.parent_id AS parent_equipment_id,
+           ep.name AS parent_equipment_name,
+           CASE WHEN e.parent_id IS NOT NULL
+             THEN (SELECT COUNT(*) FROM equipment WHERE parent_id = e.parent_id)
+             ELSE NULL
+           END AS sibling_count
+    FROM maintenance_tasks t
+    LEFT JOIN equipment e ON e.id = t.equipment_id
+    LEFT JOIN equipment ep ON ep.id = e.parent_id
+    WHERE ${extraWhere}
+    ORDER BY t.scheduled_date ASC`;
+
   try {
-    const { rows: overdue } = await pool.query(`
-      SELECT t.id, t.title, t.scheduled_date,
-             e.name AS equipment_name, e.location
-      FROM maintenance_tasks t
-      LEFT JOIN equipment e ON e.id = t.equipment_id
-      WHERE t.status IN ('pending','in_progress','overdue')
-        AND t.scheduled_date < (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-      ORDER BY t.scheduled_date ASC
-    `);
+    const { rows: overdueRaw } = await pool.query(taskQuery(
+      `t.status IN ('pending','in_progress','overdue')
+       AND t.scheduled_date < (NOW() AT TIME ZONE 'Europe/Istanbul')::date`
+    ));
 
-    const { rows: upcoming } = await pool.query(`
-      SELECT t.id, t.title, t.scheduled_date,
-             e.name AS equipment_name, e.location
-      FROM maintenance_tasks t
-      LEFT JOIN equipment e ON e.id = t.equipment_id
-      WHERE t.status IN ('pending', 'in_progress')
-        AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
-        AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-      ORDER BY t.scheduled_date ASC
-    `);
+    const { rows: upcomingRaw } = await pool.query(taskQuery(
+      `t.status IN ('pending','in_progress')
+       AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
+       AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date`
+    ));
 
-    if (overdue.length === 0 && upcoming.length === 0) {
+    if (overdueRaw.length === 0 && upcomingRaw.length === 0) {
       console.log('[email] Gönderilecek görev yok, mail atılmadı');
       return;
     }
 
-    const ok = await sendDigestEmail({
-      to,
-      userName: 'Bellis Teknik Ekibi',
-      overdue,
-      upcoming,
-    });
+    const overdue  = groupTasksForEmail(overdueRaw);
+    const upcoming = groupTasksForEmail(upcomingRaw);
+
+    const ok = await sendDigestEmail({ to, userName: 'Bellis Teknik Ekibi', overdue, upcoming });
     if (ok) console.log(`[email] Günlük özet ${to} adresine gönderildi (${overdue.length} gecikmiş, ${upcoming.length} yaklaşan)`);
   } catch (err) {
     console.error('[email] Özet gönderiminde hata:', err.message);
