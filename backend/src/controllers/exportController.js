@@ -272,25 +272,26 @@ async function equipmentList(req, res) {
     wb.creator = 'Bellis Deluxe Hotel · Teknik Servis';
     wb.created = new Date();
     const ws = wb.addWorksheet('Ekipmanlar', {
-      views: [{ state: 'frozen', ySplit: 3, showGridLines: false }],
+      views: [{ state: 'frozen', ySplit: 2, showGridLines: false }],
       properties: { defaultRowHeight: 18 },
     });
 
-    // Sıra | Ekipman Adı | Tedarikçi | Adet | Seri No | Bakım Periyodu | Durum
-    const widths = [5, 28, 20, 8, 18, 18, 14];
+    // Col 1: logo alanı (5+28=33) | Ekipman Adı | Tedarikçi | Adet | Seri No | Bakım Periyodu | Durum
+    const widths = [33, 20, 8, 18, 18, 14];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-    ws.getRow(1).height = 34;
-    ws.getRow(2).height = 25;
+    // Satır 1: logo + başlık (logo için yeterli yükseklik)
+    ws.getRow(1).height = 50;
 
     try {
       const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
       ws.addImage(imgId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 175, height: 65 }, editAs: 'oneCell' });
     } catch (e) { console.warn('Logo eklenemedi:', e.message); }
 
-    ws.mergeCells(1, 3, 1, totalCols);
-    const titleCell = ws.getCell('C1');
+    // Başlık col 2'den başlar (col 1 logo için ayrıldı)
+    ws.mergeCells(1, 2, 1, totalCols);
+    const titleCell = ws.getCell('B1');
     titleCell.value = 'EKİPMAN LİSTESİ';
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -299,15 +300,16 @@ async function equipmentList(req, res) {
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
     const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } };
 
-    const headers = ['Sıra', 'Ekipman Adı', 'Tedarikçi', 'Adet', 'Seri No', 'Bakım Periyodu', 'Durum'];
-    const headerRow = ws.getRow(3);
+    // Satır 2: tablo başlıkları (Sıra kolonu kaldırıldı)
+    const headers = ['Ekipman Adı', 'Tedarikçi', 'Adet', 'Seri No', 'Bakım Periyodu', 'Durum'];
+    const headerRow = ws.getRow(2);
     headers.forEach((h, i) => {
       const isLast = i === headers.length - 1;
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
       cell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: COLORS.primaryDark } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accent } };
-      cell.alignment = { horizontal: 'left', vertical: 'middle' };
+      cell.alignment = { horizontal: i === 2 ? 'center' : 'left', vertical: 'middle' };
       cell.border = { top: borderAccent, bottom: borderAccent, left: borderThin, right: isLast ? borderRight : borderThin };
     });
     headerRow.height = 26;
@@ -316,7 +318,6 @@ async function equipmentList(req, res) {
       const adet = eq.unit_count > 0 ? eq.unit_count : 1;
       const period = PERIOD[eq.maintenance_frequency] || PERIOD[eq.maintenance_period] || '';
       const row = ws.addRow([
-        idx + 1,
         eq.name || '',
         eq.supplier || '',
         adet,
@@ -327,10 +328,9 @@ async function equipmentList(req, res) {
       row.height = 22;
       row.eachCell((cell, colNum) => {
         const isLast = colNum === totalCols;
-        cell.alignment = { vertical: 'middle', wrapText: false, horizontal: colNum === 1 || colNum === 4 ? 'center' : 'left' };
+        cell.alignment = { vertical: 'middle', wrapText: false, horizontal: colNum === 3 ? 'center' : 'left' };
         cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
         cell.border = { top: borderThin, bottom: borderThin, left: borderThin, right: isLast ? borderRight : borderThin };
-        if (colNum === 1) cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
       });
       if (idx % 2 === 1) {
         row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accentSoft } }; });
