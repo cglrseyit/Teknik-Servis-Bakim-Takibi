@@ -83,7 +83,7 @@ async function equipmentHistory(req, res) {
     wb.creator = 'Bellis Deluxe Hotel · Teknik Servis';
     wb.created = new Date();
     const ws = wb.addWorksheet('Bakım Geçmişi', {
-      views: [{ state: 'frozen', ySplit: 3, showGridLines: false }],
+      views: [{ state: 'frozen', ySplit: 2, showGridLines: true }],
       properties: { defaultRowHeight: 18 },
     });
 
@@ -117,11 +117,9 @@ async function equipmentHistory(req, res) {
     // Sağ kenar satır 1'den kapansın
     ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
-    ws.getRow(2).height = 25;
-
-    // Satır 3: tablo başlıkları
+    // Satır 2: tablo başlıkları (spacer kaldırıldı)
     const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
-    const headerRow = ws.getRow(3);
+    const headerRow = ws.getRow(2);
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
     const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } }; // tablonun sağ bitişi
