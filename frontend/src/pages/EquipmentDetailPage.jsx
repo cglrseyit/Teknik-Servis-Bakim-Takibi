@@ -144,14 +144,15 @@ export default function EquipmentDetailPage() {
   // Birim detayında: aynı gruptaki diğer birimler — "Diğer Birimler" kutusu burada da görünsün
   const otherUnits = isUnit ? siblings.filter(u => u.id !== equipment.id) : [];
   const unitListRows = isGroup ? restUnits : otherUnits;
+  const par = equipment.parent; // unit ise parent'ın tam verisi artık geliyor
   const info = {
-    brand:              mainUnit?.brand         || equipment.brand,
-    location:           mainUnit?.location      || equipment.location,
-    supplier:           mainUnit?.supplier      || equipment.supplier,
-    model:              mainUnit?.model         || equipment.model,
-    serial_number:      mainUnit?.serial_number || equipment.serial_number,
-    notes:              mainUnit?.notes         || equipment.notes,
-    maintenance_period: equipment.maintenance_period || mainUnit?.maintenance_period,
+    brand:              mainUnit?.brand              || equipment.brand              || par?.brand,
+    location:           mainUnit?.location           || equipment.location           || par?.location,
+    supplier:           mainUnit?.supplier           || equipment.supplier           || par?.supplier,
+    model:              mainUnit?.model              || equipment.model              || par?.model,
+    serial_number:      mainUnit?.serial_number      || equipment.serial_number,
+    notes:              mainUnit?.notes              || equipment.notes              || par?.notes,
+    maintenance_period: equipment.maintenance_period || mainUnit?.maintenance_period || par?.maintenance_period,
   };
 
   return (

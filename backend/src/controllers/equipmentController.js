@@ -72,7 +72,8 @@ async function getOne(req, res) {
     let siblings = [];
     if (equipment.parent_id) {
       const { rows: pr } = await pool.query(
-        `SELECT id, name FROM equipment WHERE id = $1`,
+        `SELECT id, name, brand, model, supplier, category, maintenance_period, location, serial_number, notes
+         FROM equipment WHERE id = $1`,
         [equipment.parent_id]
       );
       parent = pr[0] || null;
