@@ -44,8 +44,21 @@ async function equipmentHistory(req, res) {
     if (!eqRows[0]) return res.status(404).json({ error: 'Ekipman bulunamadı' });
     const eq = eqRows[0];
 
+    // Child birimler var mı?
+    const { rows: children } = await pool.query(
+      `SELECT id, name FROM equipment WHERE parent_id = $1 ORDER BY name`,
+      [id]
+    );
+    const isGroup   = children.length > 0;
+    const targetIds = isGroup ? children.map(c => c.id) : [id];
+    const childMap  = Object.fromEntries(children.map(c => [c.id, c.name]));
+
+    // Grup adı: "Klima Santrali (3 ADET)"
+    const displayName = isGroup ? `${eq.name} (${children.length} ADET)` : eq.name;
+
     const { rows: tasks } = await pool.query(
       `SELECT t.*,
+              e.name AS unit_name,
               u.name AS completed_by_name,
               COALESCE(
                 (SELECT string_agg(a.filename, ', ' ORDER BY a.uploaded_at)
@@ -53,11 +66,12 @@ async function equipmentHistory(req, res) {
                 ''
               ) AS attachment_names
        FROM maintenance_tasks t
+       LEFT JOIN equipment e ON e.id = t.equipment_id
        LEFT JOIN users u ON u.id = t.completed_by
-       WHERE t.equipment_id = $1
+       WHERE t.equipment_id = ANY($1)
          AND t.status IN ('completed', 'skipped')
        ORDER BY COALESCE(t.completed_at, t.scheduled_date) DESC`,
-      [id]
+      [targetIds]
     );
 
     const wb = new ExcelJS.Workbook();
@@ -68,8 +82,11 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Kolon genişlikleri (dikey A4'e sığacak)
-    const widths = [5, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18];
+    // Kolon genişlikleri — grup için "Birim" kolonu eklenip 12 kolon olur
+    const widths = isGroup
+      ? [5, 16, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18]
+      : [5, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18];
+    const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
     // Logo ekle — sol üst
@@ -93,13 +110,13 @@ async function equipmentHistory(req, res) {
     ws.getRow(3).height = 20;
 
     // Başlık metni — logo'nun sağında, ortalı
-    ws.mergeCells('C1:K1');
+    ws.mergeCells(1, 3, 1, totalCols);
     const titleCell = ws.getCell('C1');
-    titleCell.value = eq.name;
+    titleCell.value = displayName;
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    ws.mergeCells('C2:K2');
+    ws.mergeCells(2, 3, 2, totalCols);
     const subtitleCell = ws.getCell('C2');
     subtitleCell.value = 'Bakım Geçmişi Raporu';
     subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.primary } };
@@ -107,7 +124,7 @@ async function equipmentHistory(req, res) {
 
     // Satır 4: ince ayraç (amber çizgi)
     ws.getRow(4).height = 4;
-    for (let c = 1; c <= 11; c++) {
+    for (let c = 1; c <= totalCols; c++) {
       ws.getCell(4, c).fill = {
         type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.primary },
       };
@@ -141,10 +158,9 @@ async function equipmentHistory(req, res) {
     ws.getRow(6).height = 20;
 
     // Satır 7: tablo başlıkları
-    const headers = [
-      'Sıra', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum',
-      'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar',
-    ];
+    const headers = isGroup
+      ? ['Sıra', 'Birim', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar']
+      : ['Sıra', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar'];
     const headerRow = ws.getRow(7);
     headers.forEach((h, i) => {
       const cell = headerRow.getCell(i + 1);
@@ -160,39 +176,25 @@ async function equipmentHistory(req, res) {
     headerRow.height = 26;
 
     // Veri satırları
+    const statusColIdx = isGroup ? 6 : 5;  // durum kolonu indeksi
+    const approvalColIdx = isGroup ? 11 : 10;
+
     tasks.forEach((t, idx) => {
-      const row = ws.addRow([
-        idx + 1,
-        t.title || '',
-        fmtDate(t.scheduled_date),
-        fmtDate(t.completed_at),
-        STATUS_LABELS[t.status] || t.status,
-        t.maintained_by || '',
-        t.responsible_person || '',
-        t.performed_work || '',
-        t.notes || '',
-        t.approved_by_manager ? '✓' : '',
-        t.attachment_names || '',
-      ]);
+      const rowData = isGroup
+        ? [idx + 1, t.unit_name || '', t.title || '', fmtDate(t.scheduled_date), fmtDate(t.completed_at), STATUS_LABELS[t.status] || t.status, t.maintained_by || '', t.responsible_person || '', t.performed_work || '', t.notes || '', t.approved_by_manager ? '✓' : '', t.attachment_names || '']
+        : [idx + 1, t.title || '', fmtDate(t.scheduled_date), fmtDate(t.completed_at), STATUS_LABELS[t.status] || t.status, t.maintained_by || '', t.responsible_person || '', t.performed_work || '', t.notes || '', t.approved_by_manager ? '✓' : '', t.attachment_names || ''];
+
+      const row = ws.addRow(rowData);
       row.height = 28;
       row.eachCell((cell, colNum) => {
-        cell.alignment = { vertical: 'top', wrapText: true, horizontal: colNum === 1 || colNum === 10 ? 'center' : 'left' };
+        const isCenterCol = colNum === 1 || colNum === approvalColIdx;
+        cell.alignment = { vertical: 'top', wrapText: true, horizontal: isCenterCol ? 'center' : 'left' };
         cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
-        cell.border = {
-          bottom: { style: 'hair', color: { argb: COLORS.border } },
-        };
-        // Sıra ve durum kolonlarını soft amber yap
-        if (colNum === 1) {
-          cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
-        }
-        if (colNum === 5) {
-          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
-        }
-        if (colNum === 10 && t.approved_by_manager) {
-          cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: COLORS.primary } };
-        }
+        cell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        if (colNum === 1) cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
+        if (colNum === statusColIdx) cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
+        if (colNum === approvalColIdx && t.approved_by_manager) cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: COLORS.primary } };
       });
-      // Zebra effect
       if (idx % 2 === 1) {
         row.eachCell(cell => {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accentSoft } };
@@ -201,20 +203,21 @@ async function equipmentHistory(req, res) {
     });
 
     if (tasks.length === 0) {
-      const row = ws.addRow(['', 'Henüz tamamlanmış bakım kaydı yok', '', '', '', '', '', '', '', '', '']);
-      row.height = 40;
-      row.eachCell(cell => {
+      const emptyRow = ws.addRow(Array(totalCols).fill(''));
+      emptyRow.getCell(isGroup ? 3 : 2).value = 'Henüz tamamlanmış bakım kaydı yok';
+      emptyRow.height = 40;
+      emptyRow.eachCell(cell => {
         cell.font = { italic: true, color: { argb: COLORS.textLight }, size: 11 };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
       });
-      ws.mergeCells(row.number, 1, row.number, 11);
+      ws.mergeCells(emptyRow.number, 1, emptyRow.number, totalCols);
     }
 
     // Sayfa altı: footer notu
     const footerRow = ws.addRow([]);
     footerRow.height = 30;
     const footerCell = ws.getCell(footerRow.number + 1, 1);
-    ws.mergeCells(footerRow.number + 1, 1, footerRow.number + 1, 11);
+    ws.mergeCells(footerRow.number + 1, 1, footerRow.number + 1, totalCols);
     footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${tasks.length} kayıt`;
     footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
