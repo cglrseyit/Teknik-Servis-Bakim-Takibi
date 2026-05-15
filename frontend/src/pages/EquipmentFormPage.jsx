@@ -654,7 +654,7 @@ export default function EquipmentFormPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between">
-                    {user?.role === 'admin' ? (
+                    {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) ? (
                       <div className="flex gap-2">
                         <button type="button"
                           onClick={() => setDeleteConfirm('unit')}

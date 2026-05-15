@@ -224,7 +224,7 @@ export default function EquipmentDetailPage() {
                 Düzenle
               </Link>
             )}
-            {user?.role === 'admin' && (
+            {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
               <button
                 onClick={() => setShowConfirm(true)}
                 className="px-4 py-2 bg-red-50 border border-red-100 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors"
@@ -255,7 +255,7 @@ export default function EquipmentDetailPage() {
                     >
                       {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                     </select>
-                    {user?.role === 'admin' && (
+                    {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
                       <button
                         onClick={() => setDeleteUnitConfirm({ id: mainUnit.id, name: mainUnit.name })}
                         className="p-1 text-slate-300 hover:text-red-500 transition-colors"
@@ -414,13 +414,13 @@ export default function EquipmentDetailPage() {
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Seri No</th>
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lokasyon</th>
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-400">Durum</th>
-                        {user?.role === 'admin' && <th className="px-2 py-3" />}
+                        {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && <th className="px-2 py-3" />}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {unitListRows.length === 0 ? (
                         <tr>
-                          <td colSpan={user?.role === 'admin' ? 5 : 4} className="text-center py-6 text-slate-400 text-xs">
+                          <td colSpan={['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) ? 5 : 4} className="text-center py-6 text-slate-400 text-xs">
                             {isGroup ? 'Başka birim yok' : 'Bu grupta başka birim yok'}
                           </td>
                         </tr>
@@ -442,7 +442,7 @@ export default function EquipmentDetailPage() {
                               {UNIT_STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                             </select>
                           </td>
-                          {user?.role === 'admin' && (
+                          {['admin', 'teknik_muduru', 'order_taker'].includes(user?.role) && (
                             <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={() => setDeleteUnitConfirm({ id: u.id, name: u.name })}
