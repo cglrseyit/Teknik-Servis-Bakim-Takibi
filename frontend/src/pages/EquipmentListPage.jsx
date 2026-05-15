@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Plus, Wrench, ChevronRight, SlidersHorizontal, FileSpreadsheet } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
@@ -30,6 +30,7 @@ const FREQUENCY_COLORS = {
 };
 
 export default function EquipmentListPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -152,7 +153,7 @@ export default function EquipmentListPage() {
               </tr>
             ) : (
               items.map(eq => (
-                <tr key={eq.id} className="hover:bg-slate-50/80 transition-colors group">
+                <tr key={eq.id} onClick={() => navigate(`/equipment/${eq.id}`)} className="hover:bg-slate-50/80 transition-colors cursor-pointer group">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
@@ -190,13 +191,7 @@ export default function EquipmentListPage() {
                     ); })()}
                   </td>
                   <td className="px-5 py-3.5">
-                    <Link
-                      to={`/equipment/${eq.id}`}
-                      className="flex items-center gap-1 text-amber-600 hover:text-amber-700 text-[12px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      Detay
-                      <ChevronRight size={12} />
-                    </Link>
+                    <ChevronRight size={14} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </td>
                 </tr>
               ))
