@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Wrench, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Search, Plus, Wrench, ChevronRight, SlidersHorizontal, FileSpreadsheet } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 
@@ -47,6 +47,23 @@ export default function EquipmentListPage() {
     return () => { active = false; };
   }, [search, filterStatus]);
 
+  async function exportList() {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (filterStatus) params.set('status', filterStatus);
+      const r = await api.get(`/exports/equipment/list.xlsx?${params}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ekipman-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  }
+
   return (
     <Layout>
       {/* Başlık */}
@@ -55,13 +72,22 @@ export default function EquipmentListPage() {
           <h1 className="text-xl font-bold text-slate-900">Ekipmanlar</h1>
           <p className="text-sm text-slate-500 mt-0.5">{items.length} kayıt listeleniyor</p>
         </div>
-        <Link
-          to="/equipment/new"
-          className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
-        >
-          <Plus size={15} strokeWidth={2.5} />
-          Ekipman Ekle
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportList}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-xl transition-colors"
+          >
+            <FileSpreadsheet size={15} />
+            Excel'e Aktar
+          </button>
+          <Link
+            to="/equipment/new"
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            Ekipman Ekle
+          </Link>
+        </div>
       </div>
 
       {/* Filtreler */}

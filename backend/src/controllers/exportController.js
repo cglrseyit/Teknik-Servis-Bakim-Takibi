@@ -241,4 +241,137 @@ async function equipmentHistory(req, res) {
   }
 }
 
-module.exports = { equipmentHistory };
+async function equipmentList(req, res) {
+  const { search, status } = req.query;
+  const conditions = ['e.parent_id IS NULL'];
+  const params = [];
+  if (status) { params.push(status); conditions.push(`e.status = $${params.length}`); }
+  if (search) {
+    params.push(`%${search}%`);
+    conditions.push(`(e.name ILIKE $${params.length} OR e.serial_number ILIKE $${params.length}
+      OR EXISTS (SELECT 1 FROM equipment u WHERE u.parent_id = e.id
+        AND (u.name ILIKE $${params.length} OR u.serial_number ILIKE $${params.length})))`);
+  }
+  const where = `WHERE ${conditions.join(' AND ')}`;
+
+  try {
+    const { rows: equipment } = await pool.query(
+      `SELECT e.*,
+              (SELECT COUNT(*) FROM equipment u WHERE u.parent_id = e.id)::int AS unit_count,
+              (SELECT p.frequency_type FROM maintenance_plans p
+               WHERE p.equipment_id = e.id AND p.is_active = true AND p.is_one_time = false
+               ORDER BY p.created_at DESC LIMIT 1) AS maintenance_frequency
+       FROM equipment e ${where} ORDER BY e.name`,
+      params
+    );
+
+    const EQUIP_STATUS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
+    const PERIOD = { monthly: 'Aylık', quarterly: '3 Aylık', semiannual: '6 Aylık', biannual: '6 Aylık', yearly: 'Yıllık', custom: 'Özel' };
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Bellis Deluxe Hotel · Teknik Servis';
+    wb.created = new Date();
+    const ws = wb.addWorksheet('Ekipmanlar', {
+      views: [{ state: 'frozen', ySplit: 3, showGridLines: false }],
+      properties: { defaultRowHeight: 18 },
+    });
+
+    // Sıra | Ekipman Adı | Tedarikçi | Adet | Seri No | Bakım Periyodu | Durum
+    const widths = [5, 28, 20, 8, 18, 18, 14];
+    const totalCols = widths.length;
+    widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+    ws.getRow(1).height = 34;
+    ws.getRow(2).height = 25;
+
+    try {
+      const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
+      ws.addImage(imgId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 175, height: 65 }, editAs: 'oneCell' });
+    } catch (e) { console.warn('Logo eklenemedi:', e.message); }
+
+    ws.mergeCells(1, 3, 1, totalCols);
+    const titleCell = ws.getCell('C1');
+    titleCell.value = 'EKİPMAN LİSTESİ';
+    titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
+    const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
+    const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } };
+
+    const headers = ['Sıra', 'Ekipman Adı', 'Tedarikçi', 'Adet', 'Seri No', 'Bakım Periyodu', 'Durum'];
+    const headerRow = ws.getRow(3);
+    headers.forEach((h, i) => {
+      const isLast = i === headers.length - 1;
+      const cell = headerRow.getCell(i + 1);
+      cell.value = h;
+      cell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: COLORS.primaryDark } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accent } };
+      cell.alignment = { horizontal: 'left', vertical: 'middle' };
+      cell.border = { top: borderAccent, bottom: borderAccent, left: borderThin, right: isLast ? borderRight : borderThin };
+    });
+    headerRow.height = 26;
+
+    equipment.forEach((eq, idx) => {
+      const adet = eq.unit_count > 0 ? eq.unit_count : 1;
+      const period = PERIOD[eq.maintenance_frequency] || PERIOD[eq.maintenance_period] || '';
+      const row = ws.addRow([
+        idx + 1,
+        eq.name || '',
+        eq.supplier || '',
+        adet,
+        eq.serial_number || '',
+        period,
+        EQUIP_STATUS[eq.status] || eq.status || '',
+      ]);
+      row.height = 22;
+      row.eachCell((cell, colNum) => {
+        const isLast = colNum === totalCols;
+        cell.alignment = { vertical: 'middle', wrapText: false, horizontal: colNum === 1 || colNum === 4 ? 'center' : 'left' };
+        cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
+        cell.border = { top: borderThin, bottom: borderThin, left: borderThin, right: isLast ? borderRight : borderThin };
+        if (colNum === 1) cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
+      });
+      if (idx % 2 === 1) {
+        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accentSoft } }; });
+      }
+    });
+
+    if (equipment.length === 0) {
+      const emptyRow = ws.addRow(Array(totalCols).fill(''));
+      emptyRow.getCell(2).value = 'Ekipman bulunamadı';
+      emptyRow.height = 40;
+      ws.mergeCells(emptyRow.number, 1, emptyRow.number, totalCols);
+      emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      emptyRow.getCell(1).font = { italic: true, color: { argb: COLORS.textLight }, size: 11 };
+    }
+
+    const footerRow = ws.addRow([]);
+    footerRow.height = 20;
+    const footerNum = footerRow.number + 1;
+    ws.mergeCells(footerNum, 1, footerNum, totalCols - 2);
+    const footerCell = ws.getCell(footerNum, 1);
+    footerCell.value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${equipment.length} ekipman`;
+    footerCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
+    footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.mergeCells(footerNum, totalCols - 1, footerNum, totalCols);
+    const dateCell = ws.getCell(footerNum, totalCols - 1);
+    dateCell.value = `Çıktı Tarihi: ${fmtDate(new Date())}`;
+    dateCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
+    dateCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+    ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+      margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } };
+
+    const filename = `ekipman-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Export error:', err.message);
+    res.status(500).json({ error: 'Excel oluşturulamadı' });
+  }
+}
+
+module.exports = { equipmentHistory, equipmentList };
