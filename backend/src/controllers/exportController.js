@@ -92,29 +92,20 @@ async function equipmentHistory(req, res) {
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-    // Satır 1: logo + başlık, Satır 2: alt başlık, Satır 3: tablo başlığı
-    ws.getRow(1).height = 34;
-    ws.getRow(2).height = 25;
+    ws.getRow(1).height = 62; // 82px
 
-    // Logo — daha büyük
+    // Logo
     try {
       const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
-      ws.addImage(imgId, {
-        tl: { col: 0.1, row: 0.1 },
-        ext: { width: 175, height: 65 },
-        editAs: 'oneCell',
-      });
-    } catch (e) {
-      console.warn('Logo eklenemedi:', e.message);
-    }
+      ws.addImage(imgId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 175, height: 65 }, editAs: 'oneCell' });
+    } catch (e) { console.warn('Logo eklenemedi:', e.message); }
 
-    // Başlık metni
-    ws.mergeCells(1, 3, 1, totalCols);
-    const titleCell = ws.getCell('C1');
+    // Satır 1: A'dan son kolona kadar birleşik
+    ws.mergeCells(1, 1, 1, totalCols);
+    const titleCell = ws.getCell('A1');
     titleCell.value = `${eq.name.toUpperCase()} Bakım Geçmişi Raporu`;
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    // Sağ kenar satır 1'den kapansın
     ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
     // Satır 2: tablo başlıkları (spacer kaldırıldı)
@@ -277,21 +268,19 @@ async function equipmentList(req, res) {
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-    // Satır 1: logo + başlık (logo için yeterli yükseklik)
-    ws.getRow(1).height = 58;
+    ws.getRow(1).height = 62; // 82px
 
     try {
       const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
       ws.addImage(imgId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 175, height: 65 }, editAs: 'oneCell' });
     } catch (e) { console.warn('Logo eklenemedi:', e.message); }
 
-    // Başlık col 2'den başlar (col 1 logo için ayrıldı)
-    ws.mergeCells(1, 2, 1, totalCols);
-    const titleCell = ws.getCell('B1');
+    // Satır 1: A'dan son kolona kadar birleşik
+    ws.mergeCells(1, 1, 1, totalCols);
+    const titleCell = ws.getCell('A1');
     titleCell.value = 'EKİPMAN LİSTESİ';
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    // Sağ kenar satır 1'den kapansın
     ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
