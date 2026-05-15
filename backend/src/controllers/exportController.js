@@ -111,15 +111,11 @@ async function equipmentHistory(req, res) {
     // Başlık metni
     ws.mergeCells(1, 3, 1, totalCols);
     const titleCell = ws.getCell('C1');
-    titleCell.value = displayName;
+    titleCell.value = `${eq.name.toUpperCase()} Bakım Geçmişi Raporu`;
     titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    ws.mergeCells(2, 3, 2, totalCols);
-    const subtitleCell = ws.getCell('C2');
-    subtitleCell.value = 'Bakım Geçmişi Raporu';
-    subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.primary } };
-    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(2).height = 4; // alt başlık kaldırıldı, küçük boşluk
 
     // Satır 3: tablo başlıkları
     const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
