@@ -82,7 +82,8 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    const widths = [5, 22, 11, 11, 12, 15, 15, 24, 18, 7, 18];
+    // Sıra | Ekipman | Görev Başlığı | Planlanan | Yapılma | Durum | Bakımı Yapan | Sorumlu | Yapılan İşlem | Notlar | Ek Dosyalar
+    const widths = [5, 20, 22, 14, 11, 12, 15, 15, 24, 18, 18];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -155,8 +156,10 @@ async function equipmentHistory(req, res) {
     ws.getRow(6).height = 20;
 
     // Satır 7: tablo başlıkları
-    const headers = ['Sıra', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Onay', 'Ek Dosyalar'];
+    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
     const headerRow = ws.getRow(7);
+    const borderThin = { style: 'thin', color: { argb: COLORS.border } };
+    const borderAccent = { style: 'thin', color: { argb: COLORS.primary } };
     headers.forEach((h, i) => {
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
@@ -164,8 +167,8 @@ async function equipmentHistory(req, res) {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accent } };
       cell.alignment = { horizontal: 'left', vertical: 'middle' };
       cell.border = {
-        top:    { style: 'thin', color: { argb: COLORS.primary } },
-        bottom: { style: 'thin', color: { argb: COLORS.primary } },
+        top: borderAccent, bottom: borderAccent,
+        left: borderThin, right: borderThin,
       };
     });
     headerRow.height = 26;
@@ -195,25 +198,27 @@ async function equipmentHistory(req, res) {
     displayTasks.forEach((t, idx) => {
       const row = ws.addRow([
         idx + 1,
+        displayName,                          // Ekipman (grup adı veya tekil ad)
         t.title || '',
-        fmtDate(t.scheduled_date),
+        fmtMonth(t.scheduled_date),           // Planlanan → "Mayıs 2026"
         fmtDate(t.completed_at),
         STATUS_LABELS[t.status] || t.status,
         t.maintained_by || '',
         t.responsible_person || '',
         t.performed_work || '',
         t.notes || '',
-        t.approved_by_manager ? '✓' : '',
         t.attachment_names || '',
       ]);
       row.height = 28;
       row.eachCell((cell, colNum) => {
-        cell.alignment = { vertical: 'top', wrapText: true, horizontal: colNum === 1 || colNum === 10 ? 'center' : 'left' };
+        cell.alignment = { vertical: 'top', wrapText: true, horizontal: colNum === 1 ? 'center' : 'left' };
         cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
-        cell.border = { bottom: { style: 'hair', color: { argb: COLORS.border } } };
+        cell.border = {
+          top: borderThin, bottom: borderThin,
+          left: borderThin, right: borderThin,
+        };
         if (colNum === 1) cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
-        if (colNum === 5) cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
-        if (colNum === 10 && t.approved_by_manager) cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: COLORS.primary } };
+        if (colNum === 6) cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
       });
       if (idx % 2 === 1) {
         row.eachCell(cell => {
@@ -223,7 +228,7 @@ async function equipmentHistory(req, res) {
     });
 
     if (tasks.length === 0) {
-      const emptyRow = ws.addRow(['', 'Henüz tamamlanmış bakım kaydı yok', '', '', '', '', '', '', '', '', '']);
+      const emptyRow = ws.addRow(Array(totalCols).fill(''));
       emptyRow.height = 40;
       emptyRow.eachCell(cell => {
         cell.font = { italic: true, color: { argb: COLORS.textLight }, size: 11 };
