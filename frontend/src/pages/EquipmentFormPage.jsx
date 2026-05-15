@@ -145,6 +145,8 @@ export default function EquipmentFormPage() {
 
   // Yeni birim ekleme
   const [activePlan, setActivePlan] = useState(null);
+  const [addingNewUnit, setAddingNewUnit] = useState(false);
+  const [newUnitSupplier, setNewUnitSupplier] = useState('');
   const [savingNewUnits, setSavingNewUnits] = useState(false);
 
   function changeQuantity(delta) {
@@ -356,11 +358,12 @@ export default function EquipmentFormPage() {
   }
 
   async function handleAddNewUnit() {
+    if (!newUnitSupplier.trim()) return;
     setSavingNewUnits(true);
     try {
       const currentCount = editUnits.length;
       const unitName = `${form.name} #${currentCount + 1}`;
-      const { data: newUnit } = await api.post('/equipment', { name: unitName, status: 'active', parent_id: id });
+      const { data: newUnit } = await api.post('/equipment', { name: unitName, status: 'active', supplier: newUnitSupplier.trim(), parent_id: id });
       if (activePlan) {
         await api.post('/plans', {
           equipment_id: newUnit.id,
@@ -384,6 +387,8 @@ export default function EquipmentFormPage() {
       setUnitForms(newForms);
       setOriginalUnitForms(newForms);
       setSelectedUnitIdx(currentCount);
+      setAddingNewUnit(false);
+      setNewUnitSupplier('');
       toast?.success('Yeni birim eklendi');
     } catch {
       toast?.error('Birim eklenemedi');
@@ -602,15 +607,37 @@ export default function EquipmentFormPage() {
 
                 {/* Yeni birim ekle */}
                 <div className="border-t border-slate-100 p-3">
-                  <button
-                    type="button"
-                    onClick={handleAddNewUnit}
-                    disabled={savingNewUnits}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Plus size={13} />
-                    {savingNewUnits ? 'Ekleniyor…' : 'Birim Ekle'}
-                  </button>
+                  {!addingNewUnit ? (
+                    <button
+                      type="button"
+                      onClick={() => setAddingNewUnit(true)}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                    >
+                      <Plus size={13} />
+                      Birim Ekle
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        autoFocus
+                        value={newUnitSupplier}
+                        onChange={e => setNewUnitSupplier(e.target.value)}
+                        placeholder="Tedarikçi *"
+                        className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddNewUnit(); } if (e.key === 'Escape') { setAddingNewUnit(false); setNewUnitSupplier(''); } }}
+                      />
+                      <div className="flex gap-1.5">
+                        <button type="button" onClick={() => { setAddingNewUnit(false); setNewUnitSupplier(''); }}
+                          className="flex-1 py-1.5 text-xs text-slate-500 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                          İptal
+                        </button>
+                        <button type="button" onClick={handleAddNewUnit} disabled={savingNewUnits || !newUnitSupplier.trim()}
+                          className="flex-1 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors disabled:opacity-50">
+                          {savingNewUnits ? '…' : 'Ekle'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
