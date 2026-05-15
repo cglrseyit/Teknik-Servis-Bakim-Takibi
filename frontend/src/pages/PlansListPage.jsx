@@ -73,11 +73,12 @@ export default function PlansListPage() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Bakım Planları</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{plans.length} plan tanımlı</p>
-        </div>
+      <div className="mb-5">
+        <h1 className="text-xl font-bold text-slate-900">Bakım Planları</h1>
+        <p className="text-sm text-slate-500 mt-0.5">{plans.length} plan tanımlı</p>
+      </div>
+
+      <div className="flex justify-end mb-4">
         <Link
           to="/plans/new"
           className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
