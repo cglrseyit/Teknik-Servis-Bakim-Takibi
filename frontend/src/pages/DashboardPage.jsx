@@ -342,9 +342,10 @@ export default function DashboardPage() {
     const overdueCount    = row.tasks.filter(t => t.status === 'overdue').length;
     const inProgressCount = row.tasks.filter(t => t.status === 'in_progress').length;
     const completedCount  = row.tasks.filter(t => t.status === 'completed' || t.status === 'skipped').length;
-    const pendingCount    = row.tasks.filter(t => t.status === 'pending').length;
+    const pendingCurrentCount = row.tasks.filter(t => t.status === 'pending' && !isFutureMonth(t.scheduled_date)).length;
 
-    const activeCount = inProgressCount + pendingCount;
+    // Zamanı gelmiş görevler (bu ay veya geçmiş + devam eden)
+    const activeCount = inProgressCount + pendingCurrentCount;
 
     let badgeVariant, badgeLabel;
     if (overdueCount > 0) {
@@ -384,9 +385,11 @@ export default function DashboardPage() {
           <Badge variant={badgeVariant} appearance="light">{badgeLabel}</Badge>
         </td>
         <td className="px-6 py-4">
-          {completedCount < total
+          {activeCount > 0 || overdueCount > 0
             ? <span className="text-xs text-green-600 font-semibold">Tamamla →</span>
-            : <ChevronRight size={14} className="text-gray-300" />
+            : completedCount === total
+              ? <ChevronRight size={14} className="text-gray-300" />
+              : <span className="text-xs text-gray-400 italic">Zamanı gelmedi</span>
           }
         </td>
       </tr>
