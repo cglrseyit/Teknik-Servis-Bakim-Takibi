@@ -1,4 +1,5 @@
-import { CheckCircle2, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, RefreshCw, ArrowRight } from 'lucide-react';
 
 function fmt(dateStr) {
   if (!dateStr) return null;
@@ -47,6 +48,17 @@ export default function MultiPlanPanel({ plans }) {
           <p className="text-[10px] text-red-500 mt-0.5">Gecikmiş</p>
         </div>
       </div>
+
+      {/* Ekipman detayına git */}
+      {first.parent_equipment_id && (
+        <Link
+          to={`/equipment/${first.parent_equipment_id}`}
+          className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors"
+        >
+          Ekipman Detayına Git
+          <ArrowRight size={14} />
+        </Link>
+      )}
 
       {/* Birim listesi */}
       <div className="space-y-2">
