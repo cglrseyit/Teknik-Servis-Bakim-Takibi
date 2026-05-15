@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, WrenchIcon, Clock, AlertTriangle, CalendarDays, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, WrenchIcon, Clock, AlertTriangle, CalendarDays, ArrowLeft, Layers } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
@@ -15,6 +15,15 @@ const STATUS_OPTIONS = [
   { value: 'passive',     label: 'Pasif',   color: 'text-gray-500',   bgColor: 'bg-gray-50',   borderColor: 'border-gray-400',   icon: Clock        },
   { value: 'broken',      label: 'Arızalı', color: 'text-red-600',    bgColor: 'bg-red-50',    borderColor: 'border-red-400',    icon: AlertTriangle },
 ];
+
+const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
+
+const STATUS_COLORS = {
+  active:      'bg-green-100 text-green-700',
+  passive:     'bg-slate-100 text-slate-500',
+  maintenance: 'bg-amber-100 text-amber-700',
+  broken:      'bg-red-100 text-red-600',
+};
 
 const MONTH_NAMES = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
@@ -41,30 +50,20 @@ function UnitFields({ unit, onChange, hasError }) {
       )}
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold text-slate-700">Birim Adı <span className="text-red-500">*</span></Label>
-        <Input
-          value={unit.name}
-          onChange={e => set('name', e.target.value)}
-          placeholder="örn: Kombi #1"
-          className={missing('name') ? 'border-red-400 focus:ring-red-400' : ''}
-        />
+        <Input value={unit.name} onChange={e => set('name', e.target.value)} placeholder="örn: Kombi #1"
+          className={missing('name') ? 'border-red-400 focus:ring-red-400' : ''} />
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold text-slate-700">Tedarikçi <span className="text-red-500">*</span></Label>
-          <Input
-            value={unit.supplier}
-            onChange={e => set('supplier', e.target.value)}
-            placeholder="örn: ABC Teknik Ltd."
-            className={missing('supplier') ? 'border-red-400 focus:ring-red-400' : ''}
-          />
+          <Input value={unit.supplier} onChange={e => set('supplier', e.target.value)} placeholder="örn: ABC Teknik Ltd."
+            className={missing('supplier') ? 'border-red-400 focus:ring-red-400' : ''} />
         </div>
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
           <Input value={unit.serial_number} onChange={e => set('serial_number', e.target.value)} placeholder="örn: SN-001" />
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold text-slate-700">Marka</Label>
@@ -75,12 +74,10 @@ function UnitFields({ unit, onChange, hasError }) {
           <Input value={unit.model} onChange={e => set('model', e.target.value)} placeholder="örn: ecoTEC Pro" />
         </div>
       </div>
-
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold text-slate-700">Lokasyon</Label>
         <Input value={unit.location} onChange={e => set('location', e.target.value)} placeholder="örn: 3. Kat, Teknik Oda" />
       </div>
-
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold text-slate-700">Durum</Label>
         <div className="grid grid-cols-4 gap-2">
@@ -97,7 +94,6 @@ function UnitFields({ unit, onChange, hasError }) {
           })}
         </div>
       </div>
-
       <div className="space-y-1.5">
         <Label className="text-sm font-semibold text-slate-700">Notlar</Label>
         <Textarea value={unit.notes} onChange={e => set('notes', e.target.value)} placeholder="Bu birime özel notlar..." rows={2} className="resize-none" />
@@ -111,19 +107,30 @@ export default function EquipmentFormPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const isEdit = Boolean(id);
+
+  // Ortak
   const [error, setError] = useState('');
-  const [unitErrors, setUnitErrors] = useState([]);
-  const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState(0);
   const [isUnit, setIsUnit] = useState(false);
-  const [unitList, setUnitList] = useState([]);
-  const [step, setStep] = useState('form'); // 'form' | 'period'
   const [form, setForm] = useState({
     name: '', brand: '', model: '', supplier: '',
     serial_number: '', location: '',
     status: 'active', notes: '', maintenance_period: '',
     maintenance_start_date: '',
   });
+
+  // Yeni ekipman (çoklu birim) için
+  const [unitErrors, setUnitErrors] = useState([]);
+  const [quantity, setQuantity] = useState(1);
+  const [activeTab, setActiveTab] = useState(0);
+  const [unitList, setUnitList] = useState([]);
+  const [step, setStep] = useState('form');
+
+  // Grup düzenleme modu
+  const [isGroupEdit, setIsGroupEdit] = useState(false);
+  const [editUnits, setEditUnits] = useState([]);
+  const [selectedUnitIdx, setSelectedUnitIdx] = useState(0);
+  const [unitForms, setUnitForms] = useState([]);
+  const [savingUnitId, setSavingUnitId] = useState(null);
 
   function changeQuantity(delta) {
     setQuantity(q => {
@@ -161,27 +168,43 @@ export default function EquipmentFormPage() {
     if (isEdit) {
       api.get(`/equipment/${id}`).then(r => {
         const eq = r.data;
+        const hasUnits = eq.units && eq.units.length > 0;
         setIsUnit(Boolean(eq.parent_id));
+        setIsGroupEdit(hasUnits);
+
+        if (hasUnits) {
+          setEditUnits(eq.units);
+          setUnitForms(eq.units.map(u => ({
+            name:          u.name          || '',
+            brand:         u.brand         || '',
+            model:         u.model         || '',
+            supplier:      u.supplier      || '',
+            serial_number: u.serial_number || '',
+            location:      u.location      || '',
+            status:        u.status        || 'active',
+            notes:         u.notes         || '',
+          })));
+        }
+
         setForm({
-          name:               eq.name || '',
-          brand:              eq.brand || '',
-          model:              eq.model || '',
-          supplier:           eq.supplier || '',
-          serial_number:      eq.serial_number || '',
-          location:           eq.location || '',
-          status:             eq.status || 'active',
-          notes:              eq.notes || '',
-          maintenance_period: eq.maintenance_period || '',
+          name:               eq.name               || '',
+          brand:              eq.brand               || '',
+          model:              eq.model               || '',
+          supplier:           eq.supplier            || '',
+          serial_number:      eq.serial_number       || '',
+          location:           eq.location            || '',
+          status:             eq.status              || 'active',
+          notes:              eq.notes               || '',
+          maintenance_period: eq.maintenance_period  || '',
         });
       }).catch(() => {});
     }
   }, [id, isEdit]);
 
-  // Adım 1: Ekipman bilgilerini doğrula, adım 2'ye geç
+  // Yeni ekipman – Adım 1 doğrulama
   function handleFormNext(e) {
     e.preventDefault();
     setError('');
-
     if (quantity > 1) {
       const errors = unitList.map(u => !u.name?.trim() || !u.supplier?.trim());
       setUnitErrors(errors);
@@ -193,24 +216,17 @@ export default function EquipmentFormPage() {
       }
       setUnitErrors([]);
     }
-
     setStep('period');
   }
 
-  // Adım 2: Ekipmanı oluştur (skipPlan=true → bakım planı olmadan)
+  // Yeni ekipman – Adım 2 kaydet
   async function doCreate(skipPlan = false) {
     setError('');
     try {
-      const period = skipPlan ? null : (form.maintenance_period || null);
+      const period    = skipPlan ? null : (form.maintenance_period    || null);
       const startDate = skipPlan ? null : (form.maintenance_start_date || null);
-
       if (quantity > 1) {
-        await api.post('/equipment', {
-          name: form.name,
-          maintenance_period: period,
-          maintenance_start_date: startDate,
-          units: unitList,
-        });
+        await api.post('/equipment', { name: form.name, maintenance_period: period, maintenance_start_date: startDate, units: unitList });
       } else {
         await api.post('/equipment', { ...form, maintenance_period: period, maintenance_start_date: startDate, quantity: 1 });
       }
@@ -223,14 +239,14 @@ export default function EquipmentFormPage() {
     }
   }
 
-  // Düzenleme modu: direkt kaydet
+  // Tekli ekipman düzenleme
   async function handleEditSubmit(e) {
     e.preventDefault();
     setError('');
     try {
       await api.put(`/equipment/${id}`, form);
       toast?.success('Ekipman güncellendi');
-      navigate('/equipment');
+      navigate(`/equipment/${id}`);
     } catch (err) {
       const msg = err.response?.data?.error || 'Hata oluştu';
       setError(msg);
@@ -238,25 +254,44 @@ export default function EquipmentFormPage() {
     }
   }
 
-  const isMulti = quantity > 1 && !isEdit;
+  // Grup düzenleme – tek birim kaydet
+  async function handleSaveUnit(idx) {
+    const unit     = editUnits[idx];
+    const unitForm = unitForms[idx];
+    setSavingUnitId(unit.id);
+    setError('');
+    try {
+      await api.put(`/equipment/${unit.id}`, unitForm);
+      setEditUnits(prev => prev.map((u, i) => i === idx ? { ...u, ...unitForm } : u));
+      toast?.success(`${unitForm.name} güncellendi`);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Hata oluştu';
+      setError(msg);
+      toast?.error(msg);
+    } finally {
+      setSavingUnitId(null);
+    }
+  }
 
-  // Bakım periyodu başlangıç ayı seçici (adım 2'de kullanılır)
+  function setUnitField(idx, key, val) {
+    setUnitForms(prev => prev.map((f, i) => i === idx ? { ...f, [key]: val } : f));
+  }
+
+  // Bakım başlangıç ayı seçici (Adım 2)
   function renderStartMonth() {
     if (!form.maintenance_period) return null;
     const now = new Date();
-    const curYear = now.getFullYear();
+    const curYear  = now.getFullYear();
     const curMonth = now.getMonth() + 1;
     const [selYear, selMonth] = form.maintenance_start_date
       ? form.maintenance_start_date.split('-').map(Number)
       : [0, 0];
     const years = [curYear, curYear + 1, curYear + 2];
     const cls = 'flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400';
-
     function updateDate(year, month) {
       if (year && month) setForm(f => ({ ...f, maintenance_start_date: `${year}-${String(month).padStart(2, '0')}` }));
       else setForm(f => ({ ...f, maintenance_start_date: '' }));
     }
-
     return (
       <div className="mt-4 space-y-1.5">
         <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
@@ -281,46 +316,205 @@ export default function EquipmentFormPage() {
     );
   }
 
+  const isMulti = quantity > 1 && !isEdit;
+
+  /* ─── Başlık metinleri ─── */
+  const pageTitle = isEdit && isGroupEdit
+    ? form.name
+    : isEdit
+    ? 'Ekipmanı Düzenle'
+    : step === 'period'
+    ? 'Bakım Periyodu'
+    : 'Yeni Ekipman';
+
+  const pageSubtitle = isEdit && isGroupEdit
+    ? `${editUnits.length} birim — bir birimi seçerek düzenleyin`
+    : isEdit
+    ? 'Ekipman bilgilerini güncelleyin'
+    : step === 'period'
+    ? 'Bakım planını yapılandırın veya daha sonra ayarlayın'
+    : 'Sisteme yeni bir ekipman kaydedin';
+
+  function handleBack() {
+    if (step === 'period') { setStep('form'); return; }
+    if (isEdit) { navigate(`/equipment/${id}`); return; }
+    navigate(-1);
+  }
+
   return (
     <Layout>
       <div className="p-6 overflow-auto min-h-full">
-        <div className="max-w-4xl">
+        <div className={isEdit && isGroupEdit ? 'max-w-5xl' : 'max-w-4xl'}>
 
           {/* Başlık */}
           <div className="mb-6">
-            <button
-              type="button"
-              onClick={() => step === 'period' ? setStep('form') : navigate(-1)}
-              className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors"
-            >
+            <button type="button" onClick={handleBack}
+              className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors">
               <ArrowLeft className="w-4 h-4" />
               Geri Dön
             </button>
             <div className="flex items-center gap-3 mb-1">
               <div className="p-2 bg-amber-100 rounded-lg">
-                <WrenchIcon className="w-5 h-5 text-amber-600" />
+                {isEdit && isGroupEdit
+                  ? <Layers className="w-5 h-5 text-amber-600" />
+                  : <WrenchIcon className="w-5 h-5 text-amber-600" />}
               </div>
-              <h1 className="text-xl font-bold text-slate-900">
-                {isEdit ? 'Ekipmanı Düzenle' : step === 'period' ? 'Bakım Periyodu' : 'Yeni Ekipman'}
-              </h1>
+              <h1 className="text-xl font-bold text-slate-900">{pageTitle}</h1>
             </div>
-            <p className="text-sm text-slate-400 ml-[52px]">
-              {isEdit
-                ? 'Ekipman bilgilerini güncelleyin'
-                : step === 'period'
-                ? 'Bakım planını yapılandırın veya daha sonra ayarlayın'
-                : 'Sisteme yeni bir ekipman kaydedin'}
-            </p>
+            <p className="text-sm text-slate-400 ml-[52px]">{pageSubtitle}</p>
           </div>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>
           )}
 
-          {/* ── ADIM 2: Bakım Periyodu ── */}
-          {!isEdit && step === 'period' ? (
+          {/* ══════════════════════════════════════════
+              GRUP DÜZENLEME MODU
+          ══════════════════════════════════════════ */}
+          {isEdit && isGroupEdit ? (
+            <div className="grid grid-cols-[220px_1fr] gap-4 items-start">
+
+              {/* Sol: Birim listesi */}
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden sticky top-0">
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Birimler</p>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {editUnits.map((u, i) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setSelectedUnitIdx(i)}
+                      className={`w-full px-4 py-3.5 text-left transition-colors ${
+                        selectedUnitIdx === i ? 'bg-amber-50' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className={`text-sm font-medium truncate ${selectedUnitIdx === i ? 'text-amber-700' : 'text-slate-700'}`}>
+                        {editUnits[i] ? unitForms[i]?.name || u.name : u.name}
+                      </div>
+                      <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[unitForms[i]?.status || u.status] || 'bg-slate-100 text-slate-400'}`}>
+                        {STATUS_LABELS[unitForms[i]?.status || u.status] || u.status}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sağ: Seçili birimin düzenleme formu */}
+              {unitForms[selectedUnitIdx] && (
+                <form
+                  key={selectedUnitIdx}
+                  onSubmit={e => { e.preventDefault(); handleSaveUnit(selectedUnitIdx); }}
+                >
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-semibold text-slate-700">Birim Adı</Label>
+                      <Input
+                        value={unitForms[selectedUnitIdx].name}
+                        onChange={e => setUnitField(selectedUnitIdx, 'name', e.target.value)}
+                        placeholder="örn: Kombi #1"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold text-slate-700">Tedarikçi</Label>
+                        <Input
+                          value={unitForms[selectedUnitIdx].supplier}
+                          onChange={e => setUnitField(selectedUnitIdx, 'supplier', e.target.value)}
+                          placeholder="örn: ABC Teknik Ltd."
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
+                        <Input
+                          value={unitForms[selectedUnitIdx].serial_number}
+                          onChange={e => setUnitField(selectedUnitIdx, 'serial_number', e.target.value)}
+                          placeholder="örn: SN-001"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold text-slate-700">Marka</Label>
+                        <Input
+                          value={unitForms[selectedUnitIdx].brand}
+                          onChange={e => setUnitField(selectedUnitIdx, 'brand', e.target.value)}
+                          placeholder="örn: Vaillant"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-semibold text-slate-700">Model</Label>
+                        <Input
+                          value={unitForms[selectedUnitIdx].model}
+                          onChange={e => setUnitField(selectedUnitIdx, 'model', e.target.value)}
+                          placeholder="örn: ecoTEC Pro"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-semibold text-slate-700">Lokasyon</Label>
+                      <Input
+                        value={unitForms[selectedUnitIdx].location}
+                        onChange={e => setUnitField(selectedUnitIdx, 'location', e.target.value)}
+                        placeholder="örn: 3. Kat, Teknik Oda"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-semibold text-slate-700">Durum</Label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {STATUS_OPTIONS.map(opt => {
+                          const Icon = opt.icon;
+                          const selected = unitForms[selectedUnitIdx].status === opt.value;
+                          return (
+                            <button key={opt.value} type="button"
+                              onClick={() => setUnitField(selectedUnitIdx, 'status', opt.value)}
+                              className={`flex items-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all text-left ${selected ? `${opt.bgColor} ${opt.borderColor}` : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
+                              <Icon className={`w-4 h-4 flex-shrink-0 ${selected ? opt.color : 'text-slate-400'}`} />
+                              <span className={`font-medium text-xs ${selected ? opt.color : 'text-slate-600'}`}>{opt.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-semibold text-slate-700">Notlar</Label>
+                      <Textarea
+                        value={unitForms[selectedUnitIdx].notes}
+                        onChange={e => setUnitField(selectedUnitIdx, 'notes', e.target.value)}
+                        placeholder="Bu birime özel notlar..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-3 justify-end">
+                    <Button type="button" variant="outline" size="lg" onClick={() => navigate(`/equipment/${id}`)}>
+                      Vazgeç
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={savingUnitId === editUnits[selectedUnitIdx]?.id}
+                    >
+                      {savingUnitId === editUnits[selectedUnitIdx]?.id ? 'Kaydediliyor…' : 'Kaydet'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+          /* ══════════════════════════════════════════
+              ADIM 2: Bakım Periyodu (yeni ekipman)
+          ══════════════════════════════════════════ */
+          ) : !isEdit && step === 'period' ? (
             <div>
-              {/* Özet: hangi ekipman için */}
               <div className="mb-4 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
                 <WrenchIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 <div>
@@ -334,7 +528,6 @@ export default function EquipmentFormPage() {
                   <CalendarDays className="w-4 h-4 text-slate-400" />
                   Bakım Periyodu
                 </Label>
-
                 <div className="grid grid-cols-4 gap-3">
                   {PERIOD_OPTIONS.map(opt => {
                     const selected = form.maintenance_period === opt.value;
@@ -347,29 +540,22 @@ export default function EquipmentFormPage() {
                     );
                   })}
                 </div>
-
                 {renderStartMonth()}
               </div>
 
               <div className="mt-4 flex gap-3 justify-end">
-                <Button type="button" variant="outline" size="lg" onClick={() => setStep('form')}>
-                  ← Geri Dön
-                </Button>
-                <Button type="button" variant="outline" size="lg" onClick={() => doCreate(true)}>
-                  Daha Sonra Ayarla
-                </Button>
-                <Button
-                  type="button"
-                  size="lg"
-                  onClick={() => doCreate(false)}
-                  disabled={!form.maintenance_period}
-                >
+                <Button type="button" variant="outline" size="lg" onClick={() => setStep('form')}>← Geri Dön</Button>
+                <Button type="button" variant="outline" size="lg" onClick={() => doCreate(true)}>Daha Sonra Ayarla</Button>
+                <Button type="button" size="lg" onClick={() => doCreate(false)} disabled={!form.maintenance_period}>
                   Ekipmanı Kaydet
                 </Button>
               </div>
             </div>
+
           ) : (
-            /* ── ADIM 1: Ekipman Bilgileri ── */
+          /* ══════════════════════════════════════════
+              ADIM 1: Ekipman bilgileri (yeni veya tekli düzenleme)
+          ══════════════════════════════════════════ */
             <form onSubmit={isEdit ? handleEditSubmit : handleFormNext}>
 
               {/* Ekipman adı + Adet */}
@@ -404,29 +590,24 @@ export default function EquipmentFormPage() {
                 </div>
               </div>
 
-              {/* Çoklu birim sekmeleri */}
+              {/* Çoklu birim sekmeleri (yeni ekipman) */}
               {isMulti ? (
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                   <div className="flex border-b border-slate-100 overflow-x-auto">
                     {unitList.map((u, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setActiveTab(i)}
+                      <button key={i} type="button" onClick={() => setActiveTab(i)}
                         className={`px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
                           activeTab === i
                             ? 'border-amber-500 text-amber-600 bg-amber-50/50'
                             : unitErrors[i]
                             ? 'border-red-300 text-red-500 hover:bg-red-50'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
+                        }`}>
                         {u.name || `Birim ${i + 1}`}
                         {unitErrors[i] && <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />}
                       </button>
                     ))}
                   </div>
-
                   <div className="p-6">
                     <UnitFields
                       unit={unitList[activeTab] ?? unitList[0]}
@@ -439,7 +620,7 @@ export default function EquipmentFormPage() {
                   </div>
                 </div>
               ) : (
-                /* Tekli ekipman formu */
+                /* Tekli ekipman / tekil birim düzenleme */
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
 
                   <div className="grid grid-cols-2 gap-4">
@@ -496,7 +677,7 @@ export default function EquipmentFormPage() {
                       placeholder="Ekipman hakkında önemli notlar..." rows={3} className="resize-none" />
                   </div>
 
-                  {/* Düzenleme modunda bakım periyodu göster */}
+                  {/* Düzenleme modunda bakım periyodu */}
                   {isEdit && !isUnit && (
                     <div className="border-t border-slate-100 pt-5 space-y-3">
                       <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
@@ -520,7 +701,6 @@ export default function EquipmentFormPage() {
                 </div>
               )}
 
-              {/* Butonlar */}
               <div className="mt-4 flex gap-3 justify-end">
                 <Button type="button" variant="outline" size="lg" onClick={() => navigate('/equipment')}>İptal</Button>
                 <Button type="submit" size="lg">
