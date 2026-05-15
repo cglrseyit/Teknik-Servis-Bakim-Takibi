@@ -158,7 +158,8 @@ async function updateStatus(req, res) {
            completed_at=$6, completed_by=$7,
            approved_by_manager=COALESCE($8, approved_by_manager)
        WHERE id=$9 RETURNING *`,
-      [status, notes, performed_work, maintained_by || null, responsible_person || null, completed_at, completed_by,
+      [status, notes ?? null, performed_work ?? null, maintained_by || null, responsible_person || null,
+       completed_at, completed_by,
        typeof approved_by_manager === 'boolean' ? approved_by_manager : null, id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
