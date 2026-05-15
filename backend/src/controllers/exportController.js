@@ -272,7 +272,7 @@ async function equipmentList(req, res) {
     wb.creator = 'Bellis Deluxe Hotel · Teknik Servis';
     wb.created = new Date();
     const ws = wb.addWorksheet('Ekipmanlar', {
-      views: [{ state: 'frozen', ySplit: 2, showGridLines: false }],
+      views: [{ state: 'frozen', ySplit: 2, showGridLines: true }],
       properties: { defaultRowHeight: 18 },
     });
 
@@ -282,7 +282,7 @@ async function equipmentList(req, res) {
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
     // Satır 1: logo + başlık (logo için yeterli yükseklik)
-    ws.getRow(1).height = 50;
+    ws.getRow(1).height = 58;
 
     try {
       const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
