@@ -525,7 +525,7 @@ export default function EquipmentFormPage() {
 
                     {isDirty && !isConfirmed && (
                       <div className="flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
-                        <span className="text-sm text-amber-700">Değişiklikler onaylanmadı</span>
+                        <span className="text-sm text-amber-700">Değişiklikleri onayla</span>
                         <button
                           type="button"
                           onClick={() => { setIsConfirmed(true); setError(''); }}
