@@ -345,16 +345,23 @@ export default function DashboardPage() {
 
   function renderGroupRow(row) {
     const first = row.tasks[0];
+    const total           = row.tasks.length;
     const overdueCount    = row.tasks.filter(t => t.status === 'overdue').length;
     const inProgressCount = row.tasks.filter(t => t.status === 'in_progress').length;
+    const completedCount  = row.tasks.filter(t => t.status === 'completed' || t.status === 'skipped').length;
+    const pendingCount    = row.tasks.filter(t => t.status === 'pending').length;
 
     let badgeVariant, badgeLabel;
     if (overdueCount > 0) {
       badgeVariant = 'primary'; badgeLabel = `${overdueCount} Gecikmiş`;
     } else if (inProgressCount > 0) {
       badgeVariant = 'warning'; badgeLabel = `${inProgressCount} Devam Ediyor`;
+    } else if (completedCount === total) {
+      badgeVariant = 'danger'; badgeLabel = `${completedCount} Gerçekleşti`;
+    } else if (completedCount > 0) {
+      badgeVariant = 'warning'; badgeLabel = `${completedCount}/${total} Tamamlandı`;
     } else {
-      badgeVariant = 'secondary'; badgeLabel = `${row.tasks.length} Bekliyor`;
+      badgeVariant = 'secondary'; badgeLabel = `${pendingCount} Bekliyor`;
     }
 
     return (
