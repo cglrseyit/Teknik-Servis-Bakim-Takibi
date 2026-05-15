@@ -42,9 +42,11 @@ async function getOne(req, res) {
   const { id } = req.params;
   try {
     const { rows } = await pool.query(
-      `SELECT p.*, e.name AS equipment_name, e.location, e.brand, e.serial_number, e.category
+      `SELECT p.*, e.name AS equipment_name, e.location, e.brand, e.serial_number, e.category,
+              e.parent_id AS parent_equipment_id, ep.name AS parent_equipment_name
        FROM maintenance_plans p
        LEFT JOIN equipment e ON e.id = p.equipment_id
+       LEFT JOIN equipment ep ON ep.id = e.parent_id
        WHERE p.id = $1`,
       [id]
     );

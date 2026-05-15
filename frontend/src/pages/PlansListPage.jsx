@@ -118,7 +118,7 @@ export default function PlansListPage() {
               </tr>
             ) : (
               rows.map(row => row.isGroup
-                ? <GroupRow key={`g-${row.parentId}`} row={row} onClick={() => setSelectedGroup(row)} onEdit={id => navigate(`/plans/${id}/edit`)} />
+                ? <GroupRow key={`g-${row.parentId}`} row={row} onClick={() => setSelectedGroup(row)} onEdit={() => navigate(`/plans/${row.plans[0].id}/edit`)} />
                 : <PlanRow key={row.plan.id} p={row.plan} onClick={() => setSelectedPlan(row.plan)} onEdit={id => navigate(`/plans/${id}/edit`)} />
               )
             )}
@@ -193,7 +193,7 @@ function PlanRow({ p, onClick, onEdit }) {
   );
 }
 
-function GroupRow({ row, onClick, onEdit }) {
+function GroupRow({ row, onClick, onEdit = () => {} }) {
   const first = row.plans[0];
   const completedCount = row.plans.filter(p => p.this_month_completed_at).length;
   const pendingCount = row.plans.filter(p => p.this_month_has_pending && !p.this_month_completed_at).length;
@@ -246,6 +246,12 @@ function GroupRow({ row, onClick, onEdit }) {
       </td>
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(); }}
+            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+          >
+            <Pencil size={13} />
+          </button>
           <ChevronRight size={14} className="text-slate-300" />
         </div>
       </td>

@@ -24,6 +24,7 @@ export default function PlanFormPage() {
   const isEdit = Boolean(id);
 
   const [equipment, setEquipment] = useState([]);
+  const [groupInfo, setGroupInfo] = useState(null); // edit modunda grup planı bilgisi
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -55,6 +56,9 @@ export default function PlanFormPage() {
         start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
         target_month: p.target_month ? String(p.target_month) : '',
       });
+      if (p.parent_equipment_id) {
+        setGroupInfo({ parentName: p.parent_equipment_name, equipmentName: p.equipment_name });
+      }
     }).catch(() => {});
   }, [id, isEdit]);
 
@@ -166,11 +170,22 @@ export default function PlanFormPage() {
           </div>
         )}
 
+        {isEdit && groupInfo && (
+          <div className="mb-4 p-3 bg-violet-50 border border-violet-200 text-violet-700 text-xs rounded-lg">
+            <strong>"{groupInfo.parentName}"</strong> grubuna ait bir birim — değişiklikler gruptaki tüm birimlere uygulanacak.
+          </div>
+        )}
+
         {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ekipman *</label>
+            {isEdit && groupInfo ? (
+              <div className={`${fieldCls} text-gray-500 cursor-default`}>
+                {groupInfo.parentName}
+              </div>
+            ) : (
             <select required value={form.equipment_id} onChange={set('equipment_id')} className={fieldCls}>
               <option value="">Seçin</option>
               {equipment.map(e => {
@@ -183,6 +198,7 @@ export default function PlanFormPage() {
                 );
               })}
             </select>
+            )}
             {!isEdit && !isOneTime && unitCount > 0 && (
               <div className="mt-1.5 px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700">
                 Bu ekipmanın <strong>{unitCount} birimi</strong> var — her birim için otomatik olarak ayrı plan oluşturulacak.
