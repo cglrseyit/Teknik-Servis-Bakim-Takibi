@@ -295,16 +295,50 @@ async function update(req, res) {
 
 async function remove(req, res) {
   const { id } = req.params;
+  const deleteGroup = req.query.deleteGroup === 'true';
+
   try {
     // Plan'a bağlı bekleyen/devam eden/ertelenen/gecikmiş görevleri sil
     // Tamamlanmış görevler geçmiş kayıt için saklanır (plan_id NULL'a düşer)
-    await pool.query(
-      `DELETE FROM maintenance_tasks
-       WHERE plan_id=$1 AND status IN ('pending','in_progress','postponed','overdue')`,
-      [id]
-    );
-    const { rowCount } = await pool.query('DELETE FROM maintenance_plans WHERE id=$1', [id]);
+    const deletePlan = async (planId) => {
+      await pool.query(
+        `DELETE FROM maintenance_tasks
+         WHERE plan_id=$1 AND status IN ('pending','in_progress','postponed','overdue')`,
+        [planId]
+      );
+      await pool.query('DELETE FROM maintenance_plans WHERE id=$1', [planId]);
+    };
+
+    if (deleteGroup) {
+      // Planın ekipmanını bul, parent_id varsa tüm kardeş planları sil
+      const { rows: planRows } = await pool.query(
+        'SELECT equipment_id FROM maintenance_plans WHERE id=$1', [id]
+      );
+      if (!planRows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+
+      const { rows: eqRows } = await pool.query(
+        'SELECT parent_id FROM equipment WHERE id=$1', [planRows[0].equipment_id]
+      );
+      const parentId = eqRows[0]?.parent_id;
+
+      if (parentId) {
+        // Aynı parent'a bağlı tüm birimlerin aktif planlarını sil
+        const { rows: siblingPlans } = await pool.query(
+          `SELECT mp.id FROM maintenance_plans mp
+           JOIN equipment e ON e.id = mp.equipment_id
+           WHERE e.parent_id = $1 AND mp.is_one_time = false`,
+          [parentId]
+        );
+        for (const p of siblingPlans) await deletePlan(p.id);
+        await logAction(req.user.id, 'plan_deleted', 'plan', id, null);
+        return res.json({ message: `${siblingPlans.length} plan silindi` });
+      }
+    }
+
+    // Tekil silme (grup değilse veya deleteGroup=false)
+    const { rowCount } = await pool.query('SELECT id FROM maintenance_plans WHERE id=$1', [id]);
     if (!rowCount) return res.status(404).json({ error: 'Bulunamadı' });
+    await deletePlan(id);
     await logAction(req.user.id, 'plan_deleted', 'plan', id, null);
     res.json({ message: 'Silindi' });
   } catch (err) {

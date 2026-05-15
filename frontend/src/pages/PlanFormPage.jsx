@@ -74,8 +74,9 @@ export default function PlanFormPage() {
     setShowDeleteConfirm(false);
     setDeleting(true);
     try {
-      await api.delete(`/plans/${id}`);
-      toast?.success('Plan silindi');
+      const url = groupInfo ? `/plans/${id}?deleteGroup=true` : `/plans/${id}`;
+      await api.delete(url);
+      toast?.success(groupInfo ? 'Gruptaki tüm planlar silindi' : 'Plan silindi');
       navigate('/plans');
     } catch {
       toast?.error('Silme başarısız');
@@ -343,8 +344,10 @@ export default function PlanFormPage() {
 
       <ConfirmModal
         open={showDeleteConfirm}
-        title="Planı silmek istiyor musunuz?"
-        message="Bu plan ve bağlı tüm bekleyen görevler kalıcı olarak silinecek."
+        title={groupInfo ? 'Tüm grup planları silinecek' : 'Planı silmek istiyor musunuz?'}
+        message={groupInfo
+          ? `"${groupInfo.parentName}" grubundaki tüm birimlerin bakım planı silinecek.\n\nGeçmiş bakımlarınız silinmez.`
+          : 'Bu bakım planı ve bekleyen görevler silinecek.\n\nGeçmiş bakımlarınız silinmez.'}
         confirmLabel="Evet, Sil"
         variant="danger"
         onConfirm={handleDelete}
