@@ -82,8 +82,8 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Sıra | Ekipman | Görev Başlığı | Planlanan | Yapılma | Durum | Bakımı Yapan | Sorumlu | Yapılan İşlem | Notlar | Ek Dosyalar
-    const widths = [5, 20, 22, 14, 11, 12, 15, 15, 24, 18, 18];
+    // Sıra | Ekipman | Görev Başlığı | Tedarikçi | Planlanan | Yapılma | Bakımı Yapan | Sorumlu | Yapılan İşlem | Notlar | Ek Dosyalar
+    const widths = [5, 20, 22, 15, 14, 11, 15, 15, 24, 18, 18];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -133,7 +133,6 @@ async function equipmentHistory(req, res) {
     const metaItems = [];
     if (eq.brand)    metaItems.push(['Marka', eq.brand]);
     if (eq.category) metaItems.push(['Kategori', eq.category]);
-    if (eq.supplier) metaItems.push(['Tedarikçi', eq.supplier]);
     metaItems.push(['Çıktı Tarihi', fmtDate(new Date())]);
 
     let col = 1;
@@ -156,11 +155,13 @@ async function equipmentHistory(req, res) {
     ws.getRow(6).height = 20;
 
     // Satır 7: tablo başlıkları
-    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Planlanan', 'Yapılma', 'Durum', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
+    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Planlanan', 'Yapılma', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Notlar', 'Ek Dosyalar'];
     const headerRow = ws.getRow(7);
-    const borderThin = { style: 'thin', color: { argb: COLORS.border } };
-    const borderAccent = { style: 'thin', color: { argb: COLORS.primary } };
+    const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
+    const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
+    const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } }; // tablonun sağ bitişi
     headers.forEach((h, i) => {
+      const isLast = i === headers.length - 1;
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
       cell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: COLORS.primaryDark } };
@@ -168,7 +169,7 @@ async function equipmentHistory(req, res) {
       cell.alignment = { horizontal: 'left', vertical: 'middle' };
       cell.border = {
         top: borderAccent, bottom: borderAccent,
-        left: borderThin, right: borderThin,
+        left: borderThin, right: isLast ? borderRight : borderThin,
       };
     });
     headerRow.height = 26;
@@ -198,11 +199,11 @@ async function equipmentHistory(req, res) {
     displayTasks.forEach((t, idx) => {
       const row = ws.addRow([
         idx + 1,
-        displayName,                          // Ekipman (grup adı veya tekil ad)
-        t.title || '',
-        fmtMonth(t.scheduled_date),           // Planlanan → "Mayıs 2026"
-        fmtDate(t.completed_at),
-        STATUS_LABELS[t.status] || t.status,
+        displayName,                  // Ekipman
+        t.title || '',                // Görev Başlığı
+        eq.supplier || '',            // Tedarikçi
+        fmtMonth(t.scheduled_date),   // Planlanan → "Mayıs 2026"
+        fmtDate(t.completed_at),      // Yapılma
         t.maintained_by || '',
         t.responsible_person || '',
         t.performed_work || '',
@@ -211,14 +212,14 @@ async function equipmentHistory(req, res) {
       ]);
       row.height = 28;
       row.eachCell((cell, colNum) => {
+        const isLast = colNum === totalCols;
         cell.alignment = { vertical: 'top', wrapText: true, horizontal: colNum === 1 ? 'center' : 'left' };
         cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
         cell.border = {
           top: borderThin, bottom: borderThin,
-          left: borderThin, right: borderThin,
+          left: borderThin, right: isLast ? borderRight : borderThin,
         };
         if (colNum === 1) cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textLight } };
-        if (colNum === 6) cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.primaryDark } };
       });
       if (idx % 2 === 1) {
         row.eachCell(cell => {
