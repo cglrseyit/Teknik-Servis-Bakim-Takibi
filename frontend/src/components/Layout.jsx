@@ -153,11 +153,7 @@ export default function Layout({ children }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
-        <header className="h-16 bg-white border-b border-amber-100/70 flex items-center justify-between px-6 flex-shrink-0">
-          <div>
-            <h2 className="text-[17px] font-bold text-slate-900 leading-tight">{pageTitle}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Hoş geldiniz, {user?.name?.split(' ')[0]}</p>
-          </div>
+        <header className="h-12 bg-white border-b border-amber-100/70 flex items-center justify-end px-6 flex-shrink-0">
           <div className="relative" ref={ref}>
             <button
               onClick={handleOpen}
