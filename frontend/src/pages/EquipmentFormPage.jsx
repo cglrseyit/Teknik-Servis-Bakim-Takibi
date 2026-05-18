@@ -44,9 +44,9 @@ function UnitFields({ unit, onChange, hasError }) {
   const missing = (field) => hasError && !unit[field]?.trim();
   return (
     <div className="space-y-5">
-      {hasError && (!unit.name?.trim() || !unit.supplier?.trim()) && (
+      {hasError && !unit.name?.trim() && (
         <div className="px-3 py-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg">
-          Bu birimde zorunlu alanlar eksik: {[!unit.name?.trim() && 'Birim Adı', !unit.supplier?.trim() && 'Tedarikçi'].filter(Boolean).join(', ')}
+          Bu birimde Birim Adı zorunlu.
         </div>
       )}
       <div className="space-y-1.5">
@@ -54,16 +54,9 @@ function UnitFields({ unit, onChange, hasError }) {
         <Input value={unit.name} onChange={e => set('name', e.target.value)} placeholder="örn: Kombi #1"
           className={missing('name') ? 'border-red-400 focus:ring-red-400' : ''} />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-sm font-semibold text-slate-700">Tedarikçi <span className="text-red-500">*</span></Label>
-          <Input value={unit.supplier} onChange={e => set('supplier', e.target.value)} placeholder="örn: ABC Teknik Ltd."
-            className={missing('supplier') ? 'border-red-400 focus:ring-red-400' : ''} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
-          <Input value={unit.serial_number} onChange={e => set('serial_number', e.target.value)} placeholder="örn: SN-001" />
-        </div>
+      <div className="space-y-1.5">
+        <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
+        <Input value={unit.serial_number} onChange={e => set('serial_number', e.target.value)} placeholder="örn: SN-001" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
@@ -247,12 +240,16 @@ export default function EquipmentFormPage() {
     e.preventDefault();
     setError('');
     if (quantity > 1) {
-      const errors = unitList.map(u => !u.name?.trim() || !u.supplier?.trim());
+      if (!form.supplier?.trim()) {
+        setError('Tedarikçi zorunludur.');
+        return;
+      }
+      const errors = unitList.map(u => !u.name?.trim());
       setUnitErrors(errors);
       const firstBad = errors.findIndex(Boolean);
       if (firstBad !== -1) {
         setActiveTab(firstBad);
-        setError('Tüm birimlerde Birim Adı ve Tedarikçi zorunludur.');
+        setError('Tüm birimlerde Birim Adı zorunludur.');
         return;
       }
       setUnitErrors([]);
@@ -267,7 +264,7 @@ export default function EquipmentFormPage() {
       const period    = skipPlan ? null : (form.maintenance_period    || null);
       const startDate = skipPlan ? null : (form.maintenance_start_date || null);
       if (quantity > 1) {
-        await api.post('/equipment', { name: form.name, maintenance_period: period, maintenance_start_date: startDate, units: unitList });
+        await api.post('/equipment', { name: form.name, supplier: form.supplier, maintenance_period: period, maintenance_start_date: startDate, units: unitList });
       } else {
         await api.post('/equipment', { ...form, maintenance_period: period, maintenance_start_date: startDate, quantity: 1 });
       }
@@ -554,6 +551,40 @@ export default function EquipmentFormPage() {
               GRUP DÜZENLEME MODU
           ══════════════════════════════════════════ */}
           {isEdit && isGroupEdit ? (
+            <>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-4">
+              <Label htmlFor="group-supplier" className="text-sm font-semibold text-slate-700 mb-1.5 block">
+                Grup Tedarikçisi <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="group-supplier"
+                  value={form.supplier}
+                  onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                  placeholder="örn: ABC Teknik Ltd."
+                  className="flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!form.supplier?.trim()) {
+                      toast?.error('Tedarikçi boş olamaz');
+                      return;
+                    }
+                    try {
+                      await api.put(`/equipment/${id}`, { name: form.name, supplier: form.supplier });
+                      toast?.success('Grup tedarikçisi güncellendi');
+                    } catch (err) {
+                      toast?.error(err.response?.data?.error || 'Kaydedilemedi');
+                    }
+                  }}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+                >
+                  Tedarikçiyi Kaydet
+                </button>
+              </div>
+              <p className="text-xs text-slate-400 mt-1.5">Bu tedarikçi tüm birimler için ortak olarak uygulanır.</p>
+            </div>
             <div className="grid grid-cols-[220px_1fr] gap-4 items-start">
 
               {/* Sol: Birim listesi */}
@@ -642,23 +673,13 @@ export default function EquipmentFormPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-sm font-semibold text-slate-700">Tedarikçi</Label>
-                        <Input
-                          value={unitForms[selectedUnitIdx].supplier}
-                          onChange={e => setUnitField(selectedUnitIdx, 'supplier', e.target.value)}
-                          placeholder="örn: ABC Teknik Ltd."
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
-                        <Input
-                          value={unitForms[selectedUnitIdx].serial_number}
-                          onChange={e => setUnitField(selectedUnitIdx, 'serial_number', e.target.value)}
-                          placeholder="örn: SN-001"
-                        />
-                      </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-semibold text-slate-700">Seri Numarası</Label>
+                      <Input
+                        value={unitForms[selectedUnitIdx].serial_number}
+                        onChange={e => setUnitField(selectedUnitIdx, 'serial_number', e.target.value)}
+                        placeholder="örn: SN-001"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -784,6 +805,7 @@ export default function EquipmentFormPage() {
                 </form>
               )}
             </div>
+            </>
 
           /* ══════════════════════════════════════════
               ADIM 2: Bakım Periyodu (yeni ekipman)
@@ -863,6 +885,18 @@ export default function EquipmentFormPage() {
                     </div>
                   )}
                 </div>
+
+                {isMulti && (
+                  <div className="mt-4 pt-4 border-t border-slate-100 space-y-1.5">
+                    <Label htmlFor="multi-supplier" className="text-sm font-semibold text-slate-700">
+                      Tedarikçi <span className="text-red-500">*</span>
+                    </Label>
+                    <Input id="multi-supplier" required value={form.supplier}
+                      onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                      placeholder="örn: ABC Teknik Ltd." />
+                    <p className="text-xs text-slate-400">Bu tedarikçi tüm birimler için ortak olarak uygulanır.</p>
+                  </div>
+                )}
               </div>
 
               {/* Çoklu birim sekmeleri (yeni ekipman) */}

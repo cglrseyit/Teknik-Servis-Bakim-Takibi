@@ -185,23 +185,23 @@ async function getOne(req, res) {
 async function create(req, res) {
   const { name, brand, model, supplier, status, notes, maintenance_period, maintenance_start_date, quantity, parent_id, units } = req.body;
   if (!name) return res.status(400).json({ error: 'Ekipman adı gerekli' });
-  // Alt birim veya sekme-bazlı çoklu kayıtta tedarikçi zorunlu değil
-  if (!parent_id && !Array.isArray(units) && !supplier) return res.status(400).json({ error: 'Tedarikçi gerekli' });
+  // Alt birim hariç tüm yeni ekipmanlarda tedarikçi zorunlu (sekme-bazlı çokluda da parent'a yazılıyor)
+  if (!parent_id && !supplier) return res.status(400).json({ error: 'Tedarikçi gerekli' });
 
-  // Sekme bazlı birim dizisi: her birimin kendi tedarikçi/seri no/lokasyonu var
+  // Sekme bazlı birim dizisi: tedarikçi parent'ta ortak; her birimin kendi seri no/lokasyonu var
   if (!parent_id && Array.isArray(units) && units.length > 1) {
     try {
       const { rows } = await pool.query(
-        `INSERT INTO equipment (name, maintenance_period) VALUES ($1,$2) RETURNING *`,
-        [name, maintenance_period || null]
+        `INSERT INTO equipment (name, supplier, maintenance_period) VALUES ($1,$2,$3) RETURNING *`,
+        [name, supplier || null, maintenance_period || null]
       );
       const parent = rows[0];
 
       for (const u of units) {
         await pool.query(
-          `INSERT INTO equipment (name, brand, model, supplier, status, notes, serial_number, location, parent_id)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [u.name || name, u.brand || null, u.model || null, u.supplier || null,
+          `INSERT INTO equipment (name, brand, model, status, notes, serial_number, location, parent_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [u.name || name, u.brand || null, u.model || null,
            u.status || 'active', u.notes || null, u.serial_number || null, u.location || null, parent.id]
         );
       }
