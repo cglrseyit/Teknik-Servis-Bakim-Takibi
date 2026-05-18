@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, ClipboardList, Wrench, CalendarCheck, RefreshCw, ChevronRight, Pencil, Zap, Clock, Layers } from 'lucide-react';
+import { Plus, ClipboardList, Wrench, CalendarCheck, RefreshCw, ChevronRight, Pencil, Zap, Clock, Layers, Search } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import PlanDetailPanel from '../components/PlanDetailPanel';
@@ -50,6 +50,7 @@ export default function PlansListPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);   // tekil plan
   const [selectedGroup, setSelectedGroup] = useState(null); // grup planları
+  const [search, setSearch] = useState('');
 
   function loadPlans() {
     setLoading(true);
@@ -69,14 +70,32 @@ export default function PlansListPage() {
     if (updated) setSelectedGroup(updated);
   }, [plans]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const rows = computeRows(plans);
+  const filteredPlans = (() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return plans;
+    return plans.filter(p =>
+      (p.equipment_name || '').toLowerCase().includes(q) ||
+      (p.parent_equipment_name || '').toLowerCase().includes(q)
+    );
+  })();
+  const rows = computeRows(filteredPlans);
 
   return (
     <Layout>
-      <div className="flex justify-end mb-4">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Ekipman ara..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 transition-all shadow-sm"
+          />
+        </div>
         <Link
           to="/plans/new"
-          className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
+          className="ml-auto flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
         >
           <Plus size={15} strokeWidth={2.5} />
           Plan Oluştur

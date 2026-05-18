@@ -522,8 +522,14 @@ export default function EquipmentDetailPage() {
                       </div>
 
                       {/* Detail rows */}
-                      {(t.maintained_by || t.responsible_person || t.performed_work || t.notes) && (
+                      {(t.is_one_time || t.maintained_by || t.responsible_person || t.performed_work || t.notes) && (
                         <div className="border-t border-slate-100 pt-3 space-y-2">
+                          {t.is_one_time && t.title && (
+                            <div className="flex gap-2 text-xs">
+                              <span className="text-slate-400 w-24 flex-shrink-0">Arıza Sebebi</span>
+                              <span className="text-slate-700 font-medium">{t.title}</span>
+                            </div>
+                          )}
                           {t.maintained_by && (
                             <div className="flex gap-2 text-xs">
                               <span className="text-slate-400 w-24 flex-shrink-0">Bakımı Yapan</span>

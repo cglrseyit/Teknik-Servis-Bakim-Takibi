@@ -98,8 +98,8 @@ async function equipmentHistory(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Sıra | Ekipman | Görev Başlığı | Tedarikçi | Bakımı Yapan | Sorumlu | Yapılan İşlem | Planlanan | Yapılma | Notlar | Ek Dosyalar
-    const widths = [5, 20, 22, 15, 15, 15, 24, 14, 11, 18, 18];
+    // Sıra | Ekipman | Görev Başlığı | Arıza Sebebi | Tedarikçi | Bakımı Yapan | Sorumlu | Yapılan İşlem | Planlanan | Yapılma | Notlar | Ek Dosyalar
+    const widths = [5, 20, 22, 22, 15, 15, 15, 24, 14, 11, 18, 18];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -120,7 +120,7 @@ async function equipmentHistory(req, res) {
     ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
 
     // Satır 2: tablo başlıkları (spacer kaldırıldı)
-    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Tedarikçi', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Planlanan', 'Yapılma', 'Notlar', 'Ek Dosyalar'];
+    const headers = ['Sıra', 'Ekipman', 'Görev Başlığı', 'Arıza Sebebi', 'Tedarikçi', 'Bakımı Yapan', 'Sorumlu Kişi', 'Yapılan İşlem', 'Planlanan', 'Yapılma', 'Notlar', 'Ek Dosyalar'];
     const headerRow = ws.getRow(2);
     const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
@@ -169,6 +169,7 @@ async function equipmentHistory(req, res) {
         idx + 1,
         displayName,                  // Ekipman
         titleCellValue,               // Görev Başlığı
+        t.is_one_time ? (t.title || '') : '',  // Arıza Sebebi (sadece tek seferlik için)
         eq.supplier || '',            // Tedarikçi
         t.maintained_by || '',        // Bakımı Yapan
         t.responsible_person || '',   // Sorumlu Kişi
