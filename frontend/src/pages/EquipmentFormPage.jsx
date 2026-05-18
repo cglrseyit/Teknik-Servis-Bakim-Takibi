@@ -201,7 +201,7 @@ export default function EquipmentFormPage() {
             name:          u.name          || '',
             brand:         u.brand         || '',
             model:         u.model         || '',
-            supplier:      u.supplier      || '',
+            supplier:      null,            // Birim seviyesinde supplier tutulmuyor (parent'a taşındı)
             serial_number: u.serial_number || '',
             location:      u.location      || '',
             status:        u.status        || 'active',
@@ -376,7 +376,7 @@ export default function EquipmentFormPage() {
       setEditUnits(updated.units);
       const newForms = updated.units.map(u => ({
         name: u.name || '', brand: u.brand || '', model: u.model || '',
-        supplier: u.supplier || '', serial_number: u.serial_number || '',
+        supplier: null, serial_number: u.serial_number || '',
         location: u.location || '', status: u.status || 'active', notes: u.notes || '',
       }));
       setUnitForms(newForms);
@@ -644,7 +644,7 @@ export default function EquipmentFormPage() {
                               return;
                             }
                             try {
-                              await api.put(`/equipment/${id}`, { name: form.name, supplier: form.supplier });
+                              await api.put(`/equipment/${id}`, form);
                               toast?.success('Grup tedarikçisi güncellendi');
                             } catch (err) {
                               toast?.error(err.response?.data?.error || 'Kaydedilemedi');

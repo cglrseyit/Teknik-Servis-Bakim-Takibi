@@ -163,7 +163,7 @@ export default function EquipmentDetailPage() {
   const info = {
     brand:              mainUnit?.brand              || equipment.brand              || par?.brand,
     location:           mainUnit?.location           || equipment.location           || par?.location,
-    supplier:           equipment.supplier           || par?.supplier              || mainUnit?.supplier,
+    supplier:           par?.supplier                || equipment.supplier          || mainUnit?.supplier,
     model:              mainUnit?.model              || equipment.model              || par?.model,
     serial_number:      mainUnit?.serial_number      || equipment.serial_number,
     notes:              mainUnit?.notes              || equipment.notes              || par?.notes,
