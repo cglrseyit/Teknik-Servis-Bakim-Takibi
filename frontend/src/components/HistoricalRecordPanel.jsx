@@ -11,7 +11,7 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function HistoricalRecordPanel({ equipmentId, equipmentName, onCreated }) {
+export default function HistoricalRecordPanel({ equipmentId, equipmentName, unitCount = 0, onCreated }) {
   const toast = useToast();
   const fileInputRef = useRef(null);
   const [form, setForm] = useState({
@@ -54,23 +54,19 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, onCr
 
     setSubmitting(true);
     try {
-      const { data: task } = await api.post('/tasks/historical', {
-        equipment_id: equipmentId,
-        ...form,
+      const fd = new FormData();
+      fd.append('equipment_id', String(equipmentId));
+      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      files.forEach(f => fd.append('files', f));
+
+      const { data } = await api.post('/tasks/historical', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const fd = new FormData();
-      files.forEach(f => fd.append('files', f));
-      try {
-        await api.post(`/tasks/${task.id}/attachments`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } catch (uploadErr) {
-        toast?.error('Kayıt oluştu fakat dosya yüklenemedi. Bakım geçmişinden dosya eklemeyi tekrar deneyebilirsin.');
-        console.error('attachment upload failed:', uploadErr);
-      }
-
-      toast?.success('Geçmiş bakım kaydı eklendi');
+      const unitMsg = data.unit_count > 1
+        ? `Geçmiş bakım kaydı ${data.unit_count} birime eklendi`
+        : 'Geçmiş bakım kaydı eklendi';
+      toast?.success(unitMsg);
       onCreated?.();
     } catch (err) {
       toast?.error(err.response?.data?.error || 'Kayıt oluşturulamadı');
@@ -83,6 +79,11 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, onCr
     <form onSubmit={handleSubmit} className="space-y-4">
       <p className="text-xs text-slate-500 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
         <strong className="text-slate-700">{equipmentName}</strong> için geçmiş bir bakım kaydı oluştur. Tarihten önce yapılmış bakımlar burada arşivlenir.
+        {unitCount > 0 && (
+          <span className="block mt-1.5 text-violet-700">
+            <strong>Not:</strong> Bu bir grup ekipman — kayıt <strong>{unitCount} birime</strong> birden uygulanır, dosyalar tüm birimlere bağlanır.
+          </span>
+        )}
       </p>
 
       <Field icon={Calendar} label="Bakım Tarihi *">

@@ -1,3 +1,4 @@
+const fs = require('fs');
 const pool = require('../config/db');
 const { generateTasksForPlan, getIntervalDays } = require('../services/taskGenerator');
 const { logAction } = require('../services/auditLogger');
@@ -326,8 +327,15 @@ async function getSummary(req, res) {
 
 async function createHistorical(req, res) {
   const { equipment_id, title, maintained_by, responsible_person, scheduled_date, performed_work, notes } = req.body;
+  const equipmentId = Number(equipment_id);
+  const files = req.files || [];
 
-  if (!equipment_id || !title?.trim() || !maintained_by?.trim() || !responsible_person?.trim() || !scheduled_date) {
+  function cleanupFiles() {
+    files.forEach(f => fs.unlink(f.path, () => {}));
+  }
+
+  if (!equipmentId || !title?.trim() || !maintained_by?.trim() || !responsible_person?.trim() || !scheduled_date) {
+    cleanupFiles();
     return res.status(400).json({ error: 'Ekipman, başlık, bakımı yapan, sorumlu kişi ve tarih zorunlu' });
   }
 
@@ -335,27 +343,63 @@ async function createHistorical(req, res) {
   const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
   const todayStr = `${istanbulNow.getFullYear()}-${String(istanbulNow.getMonth() + 1).padStart(2, '0')}-${String(istanbulNow.getDate()).padStart(2, '0')}`;
   if (scheduled_date > todayStr) {
+    cleanupFiles();
     return res.status(400).json({ error: 'Geçmişe dönük kayıt için tarih bugün veya daha eski olmalı' });
   }
 
   try {
+    // Grup mu? Child birimleri varsa onlara, yoksa kendisine ekle
+    const { rows: children } = await pool.query(
+      'SELECT id FROM equipment WHERE parent_id = $1 ORDER BY id',
+      [equipmentId]
+    );
+    const targetIds = children.length > 0 ? children.map(c => c.id) : [equipmentId];
+
     const completed_at = new Date(scheduled_date + 'T12:00:00');
-    const { rows } = await pool.query(
-      `INSERT INTO maintenance_tasks
-         (equipment_id, plan_id, title, scheduled_date, status,
-          completed_at, completed_by, maintained_by, responsible_person,
-          performed_work, notes, is_one_time)
-       VALUES ($1, NULL, $2, $3, 'completed', $4, $5, $6, $7, $8, $9, false)
-       RETURNING *`,
-      [equipment_id, title.trim(), scheduled_date, completed_at, req.user.id,
-       maintained_by.trim(), responsible_person.trim(),
-       performed_work?.trim() || null, notes?.trim() || null]
+    const insertedTaskIds = [];
+
+    for (const targetId of targetIds) {
+      const { rows } = await pool.query(
+        `INSERT INTO maintenance_tasks
+           (equipment_id, plan_id, title, scheduled_date, status,
+            completed_at, completed_by, maintained_by, responsible_person,
+            performed_work, notes, is_one_time)
+         VALUES ($1, NULL, $2, $3, 'completed', $4, $5, $6, $7, $8, $9, false)
+         RETURNING id`,
+        [targetId, title.trim(), scheduled_date, completed_at, req.user.id,
+         maintained_by.trim(), responsible_person.trim(),
+         performed_work?.trim() || null, notes?.trim() || null]
+      );
+      insertedTaskIds.push(rows[0].id);
+    }
+
+    // Dosyaları her task'a bağla (multer bir kez disk'e yazdı, biz N×M kayıt açıyoruz)
+    if (files.length > 0) {
+      for (const f of files) {
+        const originalname = Buffer.from(f.originalname, 'latin1').toString('utf8');
+        for (const taskId of insertedTaskIds) {
+          await pool.query(
+            `INSERT INTO task_attachments (task_id, filename, stored_filename, mime_type, size_bytes, uploaded_by)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [taskId, originalname, f.filename, f.mimetype, f.size, req.user.id]
+          );
+        }
+      }
+    }
+
+    await logAction(
+      req.user.id, 'task_completed', 'task', insertedTaskIds[0],
+      `${title.trim()}${insertedTaskIds.length > 1 ? ` (${insertedTaskIds.length} birim)` : ''}`
     );
 
-    await logAction(req.user.id, 'task_completed', 'task', rows[0].id, rows[0].title);
-    res.status(201).json(rows[0]);
+    res.status(201).json({
+      task_ids: insertedTaskIds,
+      unit_count: insertedTaskIds.length,
+      attachment_count: files.length,
+    });
   } catch (err) {
     console.error('createHistorical error:', err);
+    cleanupFiles();
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 }

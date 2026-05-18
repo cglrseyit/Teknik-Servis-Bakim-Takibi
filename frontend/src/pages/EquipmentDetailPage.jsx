@@ -615,6 +615,7 @@ export default function EquipmentDetailPage() {
           <HistoricalRecordPanel
             equipmentId={Number(id)}
             equipmentName={equipment?.name || ''}
+            unitCount={units.length}
             onCreated={() => {
               setHistoricalPanelOpen(false);
               reload();
