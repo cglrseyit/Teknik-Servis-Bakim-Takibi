@@ -30,15 +30,31 @@ function getTransport() {
 
 async function sendMail({ to, subject, html }) {
   const from = process.env.SMTP_FROM || `Bellis Teknik Servis <${process.env.SMTP_USER}>`;
+  // to: dizi veya virgüllü string olabilir → her alıcıya AYRI mail gönderilir
+  // (BCC/CC değil; her kişi yalnızca kendine gelmiş gibi görür)
+  const recipients = Array.isArray(to)
+    ? to
+    : String(to || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (recipients.length === 0) return { ok: false, error: 'Alıcı belirtilmemiş' };
+
   const t = getTransport();
   if (!t) return { ok: false, error: 'SMTP yapılandırılmamış' };
-  try {
-    await t.sendMail({ from, to, subject, html });
-    return { ok: true };
-  } catch (err) {
-    console.error(`[email] ${to} adresine gönderim başarısız:`, err.message);
-    return { ok: false, error: err.message };
+
+  let successCount = 0;
+  let lastError = null;
+  for (const addr of recipients) {
+    try {
+      await t.sendMail({ from, to: addr, subject, html });
+      successCount++;
+      if (recipients.length > 1) console.log(`[email] ${addr} adresine gönderildi`);
+    } catch (err) {
+      lastError = err.message;
+      console.error(`[email] ${addr} adresine gönderim başarısız:`, err.message);
+    }
   }
+
+  if (successCount === 0) return { ok: false, error: lastError };
+  return { ok: true };
 }
 
 function fmtMonth(d) {
