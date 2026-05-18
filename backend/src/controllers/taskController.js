@@ -324,4 +324,40 @@ async function getSummary(req, res) {
   }
 }
 
-module.exports = { getAll, getOne, create, updateStatus, bulkComplete, getSummary, getMyTasks };
+async function createHistorical(req, res) {
+  const { equipment_id, title, maintained_by, responsible_person, scheduled_date, performed_work, notes } = req.body;
+
+  if (!equipment_id || !title?.trim() || !maintained_by?.trim() || !responsible_person?.trim() || !scheduled_date) {
+    return res.status(400).json({ error: 'Ekipman, başlık, bakımı yapan, sorumlu kişi ve tarih zorunlu' });
+  }
+
+  // Tarih geçmiş veya bugün olmalı (gelecek tarih reddedilir)
+  const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+  const todayStr = `${istanbulNow.getFullYear()}-${String(istanbulNow.getMonth() + 1).padStart(2, '0')}-${String(istanbulNow.getDate()).padStart(2, '0')}`;
+  if (scheduled_date > todayStr) {
+    return res.status(400).json({ error: 'Geçmişe dönük kayıt için tarih bugün veya daha eski olmalı' });
+  }
+
+  try {
+    const completed_at = new Date(scheduled_date + 'T12:00:00');
+    const { rows } = await pool.query(
+      `INSERT INTO maintenance_tasks
+         (equipment_id, plan_id, title, scheduled_date, status,
+          completed_at, completed_by, maintained_by, responsible_person,
+          performed_work, notes, is_one_time)
+       VALUES ($1, NULL, $2, $3, 'completed', $4, $5, $6, $7, $8, $9, false)
+       RETURNING *`,
+      [equipment_id, title.trim(), scheduled_date, completed_at, req.user.id,
+       maintained_by.trim(), responsible_person.trim(),
+       performed_work?.trim() || null, notes?.trim() || null]
+    );
+
+    await logAction(req.user.id, 'task_completed', 'task', rows[0].id, rows[0].title);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('createHistorical error:', err);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+}
+
+module.exports = { getAll, getOne, create, createHistorical, updateStatus, bulkComplete, getSummary, getMyTasks };

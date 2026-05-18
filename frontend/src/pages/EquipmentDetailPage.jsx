@@ -4,7 +4,9 @@ import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2, Zap } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2, Zap, History } from 'lucide-react';
+import SlidePanel from '../components/SlidePanel';
+import HistoricalRecordPanel from '../components/HistoricalRecordPanel';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 const STATUS_COLORS = {
@@ -59,6 +61,7 @@ export default function EquipmentDetailPage() {
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitStatus, setNewUnitStatus] = useState('active');
   const [savingUnit, setSavingUnit] = useState(false);
+  const [historicalPanelOpen, setHistoricalPanelOpen] = useState(false);
 
   function reload() {
     api.get(`/equipment/${id}`).then(r => {
@@ -469,12 +472,22 @@ export default function EquipmentDetailPage() {
 
             {/* Bakım Geçmişi */}
             <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">
-              Bakım Geçmişi
-              {completedTasks.length > 0 && (
-                <span className="ml-1.5 text-xs font-normal text-slate-400">({completedTasks.length})</span>
-              )}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-slate-700">
+                Bakım Geçmişi
+                {completedTasks.length > 0 && (
+                  <span className="ml-1.5 text-xs font-normal text-slate-400">({completedTasks.length})</span>
+                )}
+              </h3>
+              <button
+                onClick={() => setHistoricalPanelOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                title="Eski tarihli bir bakım kaydı ekle"
+              >
+                <History size={13} />
+                Geçmiş Kayıt Ekle
+              </button>
+            </div>
 
             {completedTasks.length === 0 ? (
               <div className="bg-white rounded-xl border border-amber-100/60 shadow-sm p-10 text-center">
@@ -591,6 +604,24 @@ export default function EquipmentDetailPage() {
           </div>
         </div>
       </div>
+
+      <SlidePanel
+        open={historicalPanelOpen}
+        onClose={() => setHistoricalPanelOpen(false)}
+        title="Geçmiş Bakım Kaydı Ekle"
+        subtitle={equipment?.name}
+      >
+        {historicalPanelOpen && (
+          <HistoricalRecordPanel
+            equipmentId={Number(id)}
+            equipmentName={equipment?.name || ''}
+            onCreated={() => {
+              setHistoricalPanelOpen(false);
+              reload();
+            }}
+          />
+        )}
+      </SlidePanel>
 
     </Layout>
   );
