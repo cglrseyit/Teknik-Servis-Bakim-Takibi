@@ -135,6 +135,7 @@ const AUTO_MIGRATIONS = [
   `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS maintained_by TEXT`,
   `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS is_one_time BOOLEAN DEFAULT false`,
   `ALTER TABLE maintenance_tasks ADD COLUMN IF NOT EXISTS responsible_person TEXT`,
+  `ALTER TABLE maintenance_plans ADD COLUMN IF NOT EXISTS target_month INT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS supplier TEXT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS brand TEXT`,
   `ALTER TABLE equipment ADD COLUMN IF NOT EXISTS category TEXT`,
