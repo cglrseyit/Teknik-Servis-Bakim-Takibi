@@ -551,40 +551,6 @@ export default function EquipmentFormPage() {
               GRUP DÜZENLEME MODU
           ══════════════════════════════════════════ */}
           {isEdit && isGroupEdit ? (
-            <>
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-4">
-              <Label htmlFor="group-supplier" className="text-sm font-semibold text-slate-700 mb-1.5 block">
-                Grup Tedarikçisi <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="group-supplier"
-                  value={form.supplier}
-                  onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
-                  placeholder="örn: ABC Teknik Ltd."
-                  className="flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!form.supplier?.trim()) {
-                      toast?.error('Tedarikçi boş olamaz');
-                      return;
-                    }
-                    try {
-                      await api.put(`/equipment/${id}`, { name: form.name, supplier: form.supplier });
-                      toast?.success('Grup tedarikçisi güncellendi');
-                    } catch (err) {
-                      toast?.error(err.response?.data?.error || 'Kaydedilemedi');
-                    }
-                  }}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
-                >
-                  Tedarikçiyi Kaydet
-                </button>
-              </div>
-              <p className="text-xs text-slate-400 mt-1.5">Bu tedarikçi tüm birimler için ortak olarak uygulanır.</p>
-            </div>
             <div className="grid grid-cols-[220px_1fr] gap-4 items-start">
 
               {/* Sol: Birim listesi */}
@@ -653,6 +619,43 @@ export default function EquipmentFormPage() {
                   onSubmit={e => { e.preventDefault(); handleSaveUnit(selectedUnitIdx); }}
                 >
                   <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+
+                    {/* Grup geneli — tüm birimler için ortak */}
+                    <div className="-mx-6 -mt-6 mb-2 px-6 pt-5 pb-4 bg-gradient-to-br from-amber-50/70 to-amber-100/30 border-b border-amber-100 rounded-t-2xl">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <Label htmlFor="group-supplier" className="text-sm font-semibold text-amber-800">
+                          Grup Tedarikçisi <span className="text-red-500">*</span>
+                        </Label>
+                        <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Tüm birimler</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          id="group-supplier"
+                          value={form.supplier}
+                          onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                          placeholder="örn: ABC Teknik Ltd."
+                          className="flex-1 bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!form.supplier?.trim()) {
+                              toast?.error('Tedarikçi boş olamaz');
+                              return;
+                            }
+                            try {
+                              await api.put(`/equipment/${id}`, { name: form.name, supplier: form.supplier });
+                              toast?.success('Grup tedarikçisi güncellendi');
+                            } catch (err) {
+                              toast?.error(err.response?.data?.error || 'Kaydedilemedi');
+                            }
+                          }}
+                          className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                        >
+                          Tedarikçiyi Kaydet
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
@@ -805,7 +808,6 @@ export default function EquipmentFormPage() {
                 </form>
               )}
             </div>
-            </>
 
           /* ══════════════════════════════════════════
               ADIM 2: Bakım Periyodu (yeni ekipman)
