@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Loader2, Paperclip, X, Calendar, FileText, User, Briefcase, ClipboardList, StickyNote } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import DayPicker from './DayPicker';
 
 const ACCEPTED = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx';
 
@@ -85,13 +86,11 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, onCr
       </p>
 
       <Field icon={Calendar} label="Bakım Tarihi *">
-        <input
-          type="date"
-          required
-          max={todayStr()}
+        <DayPicker
           value={form.scheduled_date}
-          onChange={e => update('scheduled_date', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500"
+          onChange={v => update('scheduled_date', v)}
+          max={todayStr()}
+          placeholder="Bakımın yapıldığı tarihi seç"
         />
       </Field>
 
