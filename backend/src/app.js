@@ -16,6 +16,10 @@ const pool = require('./config/db');
 
 const app = express();
 
+// Reverse proxy arkasındayız (Railway tek hop, Bellis sunucusunda nginx olursa yine 1).
+// Bu olmadan req.ip = proxy IP olur → rate-limit tüm kullanıcıları aynı kovaya yazar.
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {

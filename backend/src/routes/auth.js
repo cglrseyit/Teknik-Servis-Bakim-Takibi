@@ -8,6 +8,9 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   skipSuccessfulRequests: true,
+  // IP + username — aynı evden farklı kullanıcılar birbirini etkilemez,
+  // tek kullanıcıya brute-force denemesi hâlâ engellenir.
+  keyGenerator: (req) => `${req.ip}::${(req.body?.username || '').toLowerCase()}`,
   message: { error: 'Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin.' },
   standardHeaders: true,
   legacyHeaders: false,
