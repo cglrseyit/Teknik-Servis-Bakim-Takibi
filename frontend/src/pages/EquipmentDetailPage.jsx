@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2, Zap } from 'lucide-react';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 const STATUS_COLORS = {
@@ -496,7 +496,15 @@ export default function EquipmentDetailPage() {
                     >
                       {/* Header row */}
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="text-sm font-semibold text-slate-800 leading-tight">{t.title}</p>
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 leading-tight">{t.title}</p>
+                          {t.is_one_time && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-50 text-orange-700">
+                              <Zap size={9} />
+                              Tek Seferlik
+                            </span>
+                          )}
+                        </div>
                         <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${TASK_STATUS_CONFIG[t.status]?.cls || ''}`}>
                           {TASK_STATUS_CONFIG[t.status]?.label}
                         </span>

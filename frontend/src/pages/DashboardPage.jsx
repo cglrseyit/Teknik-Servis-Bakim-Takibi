@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, Layers } from 'lucide-react';
+import { ClipboardList, Activity, AlertTriangle, CheckCircle2, PlayCircle, Search, X, CalendarDays, ChevronLeft, ChevronRight, ChevronDown, Layers, Zap } from 'lucide-react';
 import Layout from '../components/Layout';
 import Badge from '../components/Badge';
 import SlidePanel from '../components/SlidePanel';
@@ -301,8 +301,16 @@ export default function DashboardPage() {
         className="hover:bg-gray-50 cursor-pointer"
       >
         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-          {t.equipment_name || '—'}
-          {t.location ? <span className="text-gray-400 font-normal"> · {t.location}</span> : ''}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>{t.equipment_name || '—'}</span>
+            {t.is_one_time && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-50 text-orange-700">
+                <Zap size={9} />
+                Tek Seferlik
+              </span>
+            )}
+            {t.location && <span className="text-gray-400 font-normal">· {t.location}</span>}
+          </div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-600">{t.title}</td>
         <td className="px-6 py-4 text-sm text-gray-600">

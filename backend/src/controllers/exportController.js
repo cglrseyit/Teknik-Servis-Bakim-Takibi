@@ -162,10 +162,13 @@ async function equipmentHistory(req, res) {
 
     // Veri satırları
     displayTasks.forEach((t, idx) => {
+      const titleCellValue = t.is_one_time
+        ? `[Tek Seferlik] ${t.title || ''}`
+        : (t.title || '');
       const row = ws.addRow([
         idx + 1,
         displayName,                  // Ekipman
-        t.title || '',                // Görev Başlığı
+        titleCellValue,               // Görev Başlığı
         eq.supplier || '',            // Tedarikçi
         t.maintained_by || '',        // Bakımı Yapan
         t.responsible_person || '',   // Sorumlu Kişi
@@ -190,6 +193,11 @@ async function equipmentHistory(req, res) {
         row.eachCell(cell => {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accentSoft } };
         });
+      }
+      // Tek seferlik: görev başlığı hücresini bold + turuncu yap
+      if (t.is_one_time) {
+        const titleCell = row.getCell(3);
+        titleCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFC2410C' } }; // orange-700
       }
     });
 
