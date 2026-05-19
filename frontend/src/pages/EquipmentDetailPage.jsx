@@ -3,11 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
-import downloadAttachment from '../utils/downloadAttachment';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2, Zap, History } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, FileSpreadsheet, Plus, ChevronRight, Trash2, Zap, History } from 'lucide-react';
 import SlidePanel from '../components/SlidePanel';
 import HistoricalRecordPanel from '../components/HistoricalRecordPanel';
+import TaskAttachmentManager from '../components/TaskAttachmentManager';
 
 const STATUS_LABELS = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
 const STATUS_COLORS = {
@@ -138,6 +138,16 @@ export default function EquipmentDetailPage() {
 
   const upcomingTasks = equipment.upcoming_tasks || [];
   const completedTasks = equipment.completed_tasks || [];
+  const canEditAttachments = ['admin', 'teknik_muduru'].includes(user?.role);
+
+  function updateTaskAttachments(taskId, nextList) {
+    setEquipment(eq => eq ? {
+      ...eq,
+      completed_tasks: (eq.completed_tasks || []).map(t =>
+        t.id === taskId ? { ...t, attachments: nextList } : t
+      ),
+    } : eq);
+  }
   const isGroup = units.length > 0;
   const isUnit = Boolean(equipment.parent_id);
   // Grup ise ilk birimi "ana ekipman" olarak ön panelde göster, kalanları Birimler listesinde bırak
@@ -557,30 +567,15 @@ export default function EquipmentDetailPage() {
                         </div>
                       )}
 
-                      {/* Ek dosyalar */}
-                      {t.attachments && t.attachments.length > 0 && (
-                        <div className="border-t border-slate-100 pt-3 mt-3">
-                          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1">
-                            <Paperclip size={11} />
-                            Ek Dosyalar ({t.attachments.length})
-                          </p>
-                          <ul className="space-y-1">
-                            {t.attachments.map(a => (
-                              <li key={a.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-slate-50 rounded text-xs">
-                                <button
-                                  onClick={() => downloadAttachment(a)}
-                                  className="truncate text-left text-slate-700 hover:text-amber-700 hover:underline flex-1"
-                                  title="İndir"
-                                >
-                                  {a.filename}
-                                </button>
-                                <button onClick={() => downloadAttachment(a)} className="text-amber-600 hover:text-amber-700 flex-shrink-0" title="İndir">
-                                  <Download size={13} />
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                      {/* Ek dosyalar — ekle / sil */}
+                      {(t.attachments?.length > 0 || canEditAttachments) && (
+                        <TaskAttachmentManager
+                          taskId={t.id}
+                          attachments={t.attachments || []}
+                          canEdit={canEditAttachments}
+                          onChange={(next) => updateTaskAttachments(t.id, next)}
+                          variant="compact"
+                        />
                       )}
                     </div>
                   );
