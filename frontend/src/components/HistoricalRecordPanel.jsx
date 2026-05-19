@@ -47,10 +47,6 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
       toast?.error('Tarih, başlık, bakımı yapan ve sorumlu kişi zorunlu');
       return;
     }
-    if (files.length === 0) {
-      toast?.error('En az bir belge yüklemelisin');
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -78,7 +74,7 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <p className="text-xs text-slate-500 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-        <strong className="text-slate-700">{equipmentName}</strong> için geçmiş bir bakım kaydı oluştur. Tarihten önce yapılmış bakımlar burada arşivlenir.
+        <strong className="text-slate-700">{equipmentName}</strong> için geçmiş bir bakım kaydı oluştur. Belgeleri sonradan da ekleyebilirsin.
         {unitCount > 0 && (
           <span className="block mt-1.5 text-violet-700">
             <strong>Not:</strong> Bu bir grup ekipman — kayıt <strong>{unitCount} birime</strong> birden uygulanır, dosyalar tüm birimlere bağlanır.
@@ -148,7 +144,7 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
         />
       </Field>
 
-      <Field icon={Paperclip} label="Belgeler *">
+      <Field icon={Paperclip} label="Belgeler (opsiyonel)">
         <input
           ref={fileInputRef}
           type="file"

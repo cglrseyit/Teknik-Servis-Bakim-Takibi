@@ -7,6 +7,7 @@ import EquipmentCombobox from '../components/EquipmentCombobox';
 import HistoryTaskDetail from '../components/HistoryTaskDetail';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_CONFIG = {
   completed: { label: 'Tamamlandı', cls: 'bg-green-50 text-green-700' },
@@ -21,6 +22,8 @@ function fmtDate(d) {
 export default function CompletedTasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
+  const { user } = useAuth();
+  const canEdit = ['admin', 'teknik_muduru'].includes(user?.role);
 
   const [equipment, setEquipment] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -229,7 +232,19 @@ export default function CompletedTasksPage() {
         onClose={() => setSelectedTask(null)}
         title="Bakım Detayı"
       >
-        <HistoryTaskDetail task={selectedTask} />
+        <HistoryTaskDetail
+          task={selectedTask}
+          canEdit={canEdit}
+          onAttachmentsChange={(next) => {
+            setSelectedTask(t => t ? { ...t, attachments: next } : t);
+            setData(d => d ? {
+              ...d,
+              completed_tasks: (d.completed_tasks || []).map(t =>
+                t.id === selectedTask.id ? { ...t, attachments: next } : t
+              ),
+            } : d);
+          }}
+        />
       </SlidePanel>
     </Layout>
   );

@@ -1,9 +1,14 @@
+import { useRef, useState } from 'react';
 import {
   Zap, Paperclip, FileText, Image as ImageIcon, File,
   CalendarCheck, CalendarClock, Wrench, UserCog, ClipboardCheck,
-  StickyNote, AlertTriangle, CheckCircle2,
+  StickyNote, AlertTriangle, CheckCircle2, Upload, X, Loader2,
 } from 'lucide-react';
+import api from '../api/axios';
 import downloadAttachment from '../utils/downloadAttachment';
+import { useToast } from '../context/ToastContext';
+
+const ACCEPTED = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx';
 
 const STATUS_CONFIG = {
   completed: {
@@ -39,10 +44,57 @@ function fmtSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function HistoryTaskDetail({ task }) {
+export default function HistoryTaskDetail({ task, canEdit = false, onAttachmentsChange }) {
+  const toast = useToast();
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [localAtts, setLocalAtts] = useState(null);
+
   if (!task) return null;
   const sc = STATUS_CONFIG[task.status] || STATUS_CONFIG.completed;
   const StatusIcon = sc.Icon;
+  const attachments = localAtts ?? task.attachments ?? [];
+
+  function notifyChange(next) {
+    setLocalAtts(next);
+    onAttachmentsChange?.(next);
+  }
+
+  async function handleFilesPicked(e) {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (picked.length === 0) return;
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      picked.forEach(f => fd.append('files', f));
+      const { data } = await api.post(`/tasks/${task.id}/attachments`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      notifyChange([...attachments, ...data]);
+      toast?.success(`${data.length} belge eklendi`);
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'Yükleme başarısız');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDelete(att) {
+    if (!window.confirm(`"${att.filename}" silinsin mi?`)) return;
+    setDeletingId(att.id);
+    try {
+      await api.delete(`/attachments/${att.id}`);
+      notifyChange(attachments.filter(a => a.id !== att.id));
+      toast?.success('Belge silindi');
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'Silinemedi');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="bg-gradient-to-br from-amber-50/70 via-amber-50/30 to-white border border-amber-100 rounded-2xl p-5 space-y-5">
@@ -122,31 +174,70 @@ export default function HistoryTaskDetail({ task }) {
       )}
 
       {/* ─── Ek dosyalar ─── */}
-      {task.attachments && task.attachments.length > 0 && (
-        <SectionDivider icon={Paperclip} title={`Ek Dosyalar (${task.attachments.length})`}>
-          <ul className="space-y-1.5">
-            {task.attachments.map(a => {
-              const Icon = fileIcon(a.mime_type);
-              return (
-                <li key={a.id}>
-                  <button
-                    onClick={() => downloadAttachment(a)}
-                    className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-lg text-xs text-slate-700 hover:text-amber-800 transition-all group shadow-sm"
-                  >
-                    <span className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-7 h-7 rounded-lg bg-slate-50 group-hover:bg-amber-100 flex items-center justify-center flex-shrink-0 transition-colors">
-                        <Icon size={13} className="text-slate-500 group-hover:text-amber-600" />
+      {(attachments.length > 0 || canEdit) && (
+        <SectionDivider icon={Paperclip} title={`Ek Dosyalar${attachments.length > 0 ? ` (${attachments.length})` : ''}`}>
+          {attachments.length > 0 ? (
+            <ul className="space-y-1.5">
+              {attachments.map(a => {
+                const Icon = fileIcon(a.mime_type);
+                const isDeleting = deletingId === a.id;
+                return (
+                  <li key={a.id} className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => downloadAttachment(a)}
+                      className="flex-1 flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-lg text-xs text-slate-700 hover:text-amber-800 transition-all group shadow-sm"
+                    >
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-slate-50 group-hover:bg-amber-100 flex items-center justify-center flex-shrink-0 transition-colors">
+                          <Icon size={13} className="text-slate-500 group-hover:text-amber-600" />
+                        </span>
+                        <span className="truncate text-left font-medium">{a.filename}</span>
                       </span>
-                      <span className="truncate text-left font-medium">{a.filename}</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 flex-shrink-0 group-hover:text-amber-600">
-                      {fmtSize(a.size_bytes)}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                      <span className="text-[10px] text-slate-400 flex-shrink-0 group-hover:text-amber-600">
+                        {fmtSize(a.size_bytes)}
+                      </span>
+                    </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(a)}
+                        disabled={isDeleting}
+                        className="flex-shrink-0 p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                        title="Belgeyi sil"
+                      >
+                        {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-xs text-slate-400 italic">Henüz belge eklenmemiş.</p>
+          )}
+
+          {canEdit && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={ACCEPTED}
+                onChange={handleFilesPicked}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                disabled={uploading}
+                className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-amber-300 hover:border-amber-500 hover:bg-amber-50/60 rounded-lg text-xs font-medium text-amber-700 transition-colors disabled:opacity-60"
+              >
+                {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                {uploading ? 'Yükleniyor…' : 'Belge ekle'}
+              </button>
+            </>
+          )}
         </SectionDivider>
       )}
     </div>
