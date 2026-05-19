@@ -7,6 +7,7 @@ import {
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
 import InventoryItemPanel from '../components/InventoryItemPanel';
+import AuthImage from '../components/AuthImage';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -183,11 +184,11 @@ export default function InventoryListPage() {
                   <td className="px-5 py-3">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                       {item.primary_attachment ? (
-                        <img
-                          src={`/api/inventory/attachments/${item.primary_attachment.id}/download`}
+                        <AuthImage
+                          apiPath={`/inventory/attachments/${item.primary_attachment.id}/download`}
                           alt={item.name}
                           className="w-full h-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          fallback={<Package size={16} className="text-slate-300" />}
                         />
                       ) : (
                         <Package size={16} className="text-slate-300" />

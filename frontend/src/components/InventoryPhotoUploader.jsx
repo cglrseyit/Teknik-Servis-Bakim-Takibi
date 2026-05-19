@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Upload, X, Star, StarOff, Image as ImageIcon } from 'lucide-react';
 import api from '../api/axios';
+import AuthImage from './AuthImage';
 import { useToast } from '../context/ToastContext';
 
 /**
@@ -167,11 +168,10 @@ export default function InventoryPhotoUploader({
           <div className="grid grid-cols-3 gap-2">
             {existing.map(a => (
               <div key={a.id} className="relative group rounded-lg overflow-hidden border border-slate-200 bg-slate-50 aspect-square">
-                <img
-                  src={`/api/inventory/attachments/${a.id}/download`}
+                <AuthImage
+                  apiPath={`/inventory/attachments/${a.id}/download`}
                   alt={a.filename}
                   className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
                 {a.is_primary && (
                   <span className="absolute top-1 left-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500 text-white">

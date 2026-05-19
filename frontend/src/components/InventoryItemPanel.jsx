@@ -5,6 +5,7 @@ import {
   Building2, StickyNote, Pencil, Image as ImageIcon, Hash,
 } from 'lucide-react';
 import api from '../api/axios';
+import AuthImage from './AuthImage';
 
 const STATUS_CONFIG = {
   active:      { label: 'Aktif',      cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
@@ -83,11 +84,10 @@ export default function InventoryItemPanel({ itemId, canEdit }) {
                 onClick={() => setLightbox(a)}
                 className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50 hover:border-amber-400 transition-colors"
               >
-                <img
-                  src={`/api/inventory/attachments/${a.id}/download`}
+                <AuthImage
+                  apiPath={`/inventory/attachments/${a.id}/download`}
                   alt={a.filename}
                   className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
                 {a.is_primary && (
                   <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500 text-white">
@@ -159,12 +159,13 @@ export default function InventoryItemPanel({ itemId, canEdit }) {
           className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-6 cursor-pointer"
           onClick={() => setLightbox(null)}
         >
-          <img
-            src={`/api/inventory/attachments/${lightbox.id}/download`}
-            alt={lightbox.filename}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          />
+          <div onClick={e => e.stopPropagation()} className="max-w-full max-h-full flex items-center justify-center">
+            <AuthImage
+              apiPath={`/inventory/attachments/${lightbox.id}/download`}
+              alt={lightbox.filename}
+              className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
         </div>
       )}
     </div>
