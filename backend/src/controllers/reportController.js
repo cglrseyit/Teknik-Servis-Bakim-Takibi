@@ -119,7 +119,8 @@ async function getAuditLogDetail(req, res) {
     if (log.entity_id) {
       if (log.entity === 'task') {
         const r = await pool.query(
-          `SELECT e.id AS eq_id, e.name, e.brand, e.category, e.supplier,
+          `SELECT e.id AS eq_id, e.name, e.brand, e.category,
+                  COALESCE(e.supplier, p.supplier) AS supplier,
                   e.status, e.notes, e.maintenance_period,
                   t.title, t.scheduled_date, t.completed_at,
                   t.performed_work, t.notes AS task_notes,
@@ -128,6 +129,7 @@ async function getAuditLogDetail(req, res) {
                   u.name AS completed_by_name
            FROM maintenance_tasks t
            JOIN equipment e ON e.id = t.equipment_id
+           LEFT JOIN equipment p ON p.id = e.parent_id
            LEFT JOIN users u ON u.id = t.completed_by
            WHERE t.id = $1`, [log.entity_id]
         );

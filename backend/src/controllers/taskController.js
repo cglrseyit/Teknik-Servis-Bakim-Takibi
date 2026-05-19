@@ -58,10 +58,12 @@ async function getOne(req, res) {
   try {
     const { rows } = await pool.query(
       `SELECT t.*, e.name AS equipment_name, e.location,
-              e.brand, e.model, e.serial_number, e.category, e.supplier,
+              e.brand, e.model, e.serial_number, e.category,
+              COALESCE(e.supplier, p.supplier) AS supplier,
               e.status AS equipment_status
        FROM maintenance_tasks t
        LEFT JOIN equipment e ON e.id = t.equipment_id
+       LEFT JOIN equipment p ON p.id = e.parent_id
        WHERE t.id = $1`,
       [id]
     );
