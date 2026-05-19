@@ -23,7 +23,7 @@ export default function CompletedTasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
   const { user } = useAuth();
-  const canEdit = ['admin', 'teknik_muduru'].includes(user?.role);
+  const canEdit = ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role);
 
   const [equipment, setEquipment] = useState([]);
   const [selectedId, setSelectedId] = useState(null);

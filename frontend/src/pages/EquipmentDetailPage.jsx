@@ -138,7 +138,7 @@ export default function EquipmentDetailPage() {
 
   const upcomingTasks = equipment.upcoming_tasks || [];
   const completedTasks = equipment.completed_tasks || [];
-  const canEditAttachments = ['admin', 'teknik_muduru'].includes(user?.role);
+  const canEditAttachments = ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role);
 
   function updateTaskAttachments(taskId, nextList) {
     setEquipment(eq => eq ? {

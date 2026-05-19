@@ -34,7 +34,7 @@ export default function InventoryListPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  const canEdit = ['admin', 'teknik_muduru'].includes(user?.role);
+  const canEdit = ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role);
 
   useEffect(() => {
     setLoading(true);

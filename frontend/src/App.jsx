@@ -38,8 +38,8 @@ export default function App() {
         <Route path="/plans/:id" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><PlanDetailPage /></ProtectedRoute>} />
         <Route path="/completed-tasks" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><CompletedTasksPage /></ProtectedRoute>} />
         <Route path="/inventory"               element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryListPage /></ProtectedRoute>} />
-        <Route path="/inventory/new"           element={<ProtectedRoute roles={['admin','teknik_muduru']}><InventoryFormPage /></ProtectedRoute>} />
-        <Route path="/inventory/:id/edit"      element={<ProtectedRoute roles={['admin','teknik_muduru']}><InventoryFormPage /></ProtectedRoute>} />
+        <Route path="/inventory/new"           element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryFormPage /></ProtectedRoute>} />
+        <Route path="/inventory/:id/edit"      element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryFormPage /></ProtectedRoute>} />
         <Route path="/inventory/categories"    element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryCategoriesPage /></ProtectedRoute>} />
         <Route path="/inventory/locations"     element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryLocationsPage /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />

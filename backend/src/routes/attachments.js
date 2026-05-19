@@ -13,6 +13,6 @@ router.post(
 
 router.get('/tasks/:id/attachments', authenticate, c.listAttachments);
 router.get('/attachments/:id/download', authenticate, c.downloadAttachment);
-router.delete('/attachments/:id', authenticate, requireRole('admin', 'teknik_muduru'), c.deleteAttachment);
+router.delete('/attachments/:id', authenticate, requireRole('admin', 'teknik_muduru', 'order_taker'), c.deleteAttachment);
 
 module.exports = router;
