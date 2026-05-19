@@ -22,10 +22,10 @@ export default function InventoryLocationsPage() {
       <div className="mb-5">
         <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
           <MapPin size={14} className="text-rose-500" />
-          <span>Lokasyona göre demirbaş özetiniz</span>
+          <span>Lokasyona göre envanter özeti</span>
         </div>
         <p className="text-2xl font-bold text-slate-800">
-          Toplam {total} <span className="text-base font-normal text-slate-500">demirbaş · {data.length} lokasyon</span>
+          Toplam {total} <span className="text-base font-normal text-slate-500">kayıt · {data.length} lokasyon</span>
         </p>
       </div>
 
@@ -54,7 +54,7 @@ export default function InventoryLocationsPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">{loc.location}</p>
-                    <p className="text-[11px] text-slate-500">{loc.count} demirbaş</p>
+                    <p className="text-[11px] text-slate-500">{loc.count} kayıt</p>
                   </div>
                 </div>
                 <ChevronRight size={16} className="text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />

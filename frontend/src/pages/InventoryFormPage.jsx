@@ -100,7 +100,7 @@ export default function InventoryFormPage() {
         await api.post('/inventory', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        toast?.success('Demirbaş eklendi');
+        toast?.success('Envantere eklendi');
       }
       navigate('/inventory');
     } catch (err) {
@@ -128,7 +128,7 @@ export default function InventoryFormPage() {
             <Package size={20} className="text-amber-600" />
           </div>
           <h1 className="text-xl font-bold text-slate-900">
-            {isEdit ? 'Demirbaş Düzenle' : 'Yeni Demirbaş'}
+            {isEdit ? 'Envanter Kaydını Düzenle' : 'Yeni Envanter Kaydı'}
           </h1>
         </div>
 
@@ -257,7 +257,7 @@ export default function InventoryFormPage() {
                 onChange={e => update('notes', e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 resize-none"
-                placeholder="Bu demirbaşa özel notlar..."
+                placeholder="Bu kayda özel notlar..."
               />
             </div>
           </div>

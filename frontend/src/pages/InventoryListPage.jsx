@@ -134,7 +134,7 @@ export default function InventoryListPage() {
               className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-amber-600/20"
             >
               <Plus size={15} strokeWidth={2.5} />
-              Demirbaş Ekle
+              Envantere Ekle
             </Link>
           )}
         </div>
@@ -165,11 +165,11 @@ export default function InventoryListPage() {
               <tr>
                 <td colSpan={8} className="py-16 text-center">
                   <Package size={32} className="text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-slate-600">Demirbaş bulunamadı</p>
+                  <p className="text-sm font-medium text-slate-600">Envanter kalemi bulunamadı</p>
                   <p className="text-xs text-slate-400 mt-1">
                     {search || category || location || status
                       ? 'Filtreleri değiştirmeyi dene.'
-                      : 'Yeni bir demirbaş eklemek için "Demirbaş Ekle" tuşunu kullan.'}
+                      : 'Yeni bir kayıt eklemek için "Envantere Ekle" tuşunu kullan.'}
                   </p>
                 </td>
               </tr>
@@ -258,7 +258,7 @@ export default function InventoryListPage() {
       <SlidePanel
         open={Boolean(selectedId)}
         onClose={() => setSelectedId(null)}
-        title="Demirbaş Detayı"
+        title="Envanter Detayı"
       >
         <InventoryItemPanel itemId={selectedId} canEdit={canEdit} />
       </SlidePanel>

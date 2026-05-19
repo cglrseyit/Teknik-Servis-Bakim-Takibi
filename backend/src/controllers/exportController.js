@@ -487,7 +487,7 @@ async function inventoryList(req, res) {
     const fRow = ws.addRow(Array(totalCols).fill(''));
     fRow.height = 22;
     ws.mergeCells(fRow.number, 1, fRow.number, totalCols);
-    ws.getCell(fRow.number, 1).value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${items.length} demirbaş`;
+    ws.getCell(fRow.number, 1).value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${items.length} kayıt`;
     ws.getCell(fRow.number, 1).font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
     ws.getCell(fRow.number, 1).alignment = { horizontal: 'center', vertical: 'middle' };
     for (let c = 1; c <= totalCols; c++) {

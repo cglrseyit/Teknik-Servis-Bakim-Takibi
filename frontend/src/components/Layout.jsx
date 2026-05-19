@@ -25,7 +25,7 @@ const NAV_GROUPS = [
   {
     label: 'Envanter',
     items: [
-      { to: '/inventory',            label: 'Demirbaş Listesi', Icon: Package,    roles: ALL_TECH },
+      { to: '/inventory',            label: 'Envanter Listesi', Icon: Package,    roles: ALL_TECH },
       { to: '/inventory/categories', label: 'Kategori Özeti',   Icon: LayoutGrid, roles: ALL_TECH },
       { to: '/inventory/locations',  label: 'Lokasyon Özeti',   Icon: MapPin,     roles: ALL_TECH },
     ],
@@ -44,7 +44,7 @@ const PAGE_TITLES = {
   '/plans':     'Bakım Planları',
   '/completed-tasks': 'Yapılan Bakımlar',
   '/reports':   'Raporlar',
-  '/inventory': 'Demirbaş Listesi',
+  '/inventory': 'Envanter Listesi',
   '/inventory/categories': 'Kategori Özeti',
   '/inventory/locations':  'Lokasyon Özeti',
   '/users':     'Kullanıcılar',

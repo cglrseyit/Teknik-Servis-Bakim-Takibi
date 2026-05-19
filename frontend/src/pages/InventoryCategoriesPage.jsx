@@ -45,10 +45,10 @@ export default function InventoryCategoriesPage() {
         <div>
           <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
             <LayoutGrid size={14} className="text-amber-500" />
-            <span>Kategoriye göre demirbaş özetiniz</span>
+            <span>Kategoriye göre envanter özeti</span>
           </div>
           <p className="text-2xl font-bold text-slate-800">
-            Toplam {total} <span className="text-base font-normal text-slate-500">demirbaş · {data.length} kategori</span>
+            Toplam {total} <span className="text-base font-normal text-slate-500">kayıt · {data.length} kategori</span>
           </p>
         </div>
       </div>
@@ -83,7 +83,7 @@ export default function InventoryCategoriesPage() {
                 </div>
                 <p className="text-sm font-semibold text-slate-700 mb-1">{row.category}</p>
                 <p className={`text-3xl font-bold ${t.count}`}>{row.count}</p>
-                <p className="text-xs text-slate-500 mt-1">demirbaş</p>
+                <p className="text-xs text-slate-500 mt-1">kayıt</p>
               </Link>
             );
           })}
