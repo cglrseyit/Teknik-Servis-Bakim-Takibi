@@ -50,12 +50,14 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
-// Global API rate limiter — her IP için dakikada 120 istek
+// Global API rate limiter — her IP için dakikada 300 istek
+// Auth endpoint'leri (login/me) bu limit'in dışında; auth.js'in kendi login limiter'ı brute-force'a karşı koruyor.
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 120,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/auth/'),
   message: { error: 'Çok fazla istek. Lütfen biraz bekleyin.' },
 });
 app.use('/api', apiLimiter);
