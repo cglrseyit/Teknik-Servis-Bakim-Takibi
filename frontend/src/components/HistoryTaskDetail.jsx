@@ -45,10 +45,10 @@ export default function HistoryTaskDetail({ task }) {
   const StatusIcon = sc.Icon;
 
   return (
-    <div className="space-y-4">
+    <div className="bg-gradient-to-br from-amber-50/70 via-amber-50/30 to-white border border-amber-100 rounded-2xl p-5 space-y-5">
 
       {/* ─── Hero: başlık + rozetler + tarihler ─── */}
-      <div className="bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-white border border-amber-100 rounded-2xl p-5">
+      <div>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             {task.is_one_time && (
@@ -64,7 +64,7 @@ export default function HistoryTaskDetail({ task }) {
           </span>
         </div>
         <h2 className="text-lg font-bold text-slate-800 leading-snug break-words mb-4">{task.title}</h2>
-        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-amber-100/70">
+        <div className="grid grid-cols-2 gap-3">
           <DateCard
             icon={CalendarClock}
             label="Planlanan Tarih"
@@ -82,16 +82,16 @@ export default function HistoryTaskDetail({ task }) {
 
       {/* ─── Arıza Sebebi (yalnızca tek seferlik) ─── */}
       {task.is_one_time && task.title && (
-        <Section icon={AlertTriangle} title="Arıza Sebebi" accent="orange">
-          <p className="text-sm text-slate-700 leading-relaxed bg-orange-50/50 border border-orange-100 rounded-lg px-3.5 py-2.5 break-words">
+        <SectionDivider icon={AlertTriangle} title="Arıza Sebebi" accent="orange">
+          <p className="text-sm text-slate-700 leading-relaxed bg-orange-50/60 border border-orange-100 rounded-lg px-3.5 py-2.5 break-words">
             {task.title}
           </p>
-        </Section>
+        </SectionDivider>
       )}
 
       {/* ─── Bakım bilgileri ─── */}
       {(task.maintained_by || task.responsible_person) && (
-        <Section icon={Wrench} title="Bakım Bilgileri">
+        <SectionDivider icon={Wrench} title="Bakım Bilgileri">
           <div className="grid grid-cols-1 gap-2">
             {task.maintained_by && (
               <InfoBlock icon={Wrench} label="Bakımı Yapan" value={task.maintained_by} iconCls="text-amber-600" iconBg="bg-amber-50" />
@@ -100,30 +100,30 @@ export default function HistoryTaskDetail({ task }) {
               <InfoBlock icon={UserCog} label="Sorumlu Kişi" value={task.responsible_person} iconCls="text-violet-600" iconBg="bg-violet-50" />
             )}
           </div>
-        </Section>
+        </SectionDivider>
       )}
 
       {/* ─── Yapılan İşlem ─── */}
       {task.performed_work && (
-        <Section icon={ClipboardCheck} title="Yapılan İşlem">
-          <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg px-3.5 py-3 break-words whitespace-pre-wrap">
+        <SectionDivider icon={ClipboardCheck} title="Yapılan İşlem">
+          <p className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-200 rounded-lg px-3.5 py-3 break-words whitespace-pre-wrap shadow-sm">
             {task.performed_work}
           </p>
-        </Section>
+        </SectionDivider>
       )}
 
       {/* ─── Notlar ─── */}
       {task.notes && (
-        <Section icon={StickyNote} title="Notlar">
-          <p className="text-sm text-slate-600 leading-relaxed bg-amber-50/40 border border-amber-100/60 rounded-lg px-3.5 py-3 italic break-words whitespace-pre-wrap">
+        <SectionDivider icon={StickyNote} title="Notlar">
+          <p className="text-sm text-slate-600 leading-relaxed bg-white/70 border border-amber-100/60 rounded-lg px-3.5 py-3 italic break-words whitespace-pre-wrap shadow-sm">
             {task.notes}
           </p>
-        </Section>
+        </SectionDivider>
       )}
 
       {/* ─── Ek dosyalar ─── */}
       {task.attachments && task.attachments.length > 0 && (
-        <Section icon={Paperclip} title={`Ek Dosyalar (${task.attachments.length})`}>
+        <SectionDivider icon={Paperclip} title={`Ek Dosyalar (${task.attachments.length})`}>
           <ul className="space-y-1.5">
             {task.attachments.map(a => {
               const Icon = fileIcon(a.mime_type);
@@ -131,7 +131,7 @@ export default function HistoryTaskDetail({ task }) {
                 <li key={a.id}>
                   <button
                     onClick={() => downloadAttachment(a)}
-                    className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-lg text-xs text-slate-700 hover:text-amber-800 transition-all group"
+                    className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-lg text-xs text-slate-700 hover:text-amber-800 transition-all group shadow-sm"
                   >
                     <span className="flex items-center gap-2.5 min-w-0">
                       <span className="w-7 h-7 rounded-lg bg-slate-50 group-hover:bg-amber-100 flex items-center justify-center flex-shrink-0 transition-colors">
@@ -147,7 +147,7 @@ export default function HistoryTaskDetail({ task }) {
               );
             })}
           </ul>
-        </Section>
+        </SectionDivider>
       )}
     </div>
   );
@@ -155,15 +155,15 @@ export default function HistoryTaskDetail({ task }) {
 
 /* ──────────── Yardımcı bileşenler ──────────── */
 
-function Section({ icon: Icon, title, accent = 'slate', children }) {
+function SectionDivider({ icon: Icon, title, accent = 'slate', children }) {
   const accentCls = {
     slate:  'text-slate-400',
     orange: 'text-orange-500',
   }[accent] || 'text-slate-400';
 
   return (
-    <div>
-      <div className="flex items-center gap-1.5 mb-2 px-0.5">
+    <div className="pt-4 border-t border-amber-100/70">
+      <div className="flex items-center gap-1.5 mb-2.5 px-0.5">
         <Icon size={12} className={accentCls} />
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{title}</h3>
       </div>
