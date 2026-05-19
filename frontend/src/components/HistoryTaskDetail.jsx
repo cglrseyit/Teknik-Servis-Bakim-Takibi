@@ -47,7 +47,7 @@ export default function HistoryTaskDetail({ task }) {
   return (
     <div className="space-y-4">
 
-      {/* ─── Hero ─── */}
+      {/* ─── Hero: başlık + rozetler + tarihler ─── */}
       <div className="bg-gradient-to-br from-amber-50/80 via-amber-50/40 to-white border border-amber-100 rounded-2xl p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -63,12 +63,8 @@ export default function HistoryTaskDetail({ task }) {
             {sc.label}
           </span>
         </div>
-        <h2 className="text-lg font-bold text-slate-800 leading-snug break-words">{task.title}</h2>
-      </div>
-
-      {/* ─── Tarih bilgileri ─── */}
-      <Section icon={CalendarClock} title="Tarih Bilgileri">
-        <div className="grid grid-cols-2 gap-3">
+        <h2 className="text-lg font-bold text-slate-800 leading-snug break-words mb-4">{task.title}</h2>
+        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-amber-100/70">
           <DateCard
             icon={CalendarClock}
             label="Planlanan Tarih"
@@ -82,7 +78,7 @@ export default function HistoryTaskDetail({ task }) {
             tone="emerald"
           />
         </div>
-      </Section>
+      </div>
 
       {/* ─── Arıza Sebebi (yalnızca tek seferlik) ─── */}
       {task.is_one_time && task.title && (
