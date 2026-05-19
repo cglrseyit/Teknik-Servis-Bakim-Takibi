@@ -18,20 +18,56 @@ export default function InventoryPhotoUploader({
   const toast = useToast();
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [dragDepth, setDragDepth] = useState(0); // nested element'lerden dolayı counter
+
+  function acceptFiles(files) {
+    if (!files || !files.length) return;
+    // Sadece resim dosyalarını al
+    const imgs = files.filter(f => f.type.startsWith('image/'));
+    if (imgs.length === 0) {
+      toast?.error('Lütfen sadece resim dosyası yükle');
+      return;
+    }
+    if (imgs.length < files.length) {
+      toast?.error(`${files.length - imgs.length} resim olmayan dosya atlandı`);
+    }
+    if (inventoryId) {
+      uploadDirect(imgs);
+    } else {
+      onPendingChange?.([...pending, ...imgs]);
+    }
+  }
 
   function handleFiles(e) {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
-    if (inventoryId) {
-      // Edit modu — direkt yükle
-      uploadDirect(files);
-    } else {
-      // Yeni form — local state
-      onPendingChange?.([...pending, ...files]);
-    }
+    acceptFiles(Array.from(e.target.files || []));
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
+
+  function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth(d => d + 1);
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth(d => Math.max(0, d - 1));
+  }
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    // dropEffect olmazsa bazı browser'larda drop tetiklenmez
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragDepth(0);
+    const files = Array.from(e.dataTransfer?.files || []);
+    acceptFiles(files);
+  }
+
+  const isDragging = dragDepth > 0;
 
   async function uploadDirect(files) {
     setUploading(true);
@@ -85,19 +121,34 @@ export default function InventoryPhotoUploader({
 
   return (
     <div className="space-y-3">
-      {/* Yükleme alanı */}
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={uploading}
-        className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-amber-200 hover:border-amber-400 hover:bg-amber-50/30 rounded-xl transition-colors disabled:opacity-50"
+      {/* Yükleme alanı — drag & drop + tıkla */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-all select-none ${
+          isDragging
+            ? 'border-amber-500 bg-amber-100/60 ring-4 ring-amber-200/50 scale-[1.01]'
+            : uploading
+              ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
+              : 'border-amber-200 hover:border-amber-400 hover:bg-amber-50/30'
+        }`}
       >
-        <Upload size={20} className="text-amber-500" />
-        <span className="text-sm font-medium text-slate-600">
-          {uploading ? 'Yükleniyor…' : 'Foto seç veya buraya tıkla'}
+        <Upload size={22} className={isDragging ? 'text-amber-600' : 'text-amber-500'} strokeWidth={isDragging ? 2.4 : 2} />
+        <span className={`text-sm font-medium pointer-events-none ${isDragging ? 'text-amber-700' : 'text-slate-600'}`}>
+          {uploading
+            ? 'Yükleniyor…'
+            : isDragging
+              ? 'Bırak, ben hallederim'
+              : 'Foto sürükle bırak veya tıkla'}
         </span>
-        <span className="text-xs text-slate-400">JPG, PNG · maks 10 MB / dosya</span>
-      </button>
+        <span className="text-xs text-slate-400 pointer-events-none">JPG, PNG · maks 10 MB / dosya · 10 dosyaya kadar</span>
+      </div>
       <input
         ref={fileInputRef}
         type="file"
