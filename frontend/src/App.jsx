@@ -9,6 +9,10 @@ import EquipmentFormPage from './pages/EquipmentFormPage';
 import EquipmentDetailPage from './pages/EquipmentDetailPage';
 import PlansListPage from './pages/PlansListPage';
 import CompletedTasksPage from './pages/CompletedTasksPage';
+import InventoryListPage from './pages/InventoryListPage';
+import InventoryFormPage from './pages/InventoryFormPage';
+import InventoryCategoriesPage from './pages/InventoryCategoriesPage';
+import InventoryLocationsPage from './pages/InventoryLocationsPage';
 import PlanFormPage from './pages/PlanFormPage';
 import PlanDetailPage from './pages/PlanDetailPage';
 import UsersPage from './pages/UsersPage';
@@ -33,6 +37,11 @@ export default function App() {
         <Route path="/plans/:id/edit" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><PlanFormPage /></ProtectedRoute>} />
         <Route path="/plans/:id" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><PlanDetailPage /></ProtectedRoute>} />
         <Route path="/completed-tasks" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><CompletedTasksPage /></ProtectedRoute>} />
+        <Route path="/inventory"               element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryListPage /></ProtectedRoute>} />
+        <Route path="/inventory/new"           element={<ProtectedRoute roles={['admin','teknik_muduru']}><InventoryFormPage /></ProtectedRoute>} />
+        <Route path="/inventory/:id/edit"      element={<ProtectedRoute roles={['admin','teknik_muduru']}><InventoryFormPage /></ProtectedRoute>} />
+        <Route path="/inventory/categories"    element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryCategoriesPage /></ProtectedRoute>} />
+        <Route path="/inventory/locations"     element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><InventoryLocationsPage /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
         <Route path="/tasks/my" element={<ProtectedRoute><MyTasksPage /></ProtectedRoute>} />
         <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />

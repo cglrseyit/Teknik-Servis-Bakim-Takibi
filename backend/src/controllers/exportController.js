@@ -382,4 +382,140 @@ async function equipmentList(req, res) {
   }
 }
 
-module.exports = { equipmentHistory, equipmentList };
+async function inventoryList(req, res) {
+  const { category, location, status, search } = req.query;
+  const conditions = [];
+  const params = [];
+
+  if (category) { params.push(category); conditions.push(`category = $${params.length}`); }
+  if (location) { params.push(location); conditions.push(`location = $${params.length}`); }
+  if (status)   { params.push(status);   conditions.push(`status = $${params.length}`); }
+  if (search) {
+    params.push(`%${search}%`);
+    conditions.push(`(name ILIKE $${params.length} OR inventory_no ILIKE $${params.length} OR serial_number ILIKE $${params.length})`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  try {
+    const { rows: items } = await pool.query(
+      `SELECT * FROM inventory_items ${where} ORDER BY category, name`,
+      params
+    );
+
+    const STATUS_LABELS_EQ = { active: 'Aktif', passive: 'Pasif', maintenance: 'Bakımda', broken: 'Arızalı' };
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Bellis Deluxe Hotel · Teknik Servis';
+    wb.created = new Date();
+    const ws = wb.addWorksheet('Envanter', {
+      views: [{ state: 'frozen', ySplit: 2, showGridLines: true }],
+      properties: { defaultRowHeight: 18 },
+    });
+
+    // Demirbaş No | Adı | Kategori | Lokasyon | Marka | Model | Seri No | Tedarikçi | Kurulum | Garanti Bitiş | Durum | Notlar
+    const widths = [33, 22, 16, 18, 14, 14, 16, 18, 13, 14, 11, 24];
+    const totalCols = widths.length;
+    widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+    ws.getRow(1).height = 62;
+
+    try {
+      const imgId = wb.addImage({ filename: LOGO_PATH, extension: 'png' });
+      ws.addImage(imgId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 175, height: 65 }, editAs: 'oneCell' });
+    } catch (e) { console.warn('Logo eklenemedi:', e.message); }
+
+    ws.mergeCells(1, 1, 1, totalCols);
+    const titleCell = ws.getCell('A1');
+    titleCell.value = 'ENVANTER LİSTESİ';
+    titleCell.font = { name: 'Calibri', bold: true, size: 16, color: { argb: COLORS.textDark } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getCell(1, totalCols).border = { right: { style: 'medium', color: { argb: 'FFB0B0B0' } } };
+
+    const borderThin   = { style: 'thin',   color: { argb: COLORS.border } };
+    const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
+    const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } };
+
+    const headers = ['Demirbaş No', 'Adı', 'Kategori', 'Lokasyon', 'Marka', 'Model', 'Seri No', 'Tedarikçi', 'Kurulum', 'Garanti Bitiş', 'Durum', 'Notlar'];
+    const headerRow = ws.getRow(2);
+    headers.forEach((h, i) => {
+      const isLast = i === headers.length - 1;
+      const cell = headerRow.getCell(i + 1);
+      cell.value = h;
+      cell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: COLORS.primaryDark } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accent } };
+      cell.alignment = { horizontal: 'left', vertical: 'middle' };
+      cell.border = { top: borderAccent, bottom: borderAccent, left: borderThin, right: isLast ? borderRight : borderThin };
+    });
+    headerRow.height = 26;
+
+    items.forEach((it, idx) => {
+      const row = ws.addRow([
+        it.inventory_no || '',
+        it.name || '',
+        it.category || '',
+        it.location || '',
+        it.brand || '',
+        it.model || '',
+        it.serial_number || '',
+        it.supplier || '',
+        fmtDate(it.install_date),
+        fmtDate(it.warranty_end),
+        STATUS_LABELS_EQ[it.status] || it.status || '',
+        it.notes || '',
+      ]);
+      row.height = 22;
+      row.eachCell((cell, colNum) => {
+        const isLast = colNum === totalCols;
+        cell.alignment = { vertical: 'middle', wrapText: false, horizontal: 'left' };
+        cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
+        cell.border = { top: borderThin, bottom: borderThin, left: borderThin, right: isLast ? borderRight : borderThin };
+      });
+      if (idx % 2 === 1) {
+        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accentSoft } }; });
+      }
+    });
+
+    if (items.length === 0) {
+      const emptyRow = ws.addRow(Array(totalCols).fill(''));
+      emptyRow.getCell(2).value = 'Envanter kalemi bulunamadı';
+      emptyRow.height = 40;
+      ws.mergeCells(emptyRow.number, 1, emptyRow.number, totalCols);
+      emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      emptyRow.getCell(1).font = { italic: true, color: { argb: COLORS.textLight }, size: 11 };
+    }
+
+    const fRow = ws.addRow(Array(totalCols).fill(''));
+    fRow.height = 22;
+    ws.mergeCells(fRow.number, 1, fRow.number, totalCols);
+    ws.getCell(fRow.number, 1).value = `Bellis Deluxe Hotel · Teknik Servis Sistemi · Toplam ${items.length} demirbaş`;
+    ws.getCell(fRow.number, 1).font = { name: 'Calibri', size: 9, italic: true, color: { argb: COLORS.textLight } };
+    ws.getCell(fRow.number, 1).alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let c = 1; c <= totalCols; c++) {
+      ws.getCell(fRow.number, c).border = {
+        bottom: borderAccent,
+        left:  c === 1          ? borderThin  : undefined,
+        right: c === totalCols  ? borderRight : undefined,
+      };
+    }
+
+    ws.pageSetup = {
+      orientation: 'landscape',
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+    };
+
+    const filename = `envanter-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Inventory export error:', err.message);
+    res.status(500).json({ error: 'Excel oluşturulamadı' });
+  }
+}
+
+module.exports = { equipmentHistory, equipmentList, inventoryList };

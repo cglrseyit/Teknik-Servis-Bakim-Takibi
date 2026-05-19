@@ -2,19 +2,40 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Wrench, ClipboardList, BarChart3,
-  Users, Bell, LogOut, User, X, ChevronRight, History
+  Users, Bell, LogOut, User, X, ChevronRight, History,
+  Package, LayoutGrid, MapPin,
 } from 'lucide-react';
 import Badge from './Badge';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
-const NAV = [
-  { to: '/dashboard', label: 'Bakım Takvimi', Icon: Home,          roles: ['admin', 'teknik_muduru', 'order_taker'] },
-  { to: '/equipment', label: 'Ekipmanlar',    Icon: Wrench,        roles: ['admin', 'teknik_muduru', 'order_taker'] },
-  { to: '/plans',     label: 'Bakım Planları', Icon: ClipboardList, roles: ['admin', 'teknik_muduru', 'order_taker'] },
-  { to: '/completed-tasks', label: 'Yapılan Bakımlar', Icon: History, roles: ['admin', 'teknik_muduru', 'order_taker'] },
-  { to: '/reports',   label: 'Raporlar',      Icon: BarChart3,     roles: ['admin', 'teknik_muduru', 'order_taker'] },
-  { to: '/users',     label: 'Kullanıcılar',  Icon: Users,         roles: ['admin'] },
+const ALL_TECH = ['admin', 'teknik_muduru', 'order_taker'];
+
+const NAV_GROUPS = [
+  {
+    label: 'Bakım Takibi',
+    items: [
+      { to: '/dashboard',        label: 'Bakım Takvimi',     Icon: Home,          roles: ALL_TECH },
+      { to: '/equipment',        label: 'Ekipmanlar',        Icon: Wrench,        roles: ALL_TECH },
+      { to: '/plans',            label: 'Bakım Planları',    Icon: ClipboardList, roles: ALL_TECH },
+      { to: '/completed-tasks',  label: 'Yapılan Bakımlar',  Icon: History,       roles: ALL_TECH },
+      { to: '/reports',          label: 'Raporlar',          Icon: BarChart3,     roles: ALL_TECH },
+    ],
+  },
+  {
+    label: 'Envanter',
+    items: [
+      { to: '/inventory',            label: 'Demirbaş Listesi', Icon: Package,    roles: ALL_TECH },
+      { to: '/inventory/categories', label: 'Kategori Özeti',   Icon: LayoutGrid, roles: ALL_TECH },
+      { to: '/inventory/locations',  label: 'Lokasyon Özeti',   Icon: MapPin,     roles: ALL_TECH },
+    ],
+  },
+  {
+    label: 'Yönetim',
+    items: [
+      { to: '/users', label: 'Kullanıcılar', Icon: Users, roles: ['admin'] },
+    ],
+  },
 ];
 
 const PAGE_TITLES = {
@@ -23,6 +44,9 @@ const PAGE_TITLES = {
   '/plans':     'Bakım Planları',
   '/completed-tasks': 'Yapılan Bakımlar',
   '/reports':   'Raporlar',
+  '/inventory': 'Demirbaş Listesi',
+  '/inventory/categories': 'Kategori Özeti',
+  '/inventory/locations':  'Lokasyon Özeti',
   '/users':     'Kullanıcılar',
 };
 
@@ -76,7 +100,9 @@ export default function Layout({ children }) {
     navigate('/login');
   }
 
-  const visibleNav = NAV.filter(n => n.roles.includes(user?.role));
+  const visibleGroups = NAV_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(it => it.roles.includes(user?.role)) }))
+    .filter(g => g.items.length > 0);
 
   return (
     <div className="flex h-screen w-full bg-[#FAF7F0] overflow-hidden">
@@ -99,34 +125,43 @@ export default function Layout({ children }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-amber-700/60">Menü</p>
-          {visibleNav.map(({ to, label, Icon, notifs }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm font-medium group ${
-                  isActive
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-600/25'
-                    : 'text-slate-600 hover:bg-amber-50 hover:text-amber-800'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.7} />
-                  <span className="flex-1 text-left">{label}</span>
-                  {notifs && (
-                    <span className={`text-[11px] font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center ${
-                      isActive ? 'bg-white/25 text-white' : 'bg-red-500 text-white'
-                    }`}>
-                      {notifs}
-                    </span>
-                  )}
-                </>
-              )}
-            </NavLink>
+        <nav className="flex-1 p-3 overflow-y-auto">
+          {visibleGroups.map((group, gi) => (
+            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
+              <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-amber-700/60">
+                {group.label}
+              </p>
+              <div className="space-y-1">
+                {group.items.map(({ to, label, Icon, notifs }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/inventory'}
+                    className={({ isActive }) =>
+                      `relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-sm font-medium group ${
+                        isActive
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-600/25'
+                          : 'text-slate-600 hover:bg-amber-50 hover:text-amber-800'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.7} />
+                        <span className="flex-1 text-left">{label}</span>
+                        {notifs && (
+                          <span className={`text-[11px] font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center ${
+                            isActive ? 'bg-white/25 text-white' : 'bg-red-500 text-white'
+                          }`}>
+                            {notifs}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

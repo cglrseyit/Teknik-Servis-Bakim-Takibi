@@ -81,6 +81,7 @@ app.use('/api/tasks',         require('./routes/tasks'));
 app.use('/api/users',         require('./routes/users'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports',       require('./routes/reports'));
+app.use('/api/inventory',     require('./routes/inventory'));
 app.use('/api',               require('./routes/attachments'));
 app.use('/api/exports',       require('./routes/exports'));
 
@@ -174,6 +175,41 @@ const AUTO_MIGRATIONS = [
   `UPDATE task_attachments
    SET filename = convert_from(convert_to(filename, 'LATIN1'), 'UTF8')
    WHERE filename ~ '[ÃÄÅ]'`,
+
+  // Envanter modülü
+  `CREATE TABLE IF NOT EXISTS inventory_items (
+     id              SERIAL PRIMARY KEY,
+     inventory_no    VARCHAR(50) UNIQUE,
+     name            VARCHAR(150) NOT NULL,
+     category        VARCHAR(100),
+     location        VARCHAR(200),
+     brand           VARCHAR(100),
+     model           VARCHAR(100),
+     serial_number   VARCHAR(100),
+     supplier        VARCHAR(150),
+     install_date    DATE,
+     warranty_end    DATE,
+     status          VARCHAR(30) DEFAULT 'active'
+                     CHECK (status IN ('active','passive','broken','maintenance')),
+     notes           TEXT,
+     created_by      INT REFERENCES users(id) ON DELETE SET NULL,
+     created_at      TIMESTAMP DEFAULT NOW(),
+     updated_at      TIMESTAMP DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory_items(category)`,
+  `CREATE INDEX IF NOT EXISTS idx_inventory_location ON inventory_items(location)`,
+  `CREATE TABLE IF NOT EXISTS inventory_attachments (
+     id              SERIAL PRIMARY KEY,
+     inventory_id    INT NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+     filename        TEXT NOT NULL,
+     stored_filename TEXT NOT NULL,
+     mime_type       TEXT NOT NULL,
+     size_bytes      INT NOT NULL,
+     is_primary      BOOLEAN DEFAULT false,
+     uploaded_by     INT REFERENCES users(id) ON DELETE SET NULL,
+     uploaded_at     TIMESTAMP DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_inventory_attachments_item ON inventory_attachments(inventory_id)`,
 ];
 AUTO_MIGRATIONS.forEach(sql => {
   pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));
