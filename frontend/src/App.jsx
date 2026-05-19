@@ -8,6 +8,7 @@ import EquipmentListPage from './pages/EquipmentListPage';
 import EquipmentFormPage from './pages/EquipmentFormPage';
 import EquipmentDetailPage from './pages/EquipmentDetailPage';
 import PlansListPage from './pages/PlansListPage';
+import CompletedTasksPage from './pages/CompletedTasksPage';
 import PlanFormPage from './pages/PlanFormPage';
 import PlanDetailPage from './pages/PlanDetailPage';
 import UsersPage from './pages/UsersPage';
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/plans/new" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><PlanFormPage /></ProtectedRoute>} />
         <Route path="/plans/:id/edit" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><PlanFormPage /></ProtectedRoute>} />
         <Route path="/plans/:id" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><PlanDetailPage /></ProtectedRoute>} />
+        <Route path="/completed-tasks" element={<ProtectedRoute roles={['admin','teknik_muduru','order_taker']}><CompletedTasksPage /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
         <Route path="/tasks/my" element={<ProtectedRoute><MyTasksPage /></ProtectedRoute>} />
         <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
+import downloadAttachment from '../utils/downloadAttachment';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle2, Clock, AlertCircle, SkipForward, CalendarClock, Download, Paperclip, FileSpreadsheet, Plus, ChevronRight, Trash2, Zap, History } from 'lucide-react';
 import SlidePanel from '../components/SlidePanel';
@@ -111,20 +112,6 @@ export default function EquipmentDetailPage() {
       await api.delete(`/equipment/${deleteUnitConfirm.id}`);
       setDeleteUnitConfirm(null);
       reload();
-    } catch { /* ignore */ }
-  }
-
-  async function downloadAttachment(att) {
-    try {
-      const r = await api.get(`/attachments/${att.id}/download`, { responseType: 'blob' });
-      const url = URL.createObjectURL(r.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = att.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
     } catch { /* ignore */ }
   }
 

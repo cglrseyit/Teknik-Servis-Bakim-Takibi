@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Wrench, ClipboardList, BarChart3,
-  Users, Bell, LogOut, User, X, ChevronRight
+  Users, Bell, LogOut, User, X, ChevronRight, History
 } from 'lucide-react';
 import Badge from './Badge';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/dashboard', label: 'Bakım Takvimi', Icon: Home,          roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/equipment', label: 'Ekipmanlar',    Icon: Wrench,        roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/plans',     label: 'Bakım Planları', Icon: ClipboardList, roles: ['admin', 'teknik_muduru', 'order_taker'] },
+  { to: '/completed-tasks', label: 'Yapılan Bakımlar', Icon: History, roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/reports',   label: 'Raporlar',      Icon: BarChart3,     roles: ['admin', 'teknik_muduru', 'order_taker'] },
   { to: '/users',     label: 'Kullanıcılar',  Icon: Users,         roles: ['admin'] },
 ];
@@ -20,6 +21,7 @@ const PAGE_TITLES = {
   '/dashboard': 'Bakım Takvimi',
   '/equipment': 'Ekipmanlar',
   '/plans':     'Bakım Planları',
+  '/completed-tasks': 'Yapılan Bakımlar',
   '/reports':   'Raporlar',
   '/users':     'Kullanıcılar',
 };
