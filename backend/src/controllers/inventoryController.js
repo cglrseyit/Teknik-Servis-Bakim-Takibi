@@ -54,7 +54,17 @@ async function getOne(req, res) {
        ORDER BY is_primary DESC, uploaded_at ASC`,
       [id]
     );
-    res.json({ ...rows[0], attachments: atts });
+
+    const { rows: history } = await pool.query(
+      `SELECT h.id, h.field, h.old_value, h.new_value, h.changed_at,
+              u.name AS changed_by_name
+       FROM inventory_history h
+       LEFT JOIN users u ON u.id = h.changed_by
+       WHERE h.inventory_id = $1
+       ORDER BY h.changed_at DESC`,
+      [id]
+    );
+    res.json({ ...rows[0], attachments: atts, history });
   } catch (err) {
     console.error('inventory.getOne error:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
@@ -135,6 +145,16 @@ async function update(req, res) {
   if (!name?.trim()) return res.status(400).json({ error: 'Adı zorunlu' });
 
   try {
+    // Değişim takibi için önceki durum/lokasyonu al
+    const { rows: prevRows } = await pool.query(
+      'SELECT status, location FROM inventory_items WHERE id = $1', [id]
+    );
+    if (!prevRows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+    const prev = prevRows[0];
+
+    const newStatus = status || 'active';
+    const newLocation = location?.trim() || null;
+
     const { rows } = await pool.query(
       `UPDATE inventory_items SET
          inventory_no=$1, name=$2, category=$3, location=$4, brand=$5, model=$6,
@@ -145,19 +165,32 @@ async function update(req, res) {
         inventory_no?.trim() || null,
         name.trim(),
         category?.trim() || null,
-        location?.trim() || null,
+        newLocation,
         brand?.trim() || null,
         model?.trim() || null,
         serial_number?.trim() || null,
         supplier?.trim() || null,
         install_date || null,
         warranty_end || null,
-        status || 'active',
+        newStatus,
         notes?.trim() || null,
         id,
       ]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
+
+    // Durum / lokasyon değiştiyse hareket geçmişine yaz
+    const changes = [];
+    if (prev.status !== newStatus) changes.push(['status', prev.status, newStatus]);
+    if ((prev.location || null) !== newLocation) changes.push(['location', prev.location, newLocation]);
+    for (const [field, oldVal, newVal] of changes) {
+      await pool.query(
+        `INSERT INTO inventory_history (inventory_id, field, old_value, new_value, changed_by)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [id, field, oldVal, newVal, req.user.id]
+      );
+    }
+
     await logAction(req.user.id, 'inventory_updated', 'inventory', rows[0].id, rows[0].name);
     res.json(rows[0]);
   } catch (err) {

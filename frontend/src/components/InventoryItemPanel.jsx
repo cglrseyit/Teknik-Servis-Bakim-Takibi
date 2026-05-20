@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Tag, MapPin, Wrench, FileBadge, Calendar, ShieldCheck,
   Building2, StickyNote, Pencil, Image as ImageIcon, Hash,
+  History, ArrowRight,
 } from 'lucide-react';
 import api from '../api/axios';
 import AuthImage from './AuthImage';
@@ -17,6 +18,19 @@ const STATUS_CONFIG = {
 function fmtDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function fmtDateTime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+const FIELD_LABELS = { status: 'Durum', location: 'Lokasyon' };
+
+function displayValue(field, value) {
+  if (value == null || value === '') return field === 'location' ? 'Belirsiz' : '—';
+  if (field === 'status') return STATUS_CONFIG[value]?.label || value;
+  return value;
 }
 
 export default function InventoryItemPanel({ itemId, canEdit }) {
@@ -137,6 +151,38 @@ export default function InventoryItemPanel({ itemId, canEdit }) {
           <p className="text-sm text-slate-600 leading-relaxed bg-white/70 border border-amber-100/60 rounded-lg px-3.5 py-3 italic break-words whitespace-pre-wrap shadow-sm">
             {item.notes}
           </p>
+        </SectionDivider>
+      )}
+
+      {/* Hareket Geçmişi */}
+      {item.history?.length > 0 && (
+        <SectionDivider icon={History} title={`Hareket Geçmişi (${item.history.length})`}>
+          <ol className="space-y-2.5">
+            {item.history.map(h => (
+              <li key={h.id} className="flex gap-2.5">
+                <div className="flex flex-col items-center pt-1">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${h.field === 'status' ? 'bg-amber-500' : 'bg-rose-400'}`} />
+                  <span className="flex-1 w-px bg-slate-200 mt-1" />
+                </div>
+                <div className="flex-1 min-w-0 pb-1">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    {h.field === 'status'
+                      ? <Wrench size={11} className="text-amber-500" />
+                      : <MapPin size={11} className="text-rose-400" />}
+                    {FIELD_LABELS[h.field] || h.field} değişti
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm text-slate-700 flex-wrap">
+                    <span className="text-slate-400 line-through">{displayValue(h.field, h.old_value)}</span>
+                    <ArrowRight size={12} className="text-slate-400 flex-shrink-0" />
+                    <span className="font-semibold text-slate-800">{displayValue(h.field, h.new_value)}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {fmtDateTime(h.changed_at)}{h.changed_by_name ? ` · ${h.changed_by_name}` : ''}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
         </SectionDivider>
       )}
 

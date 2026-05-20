@@ -210,6 +210,16 @@ const AUTO_MIGRATIONS = [
      uploaded_at     TIMESTAMP DEFAULT NOW()
    )`,
   `CREATE INDEX IF NOT EXISTS idx_inventory_attachments_item ON inventory_attachments(inventory_id)`,
+  `CREATE TABLE IF NOT EXISTS inventory_history (
+     id            SERIAL PRIMARY KEY,
+     inventory_id  INT NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+     field         VARCHAR(20) NOT NULL,
+     old_value     TEXT,
+     new_value     TEXT,
+     changed_by    INT REFERENCES users(id) ON DELETE SET NULL,
+     changed_at    TIMESTAMP DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_inventory_history_item ON inventory_history(inventory_id)`,
 ];
 AUTO_MIGRATIONS.forEach(sql => {
   pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));
