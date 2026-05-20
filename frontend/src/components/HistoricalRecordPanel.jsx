@@ -1,17 +1,24 @@
 import { useState, useRef } from 'react';
-import { Loader2, Paperclip, X, Calendar, FileText, User, Briefcase, ClipboardList, StickyNote } from 'lucide-react';
+import { Loader2, Paperclip, X, Calendar, FileText, User, Briefcase, ClipboardList, StickyNote, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import DayPicker from './DayPicker';
 
 const ACCEPTED = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx';
 
+const FREQ_OPTIONS = [
+  { value: 'monthly', label: 'Aylık' },
+  { value: 'quarterly', label: '3 Aylık' },
+  { value: 'semiannual', label: '6 Aylık' },
+  { value: 'yearly', label: 'Yıllık' },
+];
+
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function HistoricalRecordPanel({ equipmentId, equipmentName, unitCount = 0, onCreated }) {
+export default function HistoricalRecordPanel({ equipmentId, equipmentName, unitCount = 0, hasActivePlan = false, onCreated }) {
   const toast = useToast();
   const fileInputRef = useRef(null);
   const [form, setForm] = useState({
@@ -22,6 +29,7 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
     performed_work: '',
     notes: '',
   });
+  const [frequencyType, setFrequencyType] = useState('');
   const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,6 +61,7 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
       const fd = new FormData();
       fd.append('equipment_id', String(equipmentId));
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      if (!hasActivePlan && frequencyType) fd.append('frequency_type', frequencyType);
       files.forEach(f => fd.append('files', f));
 
       const { data } = await api.post('/tasks/historical', fd, {
@@ -62,7 +71,7 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
       const unitMsg = data.unit_count > 1
         ? `Geçmiş bakım kaydı ${data.unit_count} birime eklendi`
         : 'Geçmiş bakım kaydı eklendi';
-      toast?.success(unitMsg);
+      toast?.success(data.plans_created > 0 ? `${unitMsg} · bakım planı oluşturuldu` : unitMsg);
       onCreated?.();
     } catch (err) {
       toast?.error(err.response?.data?.error || 'Kayıt oluşturulamadı');
@@ -143,6 +152,24 @@ export default function HistoricalRecordPanel({ equipmentId, equipmentName, unit
           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 resize-y"
         />
       </Field>
+
+      {!hasActivePlan && (
+        <Field icon={RefreshCw} label="Bakım Periyodu (opsiyonel)">
+          <select
+            value={frequencyType}
+            onChange={e => setFrequencyType(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 bg-white"
+          >
+            <option value="">Plan oluşturma</option>
+            {FREQ_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          {frequencyType && (
+            <p className="text-[11px] text-slate-500 mt-1.5 bg-amber-50/70 border border-amber-100 rounded px-2 py-1.5">
+              Bu kaydın tarihinden itibaren <strong>{FREQ_OPTIONS.find(o => o.value === frequencyType)?.label.toLowerCase()}</strong> periyotla otomatik bakım planı oluşturulacak; gelecek görevler planlanacak.
+            </p>
+          )}
+        </Field>
+      )}
 
       <Field icon={Paperclip} label="Belgeler (opsiyonel)">
         <input

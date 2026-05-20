@@ -598,6 +598,7 @@ export default function EquipmentDetailPage() {
             equipmentId={Number(id)}
             equipmentName={equipment?.name || ''}
             unitCount={units.length}
+            hasActivePlan={Boolean(equipment?.active_plan)}
             onCreated={() => {
               setHistoricalPanelOpen(false);
               reload();

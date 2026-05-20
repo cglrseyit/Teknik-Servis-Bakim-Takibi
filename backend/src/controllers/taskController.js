@@ -327,8 +327,23 @@ async function getSummary(req, res) {
   }
 }
 
+const HIST_PLAN_FREQS = ['monthly', 'quarterly', 'semiannual', 'yearly'];
+
+// Bir tarihe periyot ekler (ay-bazlı). Gün, ay-sonu kaydırmasını generator yapacağı için önemsiz.
+function addPeriod(dateStr, frequencyType) {
+  const d = new Date(dateStr + 'T12:00:00');
+  switch (frequencyType) {
+    case 'monthly':    d.setMonth(d.getMonth() + 1); break;
+    case 'quarterly':  d.setMonth(d.getMonth() + 3); break;
+    case 'semiannual': d.setMonth(d.getMonth() + 6); break;
+    case 'yearly':     d.setFullYear(d.getFullYear() + 1); break;
+    default: return null;
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 async function createHistorical(req, res) {
-  const { equipment_id, title, maintained_by, responsible_person, scheduled_date, performed_work, notes } = req.body;
+  const { equipment_id, title, maintained_by, responsible_person, scheduled_date, performed_work, notes, frequency_type } = req.body;
   const equipmentId = Number(equipment_id);
   const files = req.files || [];
 
@@ -394,10 +409,38 @@ async function createHistorical(req, res) {
       `${title.trim()}${insertedTaskIds.length > 1 ? ` (${insertedTaskIds.length} birim)` : ''}`
     );
 
+    // Periyot seçildiyse: planı olmayan birimler için otomatik bakım planı oluştur
+    let plansCreated = 0;
+    if (frequency_type && HIST_PLAN_FREQS.includes(frequency_type)) {
+      const planStart = addPeriod(scheduled_date, frequency_type);
+      for (const targetId of targetIds) {
+        // Zaten aktif periyodik planı olan birimi atla
+        const { rows: existing } = await pool.query(
+          `SELECT id FROM maintenance_plans
+           WHERE equipment_id = $1 AND is_one_time = false AND is_active = true LIMIT 1`,
+          [targetId]
+        );
+        if (existing[0]) continue;
+
+        const { rows: planRows } = await pool.query(
+          `INSERT INTO maintenance_plans
+             (equipment_id, title, description, frequency_type, advance_notice_days, start_date, is_one_time)
+           VALUES ($1,$2,$3,$4,$5,$6,false) RETURNING *`,
+          [targetId, title.trim(), performed_work?.trim() || null, frequency_type, 3, planStart]
+        );
+        await generateTasksForPlan(planRows[0], 365);
+        plansCreated++;
+      }
+      if (plansCreated > 0) {
+        await logAction(req.user.id, 'plan_created', 'plan', null, `${title.trim()} (geçmiş kayıttan otomatik)`);
+      }
+    }
+
     res.status(201).json({
       task_ids: insertedTaskIds,
       unit_count: insertedTaskIds.length,
       attachment_count: files.length,
+      plans_created: plansCreated,
     });
   } catch (err) {
     console.error('createHistorical error:', err);
