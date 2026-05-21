@@ -412,10 +412,10 @@ async function inventoryList(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Adı | Kategori | Lokasyon | Marka | Tedarikçi | Durum | Adet | Güç | Birim | Yıllık Gün | Ömür | Notlar
-    const widths = [36, 22, 26, 22, 24, 14, 9, 11, 10, 15, 13, 36];
-    const totalCols = widths.length;
-    widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+    const headers = ['Adı', 'Kategori', 'Lokasyon', 'Marka', 'Tedarikçi', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Gün', 'Ömür (yıl)', 'Notlar'];
+    const totalCols = headers.length;
+    // Genişlikler veri eklendikten sonra otomatik hesaplanacak; başlangıçta minimum ver
+    headers.forEach((_, i) => { ws.getColumn(i + 1).width = 10; });
 
     ws.getRow(1).height = 62;
 
@@ -435,7 +435,6 @@ async function inventoryList(req, res) {
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
     const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } };
 
-    const headers = ['Adı', 'Kategori', 'Lokasyon', 'Marka', 'Tedarikçi', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Gün', 'Ömür (yıl)', 'Notlar'];
     const headerRow = ws.getRow(2);
     headers.forEach((h, i) => {
       const isLast = i === headers.length - 1;
@@ -474,6 +473,16 @@ async function inventoryList(req, res) {
         row.eachCell(cell => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accentSoft } }; });
       }
     });
+
+    // Auto-fit: her sütun için başlık + tüm veri hücrelerinin max karakter uzunluğunu al
+    for (let col = 1; col <= totalCols; col++) {
+      let maxLen = headers[col - 1].length;
+      ws.getColumn(col).eachCell({ includeEmpty: false }, cell => {
+        const v = cell.value != null ? String(cell.value) : '';
+        if (v.length > maxLen) maxLen = v.length;
+      });
+      ws.getColumn(col).width = Math.min(Math.max(maxLen + 4, 10), 60);
+    }
 
     if (items.length === 0) {
       const emptyRow = ws.addRow(Array(totalCols).fill(''));
