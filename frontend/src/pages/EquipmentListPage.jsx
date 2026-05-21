@@ -12,11 +12,12 @@ const STATUS_CONFIG = {
 };
 
 const FREQUENCY_LABELS = {
-  monthly:   'Aylık',
-  quarterly: '3 Aylık',
-  biannual:  '6 Aylık',
-  yearly:    'Yıllık',
-  custom:    'Özel',
+  monthly:    'Aylık',
+  quarterly:  '3 Aylık',
+  biannual:   '6 Aylık',
+  semiannual: '6 Aylık',
+  yearly:     'Yıllık',
+  custom:     'Özel',
 };
 
 // Bakım Planları sayfasındaki periyot renkleriyle aynı tutulur

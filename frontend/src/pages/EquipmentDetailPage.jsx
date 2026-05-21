@@ -19,10 +19,11 @@ const STATUS_COLORS = {
 const UNIT_STATUS_OPTIONS = ['active', 'passive', 'maintenance', 'broken'];
 
 const PERIOD_LABELS = {
-  monthly:   'Aylık',
-  quarterly: '3 Aylık',
-  biannual:  '6 Aylık',
-  yearly:    'Yıllık',
+  monthly:    'Aylık',
+  quarterly:  '3 Aylık',
+  biannual:   '6 Aylık',
+  semiannual: '6 Aylık',
+  yearly:     'Yıllık',
 };
 
 const TASK_STATUS_CONFIG = {
