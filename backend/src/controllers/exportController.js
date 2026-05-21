@@ -412,8 +412,8 @@ async function inventoryList(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Adı | Kategori | Lokasyon | Marka | Model | Seri No | Tedarikçi | Kurulum | Garanti Bitiş | Durum | Adet | Güç | Birim | Yıllık Gün | Ömür | Notlar
-    const widths = [22, 16, 18, 14, 14, 16, 18, 13, 14, 11, 7, 9, 8, 12, 10, 24];
+    // Adı | Kategori | Lokasyon | Marka | Tedarikçi | Durum | Adet | Güç | Birim | Yıllık Gün | Ömür | Notlar
+    const widths = [22, 16, 18, 16, 18, 11, 7, 9, 8, 12, 10, 24];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -435,7 +435,7 @@ async function inventoryList(req, res) {
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
     const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } };
 
-    const headers = ['Adı', 'Kategori', 'Lokasyon', 'Marka', 'Model', 'Seri No', 'Tedarikçi', 'Kurulum', 'Garanti Bitiş', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Gün', 'Ömür (yıl)', 'Notlar'];
+    const headers = ['Adı', 'Kategori', 'Lokasyon', 'Marka', 'Tedarikçi', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Gün', 'Ömür (yıl)', 'Notlar'];
     const headerRow = ws.getRow(2);
     headers.forEach((h, i) => {
       const isLast = i === headers.length - 1;
@@ -454,11 +454,7 @@ async function inventoryList(req, res) {
         it.category || '',
         it.location || '',
         it.brand || '',
-        it.model || '',
-        it.serial_number || '',
         it.supplier || '',
-        fmtDate(it.install_date),
-        fmtDate(it.warranty_end),
         STATUS_LABELS_EQ[it.status] || it.status || '',
         it.quantity != null ? it.quantity : '',
         it.power != null ? it.power : '',
