@@ -413,7 +413,7 @@ async function inventoryList(req, res) {
     });
 
     // Adı | Kategori | Lokasyon | Marka | Tedarikçi | Durum | Adet | Güç | Birim | Yıllık Gün | Ömür | Notlar
-    const widths = [22, 16, 18, 16, 18, 11, 7, 9, 8, 12, 10, 24];
+    const widths = [36, 22, 26, 22, 24, 14, 9, 11, 10, 15, 13, 36];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -441,12 +441,12 @@ async function inventoryList(req, res) {
       const isLast = i === headers.length - 1;
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
-      cell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: COLORS.primaryDark } };
+      cell.font = { name: 'Calibri', bold: true, size: 12, color: { argb: COLORS.primaryDark } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accent } };
       cell.alignment = { horizontal: 'left', vertical: 'middle' };
       cell.border = { top: borderAccent, bottom: borderAccent, left: borderThin, right: isLast ? borderRight : borderThin };
     });
-    headerRow.height = 26;
+    headerRow.height = 32;
 
     items.forEach((it, idx) => {
       const row = ws.addRow([
@@ -463,11 +463,11 @@ async function inventoryList(req, res) {
         it.lifespan_years != null ? it.lifespan_years : '',
         it.notes || '',
       ]);
-      row.height = 22;
+      row.height = 26;
       row.eachCell((cell, colNum) => {
         const isLast = colNum === totalCols;
         cell.alignment = { vertical: 'middle', wrapText: false, horizontal: 'left' };
-        cell.font = { name: 'Calibri', size: 10, color: { argb: COLORS.textDark } };
+        cell.font = { name: 'Calibri', size: 12, color: { argb: COLORS.textDark } };
         cell.border = { top: borderThin, bottom: borderThin, left: borderThin, right: isLast ? borderRight : borderThin };
       });
       if (idx % 2 === 1) {
