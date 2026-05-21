@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, FileSpreadsheet, Package, ChevronRight, Pencil,
-  ImageIcon, MapPin, Tag, Hash, Upload, Loader2, X, CheckCircle2, AlertTriangle, Layers,
+  ImageIcon, MapPin, Tag, Hash, Upload, Loader2, X, CheckCircle2, AlertTriangle, Layers, Trash2,
 } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
@@ -54,6 +54,18 @@ export default function InventoryListPage() {
       .then(r => setItems(r.data))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
+  }
+
+  async function handleDelete(item) {
+    if (!window.confirm(`"${item.name}" kaydı silinsin mi? Bu işlem geri alınamaz.`)) return;
+    try {
+      await api.delete(`/inventory/${item.id}`);
+      toast?.success('Kayıt silindi');
+      if (selectedId === item.id) setSelectedId(null);
+      reloadList();
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'Silinemedi');
+    }
   }
 
   function resetImport() {
@@ -319,14 +331,23 @@ export default function InventoryListPage() {
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {canEdit && (
-                        <Link
-                          to={`/inventory/${item.id}/edit`}
-                          onClick={e => e.stopPropagation()}
-                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Düzenle"
-                        >
-                          <Pencil size={13} />
-                        </Link>
+                        <>
+                          <Link
+                            to={`/inventory/${item.id}/edit`}
+                            onClick={e => e.stopPropagation()}
+                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Düzenle"
+                          >
+                            <Pencil size={13} />
+                          </Link>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleDelete(item); }}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Sil"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </>
                       )}
                       <ChevronRight size={14} className="text-slate-300" />
                     </div>
@@ -344,7 +365,11 @@ export default function InventoryListPage() {
         onClose={() => setSelectedId(null)}
         title="Envanter Detayı"
       >
-        <InventoryItemPanel itemId={selectedId} canEdit={canEdit} />
+        <InventoryItemPanel
+          itemId={selectedId}
+          canEdit={canEdit}
+          onDeleted={() => { setSelectedId(null); reloadList(); }}
+        />
       </SlidePanel>
 
       {/* İçe aktarma paneli */}

@@ -4,9 +4,11 @@ import {
   Tag, MapPin, Wrench, FileBadge, Calendar, ShieldCheck,
   Building2, StickyNote, Pencil, Image as ImageIcon, Hash,
   History, ArrowRight, Zap, Gauge, CalendarDays, Hourglass, Layers,
+  Trash2, Loader2,
 } from 'lucide-react';
 import api from '../api/axios';
 import AuthImage from './AuthImage';
+import { useToast } from '../context/ToastContext';
 
 const STATUS_CONFIG = {
   active:      { label: 'Aktif',      cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
@@ -33,10 +35,26 @@ function displayValue(field, value) {
   return value;
 }
 
-export default function InventoryItemPanel({ itemId, canEdit }) {
+export default function InventoryItemPanel({ itemId, canEdit, onDeleted }) {
+  const toast = useToast();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!item) return;
+    if (!window.confirm(`"${item.name}" kaydı silinsin mi? Bu işlem geri alınamaz (fotoğraflar ve hareket geçmişi de silinir).`)) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/inventory/${item.id}`);
+      toast?.success('Kayıt silindi');
+      onDeleted?.(item.id);
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'Silinemedi');
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     if (!itemId) return;
@@ -209,16 +227,26 @@ export default function InventoryItemPanel({ itemId, canEdit }) {
         </SectionDivider>
       )}
 
-      {/* Düzenle butonu */}
+      {/* Düzenle / Sil butonları */}
       {canEdit && (
-        <div className="pt-4 border-t border-amber-100/70">
+        <div className="pt-4 border-t border-amber-100/70 flex items-center gap-2">
           <Link
             to={`/inventory/${item.id}/edit`}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
           >
             <Pencil size={14} />
             Düzenle
           </Link>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            title="Kaydı sil"
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            Sil
+          </button>
         </div>
       )}
 
