@@ -25,6 +25,7 @@ export default function InventoryFormPage() {
     brand: '', model: '', serial_number: '', supplier: '',
     install_date: '', warranty_end: '',
     status: 'active', notes: '',
+    quantity: '', power: '', power_unit: '', annual_days: '', lifespan_years: '',
   });
   const [existingAtts, setExistingAtts] = useState([]);
   const [pendingFiles, setPendingFiles] = useState([]);
@@ -59,6 +60,11 @@ export default function InventoryFormPage() {
         warranty_end:  it.warranty_end  ? it.warranty_end.split('T')[0] : '',
         status:        it.status        || 'active',
         notes:         it.notes         || '',
+        quantity:      it.quantity      != null ? String(it.quantity) : '',
+        power:         it.power          != null ? String(it.power) : '',
+        power_unit:    it.power_unit     || '',
+        annual_days:   it.annual_days    != null ? String(it.annual_days) : '',
+        lifespan_years:it.lifespan_years != null ? String(it.lifespan_years) : '',
       });
       setExistingAtts(it.attachments || []);
     }).catch(() => {
@@ -259,6 +265,39 @@ export default function InventoryFormPage() {
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 resize-none"
                 placeholder="Bu kayda özel notlar..."
               />
+            </div>
+          </div>
+
+          {/* Enerji / Kullanım bilgileri */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+            <h2 className="text-sm font-bold text-slate-700">Enerji / Kullanım Bilgileri</h2>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label>Adet</Label>
+                <Input type="number" min="1" value={form.quantity} onChange={e => update('quantity', e.target.value)} placeholder="1" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Güç</Label>
+                <Input type="number" step="any" value={form.power} onChange={e => update('power', e.target.value)} placeholder="örn: 200" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Birim</Label>
+                <Input list="unit-list" value={form.power_unit} onChange={e => update('power_unit', e.target.value)} placeholder="W / KW" />
+                <datalist id="unit-list">
+                  <option value="W" />
+                  <option value="KW" />
+                </datalist>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Yıllık Ort. Kullanılan Gün</Label>
+                <Input type="number" min="0" value={form.annual_days} onChange={e => update('annual_days', e.target.value)} placeholder="örn: 300" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Ekipman Ömrü (yıl)</Label>
+                <Input type="number" min="0" value={form.lifespan_years} onChange={e => update('lifespan_years', e.target.value)} placeholder="örn: 10" />
+              </div>
             </div>
           </div>
 

@@ -71,10 +71,18 @@ async function getOne(req, res) {
   }
 }
 
+// Sayıyı parse et: '' / null / geçersiz → null, virgül ondalık → nokta
+function numOrNull(v) {
+  if (v === undefined || v === null || String(v).trim() === '') return null;
+  const n = Number(String(v).replace(',', '.').trim());
+  return Number.isFinite(n) ? n : null;
+}
+
 async function create(req, res) {
   const {
     inventory_no, name, category, location, brand, model, serial_number,
     supplier, install_date, warranty_end, status, notes,
+    quantity, power, power_unit, annual_days, lifespan_years,
   } = req.body;
   const files = req.files || [];
 
@@ -89,8 +97,9 @@ async function create(req, res) {
     const { rows } = await pool.query(
       `INSERT INTO inventory_items
          (inventory_no, name, category, location, brand, model, serial_number,
-          supplier, install_date, warranty_end, status, notes, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+          supplier, install_date, warranty_end, status, notes, created_by,
+          quantity, power, power_unit, annual_days, lifespan_years)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
        RETURNING *`,
       [
         inventory_no?.trim() || null,
@@ -106,6 +115,11 @@ async function create(req, res) {
         status || 'active',
         notes?.trim() || null,
         req.user.id,
+        numOrNull(quantity) ?? 1,
+        numOrNull(power),
+        power_unit?.trim() || null,
+        numOrNull(annual_days),
+        numOrNull(lifespan_years),
       ]
     );
     const item = rows[0];
@@ -140,6 +154,7 @@ async function update(req, res) {
   const {
     inventory_no, name, category, location, brand, model, serial_number,
     supplier, install_date, warranty_end, status, notes,
+    quantity, power, power_unit, annual_days, lifespan_years,
   } = req.body;
 
   if (!name?.trim()) return res.status(400).json({ error: 'Adı zorunlu' });
@@ -159,7 +174,8 @@ async function update(req, res) {
       `UPDATE inventory_items SET
          inventory_no=$1, name=$2, category=$3, location=$4, brand=$5, model=$6,
          serial_number=$7, supplier=$8, install_date=$9, warranty_end=$10,
-         status=$11, notes=$12, updated_at=NOW()
+         status=$11, notes=$12, updated_at=NOW(),
+         quantity=$14, power=$15, power_unit=$16, annual_days=$17, lifespan_years=$18
        WHERE id=$13 RETURNING *`,
       [
         inventory_no?.trim() || null,
@@ -175,6 +191,11 @@ async function update(req, res) {
         newStatus,
         notes?.trim() || null,
         id,
+        numOrNull(quantity) ?? 1,
+        numOrNull(power),
+        power_unit?.trim() || null,
+        numOrNull(annual_days),
+        numOrNull(lifespan_years),
       ]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
@@ -376,8 +397,177 @@ async function downloadAttachment(req, res) {
   }
 }
 
+/* ──────────── Excel toplu içe aktarma ──────────── */
+
+// Başlık eşleştirme alias'ları (hem EYS dosyası hem bizim export şablonu)
+const FIELD_ALIASES = {
+  name:          ['EKİPMAN ADI', 'EKIPMAN ADI', 'ADI', 'AD'],
+  location:      ['EKİPMANIN KONUMU', 'EKIPMANIN KONUMU', 'LOKASYON', 'KONUM'],
+  brand:         ['MARKA'],
+  model:         ['MODEL'],
+  quantity:      ['ADET'],
+  power:         ['GÜÇ', 'GUC'],
+  power_unit:    ['BİRİM', 'BIRIM'],
+  annual_days:   ['YILLIK ORTALAMA KULLANILAN GÜN SAYISI', 'YILLIK ORTALAMA KULLANILAN GUN SAYISI', 'YILLIK GÜN', 'YILLIK ORT GÜN'],
+  lifespan_years:['EKİPMAN ÖMRÜ', 'EKIPMAN OMRU', 'ÖMÜR', 'OMUR'],
+  inventory_no:  ['DEMİRBAŞ NO', 'DEMIRBAS NO', 'DEMİRBAŞ NUMARASI'],
+  category:      ['KATEGORİ', 'KATEGORI'],
+  serial_number: ['SERİ NO', 'SERI NO', 'SERİ NUMARASI', 'SERİ NUMARASI'],
+  supplier:      ['TEDARİKÇİ', 'TEDARIKCI'],
+  install_date:  ['KURULUM', 'KURULUM TARİHİ'],
+  warranty_end:  ['GARANTİ BİTİŞ', 'GARANTI BITIS'],
+  status:        ['DURUM'],
+  notes:         ['NOTLAR', 'NOT'],
+};
+
+const STATUS_MAP = { 'AKTİF': 'active', 'AKTIF': 'active', 'PASİF': 'passive', 'PASIF': 'passive', 'BAKIMDA': 'maintenance', 'ARIZALI': 'broken', 'ARİZALİ': 'broken' };
+
+function normHeader(s) {
+  return String(s || '').toLocaleUpperCase('tr-TR').replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function cellText(v) {
+  if (v == null) return '';
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === 'object') {
+    if (Array.isArray(v.richText)) return v.richText.map(t => t.text).join('');
+    if (v.text != null) return String(v.text);
+    if (v.result != null) return String(v.result);
+    return '';
+  }
+  return String(v);
+}
+
+function parseImportDate(v) {
+  if (v == null || v === '') return null;
+  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);                 // ISO
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);        // dd.MM.yyyy / dd/MM/yyyy
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  const d = new Date(s);
+  return isNaN(d) ? null : d.toISOString().slice(0, 10);
+}
+
+async function importExcel(req, res) {
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: 'Dosya gerekli' });
+  const isPreview = req.query.preview === '1';
+  const cleanup = () => fs.unlink(file.path, () => {});
+
+  try {
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(file.path);
+    const ws = wb.worksheets[0];
+    if (!ws) { cleanup(); return res.status(400).json({ error: 'Sayfa bulunamadı' }); }
+
+    // Başlık satırını bul (ilk 20 satırda 'EKİPMAN ADI'/'ADI' içeren)
+    let headerRowNum = 0;
+    const colMap = {};
+    for (let r = 1; r <= Math.min(20, ws.rowCount); r++) {
+      const row = ws.getRow(r);
+      const found = {};
+      for (let c = 1; c <= ws.columnCount; c++) {
+        const norm = normHeader(cellText(row.getCell(c).value));
+        if (!norm) continue;
+        for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+          if (found[field] === undefined && aliases.includes(norm)) found[field] = c;
+        }
+      }
+      if (found.name !== undefined) { headerRowNum = r; Object.assign(colMap, found); break; }
+    }
+
+    if (!headerRowNum) {
+      cleanup();
+      return res.status(400).json({ error: 'Ekipman adı (başlık) sütunu bulunamadı. Excel başlıklarını kontrol edin.' });
+    }
+
+    const get = (row, field) => colMap[field] ? cellText(row.getCell(colMap[field]).value).trim() : '';
+
+    const records = [];
+    let skipped = 0;
+    const errors = [];
+
+    for (let r = headerRowNum + 1; r <= ws.rowCount; r++) {
+      const row = ws.getRow(r);
+      const name = get(row, 'name');
+      if (!name) { skipped++; continue; }
+
+      const statusRaw = normHeader(get(row, 'status'));
+      records.push({
+        _row: r,
+        inventory_no:  get(row, 'inventory_no') || null,
+        name,
+        category:      get(row, 'category') || null,
+        location:      get(row, 'location') || null,
+        brand:         get(row, 'brand') || null,
+        model:         get(row, 'model') || null,
+        serial_number: get(row, 'serial_number') || null,
+        supplier:      get(row, 'supplier') || null,
+        install_date:  parseImportDate(get(row, 'install_date')),
+        warranty_end:  parseImportDate(get(row, 'warranty_end')),
+        status:        STATUS_MAP[statusRaw] || 'active',
+        notes:         get(row, 'notes') || null,
+        quantity:      numOrNull(get(row, 'quantity')) ?? 1,
+        power:         numOrNull(get(row, 'power')),
+        power_unit:    get(row, 'power_unit') || null,
+        annual_days:   numOrNull(get(row, 'annual_days')),
+        lifespan_years:numOrNull(get(row, 'lifespan_years')),
+      });
+    }
+
+    if (isPreview) {
+      cleanup();
+      return res.json({
+        total: records.length + skipped,
+        willCreate: records.length,
+        skipped,
+        mappedColumns: Object.keys(colMap),
+        sample: records.slice(0, 5).map(r => ({
+          name: r.name, location: r.location, brand: r.brand,
+          quantity: r.quantity, power: r.power, power_unit: r.power_unit,
+        })),
+        errors,
+      });
+    }
+
+    let created = 0;
+    for (const rec of records) {
+      try {
+        await pool.query(
+          `INSERT INTO inventory_items
+             (inventory_no, name, category, location, brand, model, serial_number,
+              supplier, install_date, warranty_end, status, notes, created_by,
+              quantity, power, power_unit, annual_days, lifespan_years)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+          [
+            rec.inventory_no, rec.name, rec.category, rec.location, rec.brand, rec.model,
+            rec.serial_number, rec.supplier, rec.install_date, rec.warranty_end, rec.status,
+            rec.notes, req.user.id, rec.quantity, rec.power, rec.power_unit, rec.annual_days,
+            rec.lifespan_years,
+          ]
+        );
+        created++;
+      } catch (e) {
+        errors.push({ row: rec._row, reason: e.code === '23505' ? 'Demirbaş no zaten var' : (e.message || 'hata') });
+      }
+    }
+
+    cleanup();
+    await logAction(req.user.id, 'inventory_imported', 'inventory', null, `${created} kayıt içe aktarıldı`);
+    res.json({ created, skipped, errors });
+  } catch (err) {
+    cleanup();
+    console.error('inventory.importExcel error:', err);
+    res.status(500).json({ error: 'Excel okunamadı veya işlenemedi' });
+  }
+}
+
 module.exports = {
   getAll, getOne, create, update, remove,
   categorySummary, locationSummary,
   uploadAttachments, setPrimaryAttachment, deleteAttachment, downloadAttachment,
+  importExcel,
 };

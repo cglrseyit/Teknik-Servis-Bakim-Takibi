@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Tag, MapPin, Wrench, FileBadge, Calendar, ShieldCheck,
   Building2, StickyNote, Pencil, Image as ImageIcon, Hash,
-  History, ArrowRight,
+  History, ArrowRight, Zap, Gauge, CalendarDays, Hourglass, Layers,
 } from 'lucide-react';
 import api from '../api/axios';
 import AuthImage from './AuthImage';
@@ -74,6 +74,12 @@ export default function InventoryItemPanel({ itemId, canEdit }) {
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-700 ring-1 ring-amber-200">
                 <Tag size={10} />
                 {item.category}
+              </span>
+            )}
+            {item.quantity > 1 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-200">
+                <Layers size={10} />
+                {item.quantity} adet
               </span>
             )}
           </div>
@@ -151,6 +157,23 @@ export default function InventoryItemPanel({ itemId, canEdit }) {
           <p className="text-sm text-slate-600 leading-relaxed bg-white/70 border border-amber-100/60 rounded-lg px-3.5 py-3 italic break-words whitespace-pre-wrap shadow-sm">
             {item.notes}
           </p>
+        </SectionDivider>
+      )}
+
+      {/* Enerji / Kullanım */}
+      {(item.power != null || item.power_unit || item.annual_days != null || item.lifespan_years != null) && (
+        <SectionDivider icon={Zap} title="Enerji / Kullanım">
+          <div className="grid grid-cols-1 gap-2">
+            {item.power != null && (
+              <InfoBlock icon={Gauge} label="Güç" value={`${item.power}${item.power_unit ? ' ' + item.power_unit : ''}`} iconCls="text-amber-600" iconBg="bg-amber-50" />
+            )}
+            {item.annual_days != null && (
+              <InfoBlock icon={CalendarDays} label="Yıllık Ort. Kullanılan Gün" value={`${item.annual_days} gün`} iconCls="text-emerald-600" iconBg="bg-emerald-50" />
+            )}
+            {item.lifespan_years != null && (
+              <InfoBlock icon={Hourglass} label="Ekipman Ömrü" value={`${item.lifespan_years} yıl`} iconCls="text-violet-600" iconBg="bg-violet-50" />
+            )}
+          </div>
         </SectionDivider>
       )}
 

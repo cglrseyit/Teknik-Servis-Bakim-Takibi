@@ -220,6 +220,12 @@ const AUTO_MIGRATIONS = [
      changed_at    TIMESTAMP DEFAULT NOW()
    )`,
   `CREATE INDEX IF NOT EXISTS idx_inventory_history_item ON inventory_history(inventory_id)`,
+  // Envanter — EYS (enerji/kullanım) alanları
+  `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS quantity INT DEFAULT 1`,
+  `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS power NUMERIC`,
+  `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS power_unit VARCHAR(10)`,
+  `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS annual_days INT`,
+  `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS lifespan_years INT`,
 ];
 AUTO_MIGRATIONS.forEach(sql => {
   pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));

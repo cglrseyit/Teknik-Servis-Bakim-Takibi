@@ -10,6 +10,11 @@ router.get('/',                  authenticate, c.getAll);
 router.get('/summary/category',  authenticate, c.categorySummary);
 router.get('/summary/location',  authenticate, c.locationSummary);
 
+// Excel toplu içe aktarma (?preview=1 ile kuru deneme)
+router.post('/import',           authenticate, requireRole(...ALL_TECH),
+            attachments.upload.single('file'), attachments.multerErrorHandler,
+            c.importExcel);
+
 // Attachment alt-yolları (parametrik /:id'den ÖNCE tanımlanmalı)
 router.get('/attachments/:id/download',  authenticate, c.downloadAttachment);
 router.delete('/attachments/:id',        authenticate, requireRole(...ALL_TECH), c.deleteAttachment);

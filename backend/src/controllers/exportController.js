@@ -412,8 +412,8 @@ async function inventoryList(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    // Demirbaş No | Adı | Kategori | Lokasyon | Marka | Model | Seri No | Tedarikçi | Kurulum | Garanti Bitiş | Durum | Notlar
-    const widths = [33, 22, 16, 18, 14, 14, 16, 18, 13, 14, 11, 24];
+    // Demirbaş No | Adı | Kategori | Lokasyon | Marka | Model | Seri No | Tedarikçi | Kurulum | Garanti Bitiş | Durum | Adet | Güç | Birim | Yıllık Gün | Ömür | Notlar
+    const widths = [33, 22, 16, 18, 14, 14, 16, 18, 13, 14, 11, 7, 9, 8, 12, 10, 24];
     const totalCols = widths.length;
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
@@ -435,7 +435,7 @@ async function inventoryList(req, res) {
     const borderAccent = { style: 'thin',   color: { argb: COLORS.primary } };
     const borderRight  = { style: 'medium', color: { argb: 'FFB0B0B0' } };
 
-    const headers = ['Demirbaş No', 'Adı', 'Kategori', 'Lokasyon', 'Marka', 'Model', 'Seri No', 'Tedarikçi', 'Kurulum', 'Garanti Bitiş', 'Durum', 'Notlar'];
+    const headers = ['Demirbaş No', 'Adı', 'Kategori', 'Lokasyon', 'Marka', 'Model', 'Seri No', 'Tedarikçi', 'Kurulum', 'Garanti Bitiş', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Gün', 'Ömür (yıl)', 'Notlar'];
     const headerRow = ws.getRow(2);
     headers.forEach((h, i) => {
       const isLast = i === headers.length - 1;
@@ -461,6 +461,11 @@ async function inventoryList(req, res) {
         fmtDate(it.install_date),
         fmtDate(it.warranty_end),
         STATUS_LABELS_EQ[it.status] || it.status || '',
+        it.quantity != null ? it.quantity : '',
+        it.power != null ? it.power : '',
+        it.power_unit || '',
+        it.annual_days != null ? it.annual_days : '',
+        it.lifespan_years != null ? it.lifespan_years : '',
         it.notes || '',
       ]);
       row.height = 22;

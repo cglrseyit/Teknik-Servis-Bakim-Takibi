@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, FileSpreadsheet, Package, ChevronRight, Pencil,
-  ImageIcon, MapPin, Tag, Hash,
+  ImageIcon, MapPin, Tag, Hash, Upload, Loader2, X, CheckCircle2, AlertTriangle, Layers,
 } from 'lucide-react';
 import Layout from '../components/Layout';
 import SlidePanel from '../components/SlidePanel';
@@ -34,7 +34,73 @@ export default function InventoryListPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [exporting, setExporting] = useState(false);
 
+  // İçe aktarma
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState(null);
+  const [importResult, setImportResult] = useState(null);
+  const [importBusy, setImportBusy] = useState(false);
+
   const canEdit = ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role);
+
+  function reloadList() {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search)   params.set('search', search);
+    if (category) params.set('category', category);
+    if (location) params.set('location', location);
+    if (status)   params.set('status', status);
+    api.get(`/inventory?${params}`)
+      .then(r => setItems(r.data))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }
+
+  function resetImport() {
+    setImportFile(null);
+    setImportPreview(null);
+    setImportResult(null);
+    setImportBusy(false);
+  }
+
+  async function runPreview(file) {
+    setImportBusy(true);
+    setImportPreview(null);
+    setImportResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const { data } = await api.post('/inventory/import?preview=1', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setImportPreview(data);
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'Önizleme başarısız');
+      setImportFile(null);
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  async function confirmImport() {
+    if (!importFile) return;
+    setImportBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', importFile);
+      const { data } = await api.post('/inventory/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setImportResult(data);
+      setImportPreview(null);
+      toast?.success(`${data.created} kayıt içe aktarıldı`);
+      reloadList();
+    } catch (err) {
+      toast?.error(err.response?.data?.error || 'İçe aktarma başarısız');
+    } finally {
+      setImportBusy(false);
+    }
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -121,6 +187,15 @@ export default function InventoryListPage() {
         </select>
 
         <div className="flex items-center gap-2 ml-auto">
+          {canEdit && (
+            <button
+              onClick={() => { resetImport(); setImportOpen(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-sm font-semibold rounded-xl transition-colors"
+            >
+              <Upload size={15} />
+              Excel'den İçe Aktar
+            </button>
+          )}
           <button
             onClick={exportExcel}
             disabled={exporting || items.length === 0}
@@ -204,7 +279,15 @@ export default function InventoryListPage() {
                     ) : <span className="text-slate-300">—</span>}
                   </td>
                   <td className="px-5 py-3">
-                    <div className="text-sm font-semibold text-slate-800">{item.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-slate-800">{item.name}</span>
+                      {item.quantity > 1 && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700">
+                          <Layers size={9} />
+                          {item.quantity}
+                        </span>
+                      )}
+                    </div>
                     {item.serial_number && (
                       <div className="text-[11px] text-slate-400">SN: {item.serial_number}</div>
                     )}
@@ -262,6 +345,136 @@ export default function InventoryListPage() {
         title="Envanter Detayı"
       >
         <InventoryItemPanel itemId={selectedId} canEdit={canEdit} />
+      </SlidePanel>
+
+      {/* İçe aktarma paneli */}
+      <SlidePanel
+        open={importOpen}
+        onClose={() => { setImportOpen(false); resetImport(); }}
+        title="Excel'den İçe Aktar"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+            Envanter Excel'ini yükle. Önce bir <strong>önizleme</strong> gösterilir; onayladıktan sonra kayıtlar eklenir.
+            Başlıklar otomatik eşleştirilir (Ekipman Adı, Konum, Marka, Adet, Güç, Birim, Yıllık Gün, Ömür…).
+          </p>
+
+          {/* Dosya seç */}
+          {!importResult && (
+            <div>
+              <label className="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-blue-200 hover:border-blue-400 hover:bg-blue-50/40 rounded-xl cursor-pointer transition-colors">
+                <Upload size={22} className="text-blue-500" />
+                <span className="text-sm font-medium text-slate-600">
+                  {importFile ? importFile.name : 'Excel dosyası seç (.xlsx)'}
+                </span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0];
+                    e.target.value = '';
+                    if (f) { setImportFile(f); runPreview(f); }
+                  }}
+                />
+              </label>
+            </div>
+          )}
+
+          {importBusy && (
+            <div className="flex items-center justify-center gap-2 text-sm text-slate-500 py-4">
+              <Loader2 size={16} className="animate-spin" /> İşleniyor…
+            </div>
+          )}
+
+          {/* Önizleme */}
+          {importPreview && !importBusy && !importResult && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5">
+                  <div className="text-lg font-bold text-emerald-700">{importPreview.willCreate}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">Eklenecek</div>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5">
+                  <div className="text-lg font-bold text-slate-600">{importPreview.skipped}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">Atlanan (ad boş)</div>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5">
+                  <div className="text-lg font-bold text-blue-700">{importPreview.total}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wide">Toplam Satır</div>
+                </div>
+              </div>
+
+              {importPreview.sample?.length > 0 && (
+                <div className="border border-slate-100 rounded-lg overflow-hidden">
+                  <div className="px-3 py-1.5 bg-slate-50 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Örnek (ilk {importPreview.sample.length})</div>
+                  <ul className="divide-y divide-slate-50">
+                    {importPreview.sample.map((s, i) => (
+                      <li key={i} className="px-3 py-2 text-xs">
+                        <span className="font-semibold text-slate-800">{s.name}</span>
+                        <span className="text-slate-400">
+                          {s.location ? ` · ${s.location}` : ''}{s.brand ? ` · ${s.brand}` : ''}
+                          {s.quantity > 1 ? ` · ${s.quantity} adet` : ''}{s.power != null ? ` · ${s.power}${s.power_unit ? ' ' + s.power_unit : ''}` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded px-2.5 py-1.5">
+                <AlertTriangle size={11} className="inline mr-1 -mt-0.5" />
+                Aynı dosyayı iki kez aktarırsan kayıtlar tekrar eklenir. Bir kez aktar.
+              </p>
+
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => { setImportFile(null); setImportPreview(null); }}
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={confirmImport}
+                  disabled={importPreview.willCreate === 0}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-40"
+                >
+                  <CheckCircle2 size={15} />
+                  Onayla ve {importPreview.willCreate} Kaydı Aktar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sonuç */}
+          {importResult && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700">
+                <CheckCircle2 size={18} />
+                <span className="text-sm font-semibold">{importResult.created} kayıt başarıyla eklendi</span>
+              </div>
+              {importResult.skipped > 0 && (
+                <p className="text-xs text-slate-500">{importResult.skipped} satır atlandı (ad boş).</p>
+              )}
+              {importResult.errors?.length > 0 && (
+                <div className="border border-red-100 rounded-lg overflow-hidden">
+                  <div className="px-3 py-1.5 bg-red-50 text-[10px] font-semibold uppercase tracking-wide text-red-500">{importResult.errors.length} hatalı satır</div>
+                  <ul className="divide-y divide-slate-50 max-h-40 overflow-auto">
+                    {importResult.errors.slice(0, 50).map((e, i) => (
+                      <li key={i} className="px-3 py-1.5 text-xs text-slate-600">Satır {e.row}: {e.reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <button
+                onClick={() => { setImportOpen(false); resetImport(); }}
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                Kapat
+              </button>
+            </div>
+          )}
+        </div>
       </SlidePanel>
     </Layout>
   );
