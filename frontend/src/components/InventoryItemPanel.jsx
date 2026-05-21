@@ -41,6 +41,25 @@ export default function InventoryItemPanel({ itemId, canEdit, onDeleted }) {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [qtyEdit, setQtyEdit] = useState(false);
+  const [qtyVal, setQtyVal] = useState('');
+  const [qtySaving, setQtySaving] = useState(false);
+
+  async function saveQuantity() {
+    const n = parseInt(qtyVal, 10);
+    if (isNaN(n) || n < 1) { toast?.error('Geçersiz adet'); return; }
+    setQtySaving(true);
+    try {
+      await api.put(`/inventory/${item.id}`, { quantity: n });
+      setItem(prev => ({ ...prev, quantity: n }));
+      setQtyEdit(false);
+      toast?.success('Adet güncellendi');
+    } catch {
+      toast?.error('Kaydedilemedi');
+    } finally {
+      setQtySaving(false);
+    }
+  }
 
   async function handleDelete() {
     if (!item) return;
@@ -94,11 +113,45 @@ export default function InventoryItemPanel({ itemId, canEdit, onDeleted }) {
                 {item.category}
               </span>
             )}
-            {item.quantity > 1 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-200">
-                <Layers size={10} />
-                {item.quantity} adet
-              </span>
+            {(canEdit || (item.quantity ?? 1) > 1) && (
+              qtyEdit ? (
+                <span className="inline-flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="1"
+                    value={qtyVal}
+                    onChange={e => setQtyVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveQuantity(); if (e.key === 'Escape') setQtyEdit(false); }}
+                    autoFocus
+                    className="w-16 px-2 py-0.5 text-[11px] font-semibold border border-blue-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 text-blue-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveQuantity}
+                    disabled={qtySaving}
+                    className="px-2 py-0.5 text-[11px] font-semibold bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {qtySaving ? '…' : 'Kaydet'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQtyEdit(false)}
+                    className="px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    İptal
+                  </button>
+                </span>
+              ) : (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-200 ${canEdit ? 'cursor-pointer hover:bg-blue-100' : ''}`}
+                  title={canEdit ? 'Adedi düzenle' : undefined}
+                  onClick={canEdit ? () => { setQtyVal(String(item.quantity ?? 1)); setQtyEdit(true); } : undefined}
+                >
+                  <Layers size={10} />
+                  {(item.quantity ?? 1) > 1 ? `${item.quantity} adet` : '1 adet'}
+                  {canEdit && <Pencil size={9} className="ml-0.5 opacity-50" />}
+                </span>
+              )
             )}
           </div>
           <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}>
