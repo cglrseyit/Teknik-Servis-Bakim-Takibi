@@ -391,8 +391,16 @@ async function inventoryList(req, res) {
   if (location) { params.push(location); conditions.push(`location = $${params.length}`); }
   if (status)   { params.push(status);   conditions.push(`status = $${params.length}`); }
   if (search) {
-    params.push(`%${search}%`);
-    conditions.push(`(name ILIKE $${params.length} OR inventory_no ILIKE $${params.length} OR serial_number ILIKE $${params.length})`);
+    const TR_FROM = 'İıĞğŞşÜüÖöÇç';
+    const TR_TO   = 'iiggssuuoocc';
+    const normSearch = search
+      .replace(/İ/g,'i').replace(/ı/g,'i').replace(/Ğ/g,'g').replace(/ğ/g,'g')
+      .replace(/Ş/g,'s').replace(/ş/g,'s').replace(/Ü/g,'u').replace(/ü/g,'u')
+      .replace(/Ö/g,'o').replace(/ö/g,'o').replace(/Ç/g,'c').replace(/ç/g,'c');
+    params.push(`%${normSearch}%`);
+    const n = params.length;
+    const norm = (col) => `translate(${col}, '${TR_FROM}', '${TR_TO}')`;
+    conditions.push(`(${norm('name')} ILIKE $${n} OR ${norm('inventory_no')} ILIKE $${n} OR ${norm('serial_number')} ILIKE $${n} OR ${norm('category')} ILIKE $${n})`);
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 

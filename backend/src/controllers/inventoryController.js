@@ -14,8 +14,22 @@ async function getAll(req, res) {
   if (location) { params.push(location); conditions.push(`i.location = $${params.length}`); }
   if (status)   { params.push(status);   conditions.push(`i.status = $${params.length}`); }
   if (search) {
-    params.push(`%${search}%`);
-    conditions.push(`(i.name ILIKE $${params.length} OR i.inventory_no ILIKE $${params.length} OR i.serial_number ILIKE $${params.length} OR i.brand ILIKE $${params.length} OR i.model ILIKE $${params.length})`);
+    // Türkçe büyük/küçük harf normalize: İ→i, ı→i, Ğ→g, ğ→g, Ş→s, ş→s, Ü→u, ü→u, Ö→o, ö→o, Ç→c, ç→c
+    const TR_FROM = 'İıĞğŞşÜüÖöÇç';
+    const TR_TO   = 'iiggssuuoocc';
+    const normSearch = search
+      .replace(/İ/g,'i').replace(/ı/g,'i')
+      .replace(/Ğ/g,'g').replace(/ğ/g,'g')
+      .replace(/Ş/g,'s').replace(/ş/g,'s')
+      .replace(/Ü/g,'u').replace(/ü/g,'u')
+      .replace(/Ö/g,'o').replace(/ö/g,'o')
+      .replace(/Ç/g,'c').replace(/ç/g,'c');
+    params.push(`%${normSearch}%`);
+    const n = params.length;
+    const norm = (col) => `translate(${col}, '${TR_FROM}', '${TR_TO}')`;
+    conditions.push(
+      `(${norm('i.name')} ILIKE $${n} OR ${norm('i.inventory_no')} ILIKE $${n} OR ${norm('i.serial_number')} ILIKE $${n} OR ${norm('i.brand')} ILIKE $${n} OR ${norm('i.model')} ILIKE $${n} OR ${norm('i.category')} ILIKE $${n} OR ${norm('i.location')} ILIKE $${n})`
+    );
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
