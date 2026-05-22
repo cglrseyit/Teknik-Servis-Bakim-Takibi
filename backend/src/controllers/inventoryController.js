@@ -565,9 +565,27 @@ async function importExcel(req, res) {
   }
 }
 
+async function bulkCategory(req, res) {
+  const { ids, category } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0)
+    return res.status(400).json({ error: 'ids dizisi gerekli' });
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE inventory_items SET category = $1, updated_at = NOW() WHERE id = ANY($2::int[])`,
+      [category || null, ids]
+    );
+    await logAction(req.user.id, 'inventory_bulk_category', 'inventory', null,
+      `${rowCount} kayıt → ${category || '(boş)'}`);
+    res.json({ updated: rowCount });
+  } catch (err) {
+    console.error('bulkCategory:', err);
+    res.status(500).json({ error: 'Güncelleme başarısız' });
+  }
+}
+
 module.exports = {
   getAll, getOne, create, update, remove,
   categorySummary, locationSummary,
   uploadAttachments, setPrimaryAttachment, deleteAttachment, downloadAttachment,
-  importExcel,
+  importExcel, bulkCategory,
 };

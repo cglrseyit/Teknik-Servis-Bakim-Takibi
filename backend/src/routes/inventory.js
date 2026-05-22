@@ -19,6 +19,9 @@ router.post('/import',           authenticate, requireRole(...ALL_TECH),
 router.get('/attachments/:id/download',  authenticate, c.downloadAttachment);
 router.delete('/attachments/:id',        authenticate, requireRole(...ALL_TECH), c.deleteAttachment);
 
+// Toplu kategori değiştirme
+router.patch('/bulk-category', authenticate, requireRole(...ALL_TECH), c.bulkCategory);
+
 // CRUD
 router.get('/:id',     authenticate, c.getOne);
 router.post('/',       authenticate, requireRole(...ALL_TECH),
