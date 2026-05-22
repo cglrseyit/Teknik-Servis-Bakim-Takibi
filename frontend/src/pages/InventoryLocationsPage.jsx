@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, ChevronRight, Package, Tag } from 'lucide-react';
+import { MapPin, ChevronRight, Package, Tag, Search } from 'lucide-react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 
 export default function InventoryLocationsPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     api.get('/inventory/summary/location')
@@ -16,6 +17,15 @@ export default function InventoryLocationsPage() {
   }, []);
 
   const total = data.reduce((acc, x) => acc + x.count, 0);
+
+  const norm = s => s.toLowerCase()
+    .replace(/İ/g,'i').replace(/ı/g,'i').replace(/Ğ/g,'g').replace(/ğ/g,'g')
+    .replace(/Ş/g,'s').replace(/ş/g,'s').replace(/Ü/g,'u').replace(/ü/g,'u')
+    .replace(/Ö/g,'o').replace(/ö/g,'o').replace(/Ç/g,'c').replace(/ç/g,'c');
+
+  const filtered = search.trim()
+    ? data.filter(loc => norm(loc.location).includes(norm(search)))
+    : data;
 
   return (
     <Layout>
@@ -29,20 +39,33 @@ export default function InventoryLocationsPage() {
         </p>
       </div>
 
+      <div className="relative mb-4 max-w-sm">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Lokasyon ara…"
+          className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400"
+        />
+      </div>
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl border border-slate-100 shadow-sm h-48 animate-pulse" />
           ))}
         </div>
-      ) : data.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center">
           <MapPin className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-medium text-slate-600">Henüz envanter kalemi yok</p>
+          <p className="text-sm font-medium text-slate-600">
+            {search.trim() ? 'Eşleşen lokasyon bulunamadı' : 'Henüz envanter kalemi yok'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.map(loc => (
+          {filtered.map(loc => (
             <div key={loc.location} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <Link
                 to={`/inventory?location=${encodeURIComponent(loc.location)}`}
