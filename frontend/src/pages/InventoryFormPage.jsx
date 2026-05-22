@@ -4,6 +4,7 @@ import { ArrowLeft, Package, CheckCircle2, AlertTriangle, Clock, XCircle } from 
 import Layout from '../components/Layout';
 import DayPicker from '../components/DayPicker';
 import InventoryPhotoUploader from '../components/InventoryPhotoUploader';
+import ComboboxInput from '../components/ComboboxInput';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 
@@ -168,27 +169,21 @@ export default function InventoryFormPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Kategori</Label>
-                <Input
-                  list="cat-list"
+                <ComboboxInput
                   value={form.category}
-                  onChange={e => update('category', e.target.value)}
+                  onChange={v => update('category', v)}
+                  options={allCategories}
                   placeholder="örn: HVAC, Pompa, Jeneratör"
                 />
-                <datalist id="cat-list">
-                  {allCategories.map(c => <option key={c} value={c} />)}
-                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label>Lokasyon</Label>
-                <Input
-                  list="loc-list"
+                <ComboboxInput
                   value={form.location}
-                  onChange={e => update('location', e.target.value)}
+                  onChange={v => update('location', v)}
+                  options={allLocations}
                   placeholder="örn: Bodrum Mekanik Oda"
                 />
-                <datalist id="loc-list">
-                  {allLocations.map(l => <option key={l} value={l} />)}
-                </datalist>
               </div>
             </div>
 
@@ -282,11 +277,12 @@ export default function InventoryFormPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Birim</Label>
-                <Input list="unit-list" value={form.power_unit} onChange={e => update('power_unit', e.target.value)} placeholder="W / KW" />
-                <datalist id="unit-list">
-                  <option value="W" />
-                  <option value="KW" />
-                </datalist>
+                <ComboboxInput
+                  value={form.power_unit}
+                  onChange={v => update('power_unit', v)}
+                  options={['W', 'KW']}
+                  placeholder="W / KW"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
