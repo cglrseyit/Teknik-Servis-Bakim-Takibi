@@ -192,7 +192,7 @@ export default function InventoryFormPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label>Marka</Label>
                 <Input value={form.brand} onChange={e => update('brand', e.target.value)} placeholder="örn: Daikin" />
@@ -200,6 +200,10 @@ export default function InventoryFormPage() {
               <div className="space-y-1.5">
                 <Label>Model</Label>
                 <Input value={form.model} onChange={e => update('model', e.target.value)} placeholder="örn: VRV-IV" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Adet</Label>
+                <Input type="number" min="1" value={form.quantity} onChange={e => update('quantity', e.target.value)} placeholder="1" />
               </div>
             </div>
 
@@ -271,11 +275,7 @@ export default function InventoryFormPage() {
           {/* Enerji / Kullanım bilgileri */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
             <h2 className="text-sm font-bold text-slate-700">Enerji / Kullanım Bilgileri</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label>Adet</Label>
-                <Input type="number" min="1" value={form.quantity} onChange={e => update('quantity', e.target.value)} placeholder="1" />
-              </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Güç</Label>
                 <Input type="number" step="any" value={form.power} onChange={e => update('power', e.target.value)} placeholder="örn: 200" />
