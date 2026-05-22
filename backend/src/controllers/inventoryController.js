@@ -10,7 +10,13 @@ async function getAll(req, res) {
   const conditions = [];
   const params = [];
 
-  if (category) { params.push(category); conditions.push(`i.category = $${params.length}`); }
+  if (category) {
+    if (category === 'Diğer') {
+      conditions.push(`(i.category IS NULL OR i.category = '')`);
+    } else {
+      params.push(category); conditions.push(`i.category = $${params.length}`);
+    }
+  }
   if (location) { params.push(location); conditions.push(`i.location = $${params.length}`); }
   if (status)   { params.push(status);   conditions.push(`i.status = $${params.length}`); }
   if (search) {

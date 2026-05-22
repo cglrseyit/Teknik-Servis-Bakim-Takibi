@@ -387,7 +387,10 @@ async function inventoryList(req, res) {
   const conditions = [];
   const params = [];
 
-  if (category) { params.push(category); conditions.push(`category = $${params.length}`); }
+  if (category) {
+    if (category === 'Diğer') { conditions.push(`(category IS NULL OR category = '')`); }
+    else { params.push(category); conditions.push(`category = $${params.length}`); }
+  }
   if (location) { params.push(location); conditions.push(`location = $${params.length}`); }
   if (status)   { params.push(status);   conditions.push(`status = $${params.length}`); }
   if (search) {
