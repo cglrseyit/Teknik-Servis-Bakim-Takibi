@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   LayoutGrid, ChevronRight, Wind, Droplet, Zap, Flame, Package, Cog,
   ArrowLeft, MapPin, Tag, Hash, Layers, Check, Search, Loader2,
@@ -42,13 +43,14 @@ export default function InventoryCategoriesPage() {
   const { user } = useAuth();
   const toast = useToast();
   const canEdit = ['admin', 'teknik_muduru', 'order_taker'].includes(user?.role);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCat = searchParams.get('cat');
 
   // Kategori özeti
   const [summary, setSummary] = useState([]);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
   // Seçili kategori detayı
-  const [selectedCat, setSelectedCat] = useState(null);
   const [catItems, setCatItems] = useState([]);
   const [catLoading, setCatLoading] = useState(false);
 
@@ -69,14 +71,19 @@ export default function InventoryCategoriesPage() {
       .finally(() => setSummaryLoading(false));
   }, []);
 
-  function openCategory(cat) {
-    setSelectedCat(cat);
+  // selectedCat URL'den geldiği için useEffect ile fetch
+  useEffect(() => {
+    if (!selectedCat) { setCatItems([]); return; }
     setSelectedId(null);
     setCatLoading(true);
-    api.get(`/inventory?category=${encodeURIComponent(cat)}`)
+    api.get(`/inventory?category=${encodeURIComponent(selectedCat)}`)
       .then(r => setCatItems(r.data))
       .catch(() => setCatItems([]))
       .finally(() => setCatLoading(false));
+  }, [selectedCat]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function openCategory(cat) {
+    setSearchParams({ cat });
   }
 
   function reloadCatItems() {
@@ -86,15 +93,11 @@ export default function InventoryCategoriesPage() {
       .then(r => setCatItems(r.data))
       .catch(() => setCatItems([]))
       .finally(() => setCatLoading(false));
-    // Özet sayaçlarını da güncelle
     api.get('/inventory/summary/category').then(r => setSummary(r.data)).catch(() => {});
   }
 
   function goBack() {
-    setSelectedCat(null);
-    setCatItems([]);
-    setSelectedId(null);
-    // Özet yenile (ekleme/silme varsa sayılar değişmiş olabilir)
+    setSearchParams({});
     api.get('/inventory/summary/category').then(r => setSummary(r.data)).catch(() => {});
   }
 
