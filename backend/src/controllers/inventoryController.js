@@ -428,7 +428,7 @@ const FIELD_ALIASES = {
   quantity:      ['ADET'],
   power:         ['GÜÇ', 'GUC'],
   power_unit:    ['BİRİM', 'BIRIM'],
-  annual_days:   ['YILLIK ORTALAMA KULLANILAN GÜN SAYISI', 'YILLIK ORTALAMA KULLANILAN GUN SAYISI', 'YILLIK GÜN', 'YILLIK ORT GÜN'],
+  annual_days:   ['YILLIK ORTALAMA KULLANILAN GÜN SAYISI', 'YILLIK ORTALAMA KULLANILAN GUN SAYISI', 'YILLIK GÜN', 'YILLIK ORT GÜN', 'YILLIK KULLANIM'],
   lifespan_years:['EKİPMAN ÖMRÜ', 'EKIPMAN OMRU', 'ÖMÜR', 'OMUR'],
   inventory_no:  ['DEMİRBAŞ NO', 'DEMIRBAS NO', 'DEMİRBAŞ NUMARASI'],
   category:      ['KATEGORİ', 'KATEGORI'],
