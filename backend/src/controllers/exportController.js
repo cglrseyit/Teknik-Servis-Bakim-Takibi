@@ -423,7 +423,7 @@ async function inventoryList(req, res) {
       properties: { defaultRowHeight: 18 },
     });
 
-    const headers = ['Adı', 'Kategori', 'Lokasyon', 'Marka', 'Tedarikçi', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Kullanım', 'Ömür (yıl)', 'Notlar'];
+    const headers = ['Adı', 'Kategori', 'Lokasyon', 'Marka', 'Durum', 'Adet', 'Güç', 'Birim', 'Yıllık Kullanım', 'Ömür (yıl)', 'Notlar'];
     const totalCols = headers.length;
     // Genişlikler veri eklendikten sonra otomatik hesaplanacak; başlangıçta minimum ver
     headers.forEach((_, i) => { ws.getColumn(i + 1).width = 10; });
@@ -464,7 +464,6 @@ async function inventoryList(req, res) {
         it.category || '',
         it.location || '',
         it.brand || '',
-        it.supplier || '',
         STATUS_LABELS_EQ[it.status] || it.status || '',
         it.quantity != null ? it.quantity : '',
         it.power != null ? it.power : '',
