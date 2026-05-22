@@ -492,7 +492,7 @@ async function inventoryList(req, res) {
         const v = cell.value != null ? String(cell.value) : '';
         if (v.length > maxLen) maxLen = v.length;
       });
-      ws.getColumn(col).width = Math.min(Math.max(maxLen + 4, 10), 60);
+      ws.getColumn(col).width = Math.min(Math.max(maxLen + 2, 8), 40);
     }
 
     if (items.length === 0) {
