@@ -451,12 +451,12 @@ async function inventoryList(req, res) {
       const isLast = i === headers.length - 1;
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
-      cell.font = { name: 'Calibri', bold: true, size: 12, color: { argb: COLORS.primaryDark } };
+      cell.font = { name: 'Calibri', bold: true, size: 11, color: { argb: COLORS.primaryDark } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.accent } };
       cell.alignment = { horizontal: 'left', vertical: 'middle' };
       cell.border = { top: borderAccent, bottom: borderAccent, left: borderThin, right: isLast ? borderRight : borderThin };
     });
-    headerRow.height = 32;
+    headerRow.height = 28;
 
     items.forEach((it, idx) => {
       const row = ws.addRow([
@@ -473,11 +473,11 @@ async function inventoryList(req, res) {
         it.lifespan_years != null ? it.lifespan_years : '',
         it.notes || '',
       ]);
-      row.height = 26;
+      row.height = 22;
       row.eachCell((cell, colNum) => {
         const isLast = colNum === totalCols;
         cell.alignment = { vertical: 'middle', wrapText: false, horizontal: 'left' };
-        cell.font = { name: 'Calibri', size: 12, color: { argb: COLORS.textDark } };
+        cell.font = { name: 'Calibri', size: 11, color: { argb: COLORS.textDark } };
         cell.border = { top: borderThin, bottom: borderThin, left: borderThin, right: isLast ? borderRight : borderThin };
       });
       if (idx % 2 === 1) {
