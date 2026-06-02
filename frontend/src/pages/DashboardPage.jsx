@@ -222,7 +222,7 @@ export default function DashboardPage() {
 
     const firstDay = `${selectedMonth}-01`;
     const lastDay = lastDayOfMonth(selectedMonth);
-    const isCurrentMonth = selectedMonth === currentYearMonth;
+    const isCurrentMonth = selectedMonth === currentYearMonth();
 
     let params;
     if (statusFilter === 'undone' && isCurrentMonth) {
