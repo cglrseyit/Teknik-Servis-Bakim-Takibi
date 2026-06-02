@@ -222,19 +222,12 @@ export default function DashboardPage() {
 
     const firstDay = `${selectedMonth}-01`;
     const lastDay = lastDayOfMonth(selectedMonth);
-    const isCurrentMonth = selectedMonth === currentYearMonth();
 
-    let params;
-    if (statusFilter === 'undone' && isCurrentMonth) {
-      // Geçmiş aylardan overdue/in_progress görevleri de dahil et
-      params = new URLSearchParams({ this_month: 'true' });
+    const params = new URLSearchParams({ date_from: firstDay, date_to: lastDay });
+    if (statusFilter === 'undone') {
+      params.set('undone', 'true');
     } else {
-      params = new URLSearchParams({ date_from: firstDay, date_to: lastDay });
-      if (statusFilter === 'undone') {
-        params.set('undone', 'true');
-      } else {
-        params.set('status', statusFilter);
-      }
+      params.set('status', statusFilter);
     }
 
     api.get(`/tasks?${params}`).then(r => setTasks(r.data)).catch(() => {});

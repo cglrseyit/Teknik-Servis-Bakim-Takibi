@@ -313,7 +313,7 @@ async function getSummary(req, res) {
     const { rows } = await pool.query(
       `SELECT
          COUNT(*) FILTER (WHERE status = 'pending' AND DATE_TRUNC('month', scheduled_date) = DATE_TRUNC('month', CURRENT_DATE)) AS pending,
-         COUNT(*) FILTER (WHERE status = 'overdue') AS overdue,
+         COUNT(*) FILTER (WHERE status = 'overdue' OR (status = 'pending' AND scheduled_date < CURRENT_DATE)) AS overdue,
          COUNT(*) FILTER (WHERE status = 'in_progress') AS in_progress,
          COUNT(*) FILTER (WHERE status = 'completed' AND DATE_TRUNC('month', completed_at) = DATE_TRUNC('month', NOW())) AS completed_this_month,
          COUNT(*) FILTER (WHERE scheduled_date = $1 AND status IN ('pending','in_progress')) AS today
