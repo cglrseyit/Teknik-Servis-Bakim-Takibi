@@ -74,6 +74,25 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.get('/api/stats', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        (SELECT COUNT(*) FROM maintenance_tasks WHERE status = 'completed') AS completed_tasks,
+        (SELECT COUNT(*) FROM maintenance_tasks WHERE status = 'overdue')   AS overdue_tasks,
+        (SELECT COUNT(*) FROM equipment WHERE is_active = true)             AS active_equipment
+    `);
+    const { completed_tasks, overdue_tasks, active_equipment } = result.rows[0];
+    const completed = parseInt(completed_tasks);
+    const overdue   = parseInt(overdue_tasks);
+    const total     = completed + overdue;
+    const completion_rate = total > 0 ? Math.round((completed / total) * 100) : 100;
+    res.json({ completed_tasks: completed, active_equipment: parseInt(active_equipment), completion_rate });
+  } catch {
+    res.status(500).json({ error: 'Stats unavailable' });
+  }
+});
+
 app.use('/api/auth',        require('./routes/auth'));
 app.use('/api/equipment',   require('./routes/equipment'));
 app.use('/api/plans',       require('./routes/plans'));

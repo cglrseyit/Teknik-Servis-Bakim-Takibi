@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import bellisLogo from '/bellis-logo-dark.png';
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -11,6 +13,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/stats`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setStats(data); })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -62,19 +72,26 @@ export default function LoginPage() {
           {/* Büyük oran görseli */}
           <div className="mb-8">
             <div className="flex items-baseline gap-1.5 mb-2">
-              <span className="text-[80px] font-black text-white leading-none tracking-[-3px]">98</span>
-              <span className="text-amber-400 text-[38px] font-black leading-none mb-1">%</span>
+              <span className="text-[80px] font-black text-white leading-none tracking-[-3px]">
+                {stats ? stats.completion_rate : '—'}
+              </span>
+              {stats && <span className="text-amber-400 text-[38px] font-black leading-none mb-1">%</span>}
             </div>
             <p className="text-slate-400 text-[12.5px] mb-4 tracking-wide">zamanında tamamlama oranı</p>
             <div className="h-[3px] bg-slate-800/80 rounded-full overflow-hidden">
-              <div className="h-full w-[98%] bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 rounded-full" />
+              <div
+                className="h-full bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 rounded-full transition-all duration-1000"
+                style={{ width: stats ? `${stats.completion_rate}%` : '0%' }}
+              />
             </div>
           </div>
 
           {/* İkincil stat kartları */}
           <div className="grid grid-cols-2 gap-3 mb-12">
             <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
-              <p className="text-[30px] font-bold text-white leading-none tracking-tight">1.247</p>
+              <p className="text-[30px] font-bold text-white leading-none tracking-tight">
+                {stats ? stats.completed_tasks.toLocaleString('tr-TR') : '—'}
+              </p>
               <p className="text-slate-500 text-[11px] mt-2 leading-snug">tamamlanan<br />bakım görevi</p>
             </div>
             <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
@@ -85,7 +102,9 @@ export default function LoginPage() {
                 </span>
                 <span className="text-[10px] text-emerald-400 font-medium uppercase tracking-wider">Aktif</span>
               </div>
-              <p className="text-[30px] font-bold text-white leading-none tracking-tight">24</p>
+              <p className="text-[30px] font-bold text-white leading-none tracking-tight">
+                {stats ? stats.active_equipment : '—'}
+              </p>
               <p className="text-slate-500 text-[11px] mt-2 leading-snug">ekipman<br />takipte</p>
             </div>
           </div>
