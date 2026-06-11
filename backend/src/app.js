@@ -80,7 +80,7 @@ app.get('/api/stats', async (req, res) => {
       SELECT
         (SELECT COUNT(*) FROM maintenance_tasks WHERE status = 'completed') AS completed_tasks,
         (SELECT COUNT(*) FROM maintenance_tasks WHERE status = 'overdue')   AS overdue_tasks,
-        (SELECT COUNT(*) FROM equipment WHERE is_active = true)             AS active_equipment
+        (SELECT COUNT(*) FROM equipment WHERE status = 'active')            AS active_equipment
     `);
     const { completed_tasks, overdue_tasks, active_equipment } = result.rows[0];
     const completed = parseInt(completed_tasks);
@@ -88,7 +88,8 @@ app.get('/api/stats', async (req, res) => {
     const total     = completed + overdue;
     const completion_rate = total > 0 ? Math.round((completed / total) * 100) : 100;
     res.json({ completed_tasks: completed, active_equipment: parseInt(active_equipment), completion_rate });
-  } catch {
+  } catch (err) {
+    console.error('[stats] DB error:', err.message);
     res.status(500).json({ error: 'Stats unavailable' });
   }
 });
