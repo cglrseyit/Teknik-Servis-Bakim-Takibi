@@ -1,26 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, BarChart3, Bell } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import bellisLogo from '/bellis-logo-dark.png';
-
-const FEATURES = [
-  {
-    icon: ShieldCheck,
-    label: 'Bakım Planları',
-    desc: 'Periyodik görev otomasyonu ve takvim yönetimi',
-  },
-  {
-    icon: Bell,
-    label: 'Anlık Bildirimler',
-    desc: 'Geciken ve yaklaşan görevler için uyarı sistemi',
-  },
-  {
-    icon: BarChart3,
-    label: 'Detaylı Raporlama',
-    desc: 'Grafik analiz ve denetim kayıtları',
-  },
-];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -50,15 +32,22 @@ export default function LoginPage() {
       {/* ── Sol Panel ── */}
       <div className="hidden lg:flex flex-col w-[460px] flex-shrink-0 bg-[#0d0e12] relative overflow-hidden">
 
-        {/* Dekoratif arka plan */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_#92400e22_0%,_transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_#1e1b4b18_0%,_transparent_60%)]" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-600/30 to-transparent" />
+        {/* Nokta grid arka plan */}
+        <div
+          className="absolute inset-0 opacity-100"
+          style={{
+            backgroundImage: 'radial-gradient(circle, rgba(251,191,36,0.07) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
+        {/* Atmosfer gradyanları */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-10%,_rgba(180,83,9,0.18)_0%,_transparent_100%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#0d0e12] to-transparent" />
 
-        {/* İnce altın çizgi sol kenar */}
+        {/* Sağ kenar çizgisi */}
         <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-transparent via-amber-600/20 to-transparent" />
 
-        {/* Logo — sol üst */}
+        {/* Logo */}
         <div className="relative z-10 px-10 pt-10">
           <img
             src={bellisLogo}
@@ -67,43 +56,55 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Divider */}
-        <div className="relative z-10 mx-10 mt-8 mb-0 h-px bg-gradient-to-r from-amber-600/40 via-amber-600/10 to-transparent" />
+        {/* Ana içerik */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center px-10">
 
-        {/* Orta içerik */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center px-10 py-12">
-          <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500 mb-5">
-            Teknik Servis Yönetimi
-          </span>
+          {/* Büyük oran görseli */}
+          <div className="mb-8">
+            <div className="flex items-baseline gap-1.5 mb-2">
+              <span className="text-[80px] font-black text-white leading-none tracking-[-3px]">98</span>
+              <span className="text-amber-400 text-[38px] font-black leading-none mb-1">%</span>
+            </div>
+            <p className="text-slate-400 text-[12.5px] mb-4 tracking-wide">zamanında tamamlama oranı</p>
+            <div className="h-[3px] bg-slate-800/80 rounded-full overflow-hidden">
+              <div className="h-full w-[98%] bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 rounded-full" />
+            </div>
+          </div>
 
-          <h2 className="text-[28px] font-bold text-white leading-[1.3] mb-4">
-            Tesisinizin bakımını<br />
-            <span className="text-amber-400">tam kontrol altında</span><br />
-            tutun.
-          </h2>
-
-          <p className="text-slate-400 text-[13.5px] leading-relaxed mb-10 max-w-[300px]">
-            Bakım planları, görev takibi ve anlık raporlarla operasyonel sürekliliği sağlayın.
-          </p>
-
-          <div className="space-y-5">
-            {FEATURES.map(({ icon: Icon, label, desc }) => (
-              <div key={label} className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Icon size={14} className="text-amber-400" strokeWidth={1.8} />
-                </div>
-                <div>
-                  <p className="text-[13px] font-semibold text-slate-200">{label}</p>
-                  <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">{desc}</p>
-                </div>
+          {/* İkincil stat kartları */}
+          <div className="grid grid-cols-2 gap-3 mb-12">
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
+              <p className="text-[30px] font-bold text-white leading-none tracking-tight">1.247</p>
+              <p className="text-slate-500 text-[11px] mt-2 leading-snug">tamamlanan<br />bakım görevi</p>
+            </div>
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-[10px] text-emerald-400 font-medium uppercase tracking-wider">Aktif</span>
               </div>
-            ))}
+              <p className="text-[30px] font-bold text-white leading-none tracking-tight">24</p>
+              <p className="text-slate-500 text-[11px] mt-2 leading-snug">ekipman<br />takipte</p>
+            </div>
+          </div>
+
+          {/* İnsan gibi tagline */}
+          <div>
+            <div className="w-7 h-[2px] bg-amber-500/50 mb-5 rounded-full" />
+            <p className="text-slate-300 text-[17px] font-light leading-[1.6]">
+              Misafir gülümserken,
+            </p>
+            <p className="text-white text-[17px] font-semibold leading-[1.6]">
+              biz zaten hazır olmuştuk.
+            </p>
           </div>
         </div>
 
         {/* Alt bilgi */}
         <div className="relative z-10 px-10 pb-8">
-          <div className="h-px bg-gradient-to-r from-amber-600/20 via-amber-600/5 to-transparent mb-6" />
+          <div className="h-px bg-gradient-to-r from-amber-600/20 via-amber-600/5 to-transparent mb-5" />
           <p className="text-[11px] text-slate-600">
             © {new Date().getFullYear()} Bellis Deluxe Hotel · Teknik Servis Sistemi
           </p>
