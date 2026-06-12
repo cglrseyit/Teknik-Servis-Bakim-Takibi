@@ -77,7 +77,7 @@ export default function LoginPage() {
               </span>
               {stats && <span className="text-amber-400/50 text-[28px] font-bold leading-none mb-1">/100</span>}
             </div>
-            <p className="text-slate-400 text-[12.5px] mb-4 tracking-wide">tamamlanan bakım puanı</p>
+            <p className="text-slate-400 text-[12.5px] mb-4 tracking-wide">bakım başarı puanı</p>
             <div className="h-[3px] bg-slate-800/80 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 rounded-full transition-all duration-1000"
