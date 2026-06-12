@@ -71,13 +71,13 @@ export default function LoginPage() {
 
           {/* Büyük oran görseli */}
           <div className="mb-8">
-            <div className="flex items-baseline gap-1.5 mb-2">
+            <div className="flex items-baseline gap-2 mb-2">
               <span className="text-[80px] font-black text-white leading-none tracking-[-3px]">
                 {stats ? stats.completion_rate : '—'}
               </span>
-              {stats && <span className="text-amber-400 text-[38px] font-black leading-none mb-1">%</span>}
+              {stats && <span className="text-amber-400/50 text-[28px] font-bold leading-none mb-1">/100</span>}
             </div>
-            <p className="text-slate-400 text-[12.5px] mb-4 tracking-wide">zamanında tamamlama oranı</p>
+            <p className="text-slate-400 text-[12.5px] mb-4 tracking-wide">bakım skoru</p>
             <div className="h-[3px] bg-slate-800/80 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-amber-700 via-amber-500 to-amber-300 rounded-full transition-all duration-1000"
