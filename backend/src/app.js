@@ -87,17 +87,15 @@ app.get('/api/stats', async (req, res) => {
             AND completed_at IS NOT NULL
             AND completed_at::date > scheduled_date
         ) AS late,
-        COUNT(*) FILTER (WHERE status = 'overdue') AS overdue_tasks,
         (SELECT COUNT(*) FROM equipment WHERE status = 'active') AS active_equipment
       FROM maintenance_tasks
     `);
-    const { on_time, late, overdue_tasks, active_equipment } = result.rows[0];
+    const { on_time, late, active_equipment } = result.rows[0];
     const onTime   = parseInt(on_time);
     const lateDone = parseInt(late);
-    const overdue  = parseInt(overdue_tasks);
-    const total = onTime + lateDone + overdue;
+    const total = onTime + lateDone;
     const completion_rate = total > 0 ? Math.round((onTime / total) * 100) : 100;
-    res.json({ completed_tasks: onTime + lateDone, active_equipment: parseInt(active_equipment), completion_rate });
+    res.json({ completed_tasks: total, active_equipment: parseInt(active_equipment), completion_rate });
   } catch (err) {
     console.error('[stats] DB error:', err.message);
     res.status(500).json({ error: 'Stats unavailable' });
