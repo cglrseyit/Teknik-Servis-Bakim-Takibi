@@ -25,7 +25,7 @@ function firstDayOffset(year, month) {
   return d === 0 ? 6 : d - 1;
 }
 
-export default function DatePickerField({ value, onChange, label, required, className = '' }) {
+export default function DatePickerField({ value, onChange, label, required, minDate, className = '' }) {
   const today = todayIstanbul();
   const initYear  = value ? Number(value.split('-')[0]) : Number(today.split('-')[0]);
   const initMonth = value ? Number(value.split('-')[1]) - 1 : Number(today.split('-')[1]) - 1;
@@ -149,14 +149,18 @@ export default function DatePickerField({ value, onChange, label, required, clas
                   const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
                   const isSelected = dateStr === value;
                   const isToday    = dateStr === today;
+                  const isDisabled = minDate ? dateStr < minDate : false;
                   return (
-                    <button key={day} type="button" onClick={() => selectDay(day)}
+                    <button key={day} type="button" onClick={() => !isDisabled && selectDay(day)}
+                      disabled={isDisabled}
                       className={`w-full aspect-square flex items-center justify-center text-sm rounded-lg transition-colors font-medium
-                        ${isSelected
-                          ? 'bg-amber-500 text-white shadow-sm'
-                          : isToday
-                            ? 'border-2 border-amber-400 text-amber-700'
-                            : 'hover:bg-gray-100 text-gray-700'}`}>
+                        ${isDisabled
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-amber-500 text-white shadow-sm'
+                            : isToday
+                              ? 'border-2 border-amber-400 text-amber-700'
+                              : 'hover:bg-gray-100 text-gray-700'}`}>
                       {day}
                     </button>
                   );
@@ -164,12 +168,14 @@ export default function DatePickerField({ value, onChange, label, required, clas
               </div>
 
               {/* Today */}
-              <div className="mt-3 pt-3 border-t border-gray-100 text-center">
-                <button type="button" onClick={selectToday}
-                  className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
-                  Bugün
-                </button>
-              </div>
+              {(!minDate || today >= minDate) && (
+                <div className="mt-3 pt-3 border-t border-gray-100 text-center">
+                  <button type="button" onClick={selectToday}
+                    className="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
+                    Bugün
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -189,15 +195,20 @@ export default function DatePickerField({ value, onChange, label, required, clas
                 {years.map(y => {
                   const isSelected = y === viewYear;
                   const isCurrentYear = y === Number(today.split('-')[0]);
+                  const minYear = minDate ? Number(minDate.split('-')[0]) : null;
+                  const isDisabledYear = minYear ? y < minYear : false;
                   return (
                     <button key={y} type="button"
-                      onClick={() => { setViewYear(y); setMode('calendar'); }}
+                      onClick={() => { if (!isDisabledYear) { setViewYear(y); setMode('calendar'); } }}
+                      disabled={isDisabledYear}
                       className={`py-2 text-sm font-medium rounded-lg transition-colors
-                        ${isSelected
-                          ? 'bg-amber-500 text-white shadow-sm'
-                          : isCurrentYear
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'hover:bg-gray-100 text-gray-700'}`}>
+                        ${isDisabledYear
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-amber-500 text-white shadow-sm'
+                            : isCurrentYear
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'hover:bg-gray-100 text-gray-700'}`}>
                       {y}
                     </button>
                   );
