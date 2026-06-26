@@ -336,7 +336,11 @@ export default function DashboardPage() {
             )
           )}
           {t.status === 'in_progress' && (
-            <span className="text-xs text-green-600 font-semibold">Tamamla →</span>
+            isFutureDay(t.scheduled_date?.split('T')[0]) ? (
+              <span className="text-xs text-gray-400 italic">Zamanı gelmedi</span>
+            ) : (
+              <span className="text-xs text-green-600 font-semibold">Tamamla →</span>
+            )
           )}
         </td>
       </tr>
@@ -350,9 +354,10 @@ export default function DashboardPage() {
     const inProgressCount = row.tasks.filter(t => t.status === 'in_progress').length;
     const completedCount  = row.tasks.filter(t => t.status === 'completed' || t.status === 'skipped').length;
     const pendingCurrentCount = row.tasks.filter(t => t.status === 'pending' && !isFutureDay(t.scheduled_date)).length;
+    const inProgressCurrentCount = row.tasks.filter(t => t.status === 'in_progress' && !isFutureDay(t.scheduled_date)).length;
 
-    // Zamanı gelmiş görevler (bu ay veya geçmiş + devam eden)
-    const activeCount = inProgressCount + pendingCurrentCount;
+    // Zamanı gelmiş görevler (tarih bugün veya geçmişte)
+    const activeCount = inProgressCurrentCount + pendingCurrentCount;
 
     let badgeVariant, badgeLabel;
     if (overdueCount > 0) {
