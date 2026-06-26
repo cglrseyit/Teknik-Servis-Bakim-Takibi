@@ -174,6 +174,7 @@ export default function PlanFormPage() {
   }
 
   const fieldCls = "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white";
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
   const selectedEquipment = equipment.find(e => String(e.id) === String(form.equipment_id));
   const unitCount = selectedEquipment?.unit_count || 0;
 
@@ -299,6 +300,7 @@ export default function PlanFormPage() {
                 value={form.picked_date}
                 onChange={v => setForm(f => ({ ...f, picked_date: v }))}
                 required={bakimAyiRequired}
+                minDate={!isEdit ? todayStr : undefined}
               />
               <p className="text-xs text-gray-400 mt-2">
                 {form.frequency_type === 'yearly'
@@ -319,6 +321,7 @@ export default function PlanFormPage() {
               value={form.picked_date}
               onChange={v => setForm(f => ({ ...f, picked_date: v }))}
               required
+              minDate={!isEdit ? todayStr : undefined}
             />
           )}
           <div className="flex gap-3 pt-2">
