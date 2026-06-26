@@ -73,7 +73,13 @@ async function generateTasksForPlan(plan, daysAhead) {
   const freqMonths = getFrequencyMonths(plan);
   const intervalDays = getIntervalDays(plan);
   const window = daysAhead !== undefined ? daysAhead : 365;
-  const targetDay = plan.target_day || null;
+  // target_day yoksa start_date'in gününü türet (ay sonu snap'ini engeller)
+  const targetDay = plan.target_day || (() => {
+    const sd = toDateStr(plan.start_date);
+    if (!sd) return null;
+    const d = new Date(sd + 'T12:00:00');
+    return isNaN(d.getTime()) ? null : d.getDate();
+  })();
 
   const client = await pool.connect();
   try {

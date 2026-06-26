@@ -211,9 +211,11 @@ async function create(req, res) {
           const freq = PERIOD_TO_FREQ[maintenance_period];
           const day = parseInt(maintenance_start_day) || null;
           const startDate = maintenance_start_date
-            ? `${maintenance_start_date}-${String(day || 1).padStart(2, '0')}`
+            ? (maintenance_start_date.length >= 10
+                ? maintenance_start_date
+                : `${maintenance_start_date}-${String(day || 1).padStart(2, '0')}`)
             : new Date().toISOString().split('T')[0];
-          const targetMonth = maintenance_start_date ? parseInt(maintenance_start_date.split('-')[1]) : null;
+          const targetMonth = startDate ? parseInt(startDate.split('-')[1]) : null;
           const { rows: children } = await pool.query(
             `SELECT id FROM equipment WHERE parent_id = $1 ORDER BY name`,
             [parent.id]
@@ -266,9 +268,11 @@ async function create(req, res) {
         const freq = PERIOD_TO_FREQ[maintenance_period];
         const day = parseInt(maintenance_start_day) || null;
         const startDate = maintenance_start_date
-          ? `${maintenance_start_date}-${String(day || 1).padStart(2, '0')}`
+          ? (maintenance_start_date.length >= 10
+              ? maintenance_start_date
+              : `${maintenance_start_date}-${String(day || 1).padStart(2, '0')}`)
           : new Date().toISOString().split('T')[0];
-        const targetMonth = maintenance_start_date ? parseInt(maintenance_start_date.split('-')[1]) : null;
+        const targetMonth = startDate ? parseInt(startDate.split('-')[1]) : null;
         const planTargets = childIds.length > 0 ? childIds : [equipment.id];
         for (const eqId of planTargets) {
           const { rows: planRows } = await pool.query(
