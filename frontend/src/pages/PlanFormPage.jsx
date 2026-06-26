@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { RefreshCw, Zap } from 'lucide-react';
+import DatePickerField from '../components/DatePickerField';
 import Layout from '../components/Layout';
 import ConfirmModal from '../components/ConfirmModal';
 import api from '../api/axios';
@@ -36,9 +37,7 @@ export default function PlanFormPage() {
     title: '', description: '',
     frequency_type: 'monthly', frequency_days: '',
     start_date: '',
-    target_month: '',
-    target_day: '',
-    target_year: String(new Date().getFullYear()),
+    picked_date: '',
   });
 
   useEffect(() => {
@@ -58,17 +57,17 @@ export default function PlanFormPage() {
         frequency_type: p.frequency_type || 'monthly',
         frequency_days: p.frequency_days || '',
         start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
-        target_day: p.is_one_time
-          ? (sd ? String(Number(sd.split('-')[2])) : '')
-          : (p.target_day ? String(p.target_day) : ''),
-        target_month: p.is_one_time
-          ? (sd ? String(Number(sd.split('-')[1])) : '')
-          : (p.target_month ? String(p.target_month) : ''),
-        target_year: sd ? sd.slice(0, 4) : String(new Date().getFullYear()),
+        picked_date: p.is_one_time
+          ? sd
+          : (p.target_day && p.target_month && sd)
+            ? `${sd.slice(0, 4)}-${String(p.target_month).padStart(2,'0')}-${String(p.target_day).padStart(2,'0')}`
+            : '',
       });
       setOriginalForm({
         frequency_type: p.frequency_type || 'monthly',
-        target_month: p.target_month ? String(p.target_month) : '',
+        picked_date: p.target_day && p.target_month && sd
+          ? `${sd.slice(0, 4)}-${String(p.target_month).padStart(2,'0')}-${String(p.target_day).padStart(2,'0')}`
+          : sd,
       });
       if (p.parent_equipment_id) {
         setGroupInfo({ parentName: p.parent_equipment_name, equipmentName: p.equipment_name });
@@ -95,18 +94,18 @@ export default function PlanFormPage() {
   function buildPayload(extra = {}) {
     const payload = { ...form, is_one_time: isOneTime, ...extra };
     const usesTargetMonth = !isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type);
-    payload.target_month = (usesTargetMonth && form.target_month) ? Number(form.target_month) : null;
-    payload.target_day = (usesTargetMonth && form.target_day) ? Number(form.target_day) : null;
-    if (isOneTime && form.target_month && form.target_day) {
-      const tm = Number(form.target_month);
-      const td = Number(form.target_day);
-      const year = Number(form.target_year) || new Date().getFullYear();
-      payload.start_date = `${year}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
-    } else if (usesTargetMonth && form.target_month) {
-      const tm = Number(form.target_month);
-      const td = Number(form.target_day) || 1;
-      const year = Number(form.target_year) || new Date().getFullYear();
-      payload.start_date = `${year}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
+    if (isOneTime && form.picked_date) {
+      payload.start_date  = form.picked_date;
+      payload.target_day   = null;
+      payload.target_month = null;
+    } else if (usesTargetMonth && form.picked_date) {
+      const [year, month, day] = form.picked_date.split('-');
+      payload.target_month = Number(month);
+      payload.target_day   = Number(day);
+      payload.start_date   = form.picked_date;
+    } else {
+      payload.target_month = null;
+      payload.target_day   = null;
     }
     return payload;
   }
@@ -182,9 +181,9 @@ export default function PlanFormPage() {
   // - Periyot değiştiyse → Bakım Ayı zorunlu
   // - Bakım Ayı seçildiyse → Periyot zorunlu (label için)
   const freqChanged = isEdit && originalForm !== null && form.frequency_type !== originalForm.frequency_type;
-  const monthSelected = Boolean(form.target_month);
+  const dateSelected = Boolean(form.picked_date);
   const bakimAyiRequired = !isEdit || freqChanged;
-  const periyotLabelRequired = !isEdit || monthSelected;
+  const periyotLabelRequired = !isEdit || dateSelected;
 
   return (
     <Layout>
@@ -295,35 +294,12 @@ export default function PlanFormPage() {
 
           {!isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Tarihi {bakimAyiRequired ? '*' : ''}</label>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <select required={bakimAyiRequired} value={form.target_day} onChange={set('target_day')} className={fieldCls}>
-                    <option value="">Gün</option>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">Gün</p>
-                </div>
-                <div>
-                  <select required={bakimAyiRequired} value={form.target_month} onChange={set('target_month')} className={fieldCls}>
-                    <option value="">Ay</option>
-                    {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
-                      <option key={i+1} value={i+1}>{m}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">Ay</p>
-                </div>
-                <div>
-                  <select value={form.target_year} onChange={set('target_year')} className={fieldCls}>
-                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">Yıl</p>
-                </div>
-              </div>
+              <DatePickerField
+                label={`Bakım Tarihi${bakimAyiRequired ? ' *' : ''}`}
+                value={form.picked_date}
+                onChange={v => setForm(f => ({ ...f, picked_date: v }))}
+                required={bakimAyiRequired}
+              />
               <p className="text-xs text-gray-400 mt-2">
                 {form.frequency_type === 'yearly'
                   ? 'Her yıl bu tarihte bakım görevi oluşturulur'
@@ -338,37 +314,12 @@ export default function PlanFormPage() {
 
 
           {isOneTime && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Görev Tarihi *</label>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <select required value={form.target_day} onChange={set('target_day')} className={fieldCls}>
-                    <option value="">Gün</option>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">Gün</p>
-                </div>
-                <div>
-                  <select required value={form.target_month} onChange={set('target_month')} className={fieldCls}>
-                    <option value="">Ay</option>
-                    {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
-                      <option key={i+1} value={i+1}>{m}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">Ay</p>
-                </div>
-                <div>
-                  <select value={form.target_year} onChange={set('target_year')} className={fieldCls}>
-                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">Yıl</p>
-                </div>
-              </div>
-            </div>
+            <DatePickerField
+              label="Görev Tarihi *"
+              value={form.picked_date}
+              onChange={v => setForm(f => ({ ...f, picked_date: v }))}
+              required
+            />
           )}
           <div className="flex gap-3 pt-2">
             <button
