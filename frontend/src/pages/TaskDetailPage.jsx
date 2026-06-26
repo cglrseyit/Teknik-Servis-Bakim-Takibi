@@ -61,7 +61,7 @@ export default function TaskDetailPage() {
   const isAlreadyDone = ['completed', 'skipped'].includes(task.status);
   const isFutureDay = (() => {
     if (!task.scheduled_date) return false;
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
     return task.scheduled_date.split('T')[0] > today;
   })();
 

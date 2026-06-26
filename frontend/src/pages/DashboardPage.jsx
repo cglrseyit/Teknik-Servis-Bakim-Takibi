@@ -271,8 +271,8 @@ export default function DashboardPage() {
 
   function isFutureDay(scheduledDate) {
     if (!scheduledDate) return false;
-    const today = new Date().toISOString().split('T')[0];
-    return scheduledDate > today;
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
+    return scheduledDate.split('T')[0] > today;
   }
 
   function handleStart(e, task) {

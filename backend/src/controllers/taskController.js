@@ -116,9 +116,8 @@ async function updateStatus(req, res) {
 
       if (cur.scheduled_date) {
         // 1) Tarih kontrolü: scheduled_date bugünden büyükse engelle
-        const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
-        const todayStr = `${istanbulNow.getFullYear()}-${String(istanbulNow.getMonth()+1).padStart(2,'0')}-${String(istanbulNow.getDate()).padStart(2,'0')}`;
-        const sdStr = new Date(cur.scheduled_date).toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
+        const sdStr = String(cur.scheduled_date).split('T')[0];
         if (sdStr > todayStr) {
           const fmtDate = new Date(sdStr + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
           return res.status(400).json({
@@ -209,8 +208,7 @@ async function bulkComplete(req, res) {
 
   const completed_at = performed_date ? new Date(performed_date + 'T12:00:00') : new Date();
   const completed_by = req.user.id;
-  const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
-  const bulkTodayStr = `${istanbulNow.getFullYear()}-${String(istanbulNow.getMonth()+1).padStart(2,'0')}-${String(istanbulNow.getDate()).padStart(2,'0')}`;
+  const bulkTodayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 
 
   const completed = [];
@@ -230,7 +228,7 @@ async function bulkComplete(req, res) {
       }
       // Bakım günü henüz gelmemişse tamamlanamaz
       if (cur.scheduled_date) {
-        const sdStr = new Date(cur.scheduled_date).toISOString().split('T')[0];
+        const sdStr = String(cur.scheduled_date).split('T')[0];
         if (sdStr > bulkTodayStr) {
           skipped.push({ id, reason: 'Zamanı gelmedi' }); continue;
         }
