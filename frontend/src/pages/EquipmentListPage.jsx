@@ -34,7 +34,7 @@ export default function EquipmentListPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState('active');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
