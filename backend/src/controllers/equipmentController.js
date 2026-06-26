@@ -183,7 +183,7 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { name, brand, model, supplier, status, notes, maintenance_period, maintenance_start_date, quantity, parent_id, units } = req.body;
+  const { name, brand, model, supplier, status, notes, maintenance_period, maintenance_start_date, maintenance_start_day, quantity, parent_id, units } = req.body;
   if (!name) return res.status(400).json({ error: 'Ekipman adı gerekli' });
   // Alt birim hariç tüm yeni ekipmanlarda tedarikçi zorunlu (sekme-bazlı çokluda da parent'a yazılıyor)
   if (!parent_id && !supplier) return res.status(400).json({ error: 'Tedarikçi gerekli' });
@@ -209,10 +209,11 @@ async function create(req, res) {
       if (maintenance_period && PERIOD_TO_FREQ[maintenance_period]) {
         try {
           const freq = PERIOD_TO_FREQ[maintenance_period];
+          const day = parseInt(maintenance_start_day) || null;
           const startDate = maintenance_start_date
-            ? `${maintenance_start_date}-01`
+            ? `${maintenance_start_date}-${String(day || 1).padStart(2, '0')}`
             : new Date().toISOString().split('T')[0];
-          // Her child birim için ayrı plan oluştur
+          const targetMonth = maintenance_start_date ? parseInt(maintenance_start_date.split('-')[1]) : null;
           const { rows: children } = await pool.query(
             `SELECT id FROM equipment WHERE parent_id = $1 ORDER BY name`,
             [parent.id]
@@ -220,9 +221,9 @@ async function create(req, res) {
           for (const child of children) {
             const { rows: planRows } = await pool.query(
               `INSERT INTO maintenance_plans
-                 (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active)
-               VALUES ($1,$2,$3,$4,$5,$6,false,true) RETURNING *`,
-              [child.id, `Periyodik Bakım`, freq.frequency_type, freq.frequency_days, 3, startDate]
+                 (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active, target_month, target_day)
+               VALUES ($1,$2,$3,$4,$5,$6,false,true,$7,$8) RETURNING *`,
+              [child.id, `Periyodik Bakım`, freq.frequency_type, freq.frequency_days, 3, startDate, targetMonth, day]
             );
             await generateTasksForPlan(planRows[0], 365);
           }
@@ -263,17 +264,18 @@ async function create(req, res) {
     if (!parent_id && maintenance_period && PERIOD_TO_FREQ[maintenance_period]) {
       try {
         const freq = PERIOD_TO_FREQ[maintenance_period];
+        const day = parseInt(maintenance_start_day) || null;
         const startDate = maintenance_start_date
-          ? `${maintenance_start_date}-01`
+          ? `${maintenance_start_date}-${String(day || 1).padStart(2, '0')}`
           : new Date().toISOString().split('T')[0];
-        // Birden fazla child varsa her birine plan; tekil ekipmansa kendisine
+        const targetMonth = maintenance_start_date ? parseInt(maintenance_start_date.split('-')[1]) : null;
         const planTargets = childIds.length > 0 ? childIds : [equipment.id];
         for (const eqId of planTargets) {
           const { rows: planRows } = await pool.query(
             `INSERT INTO maintenance_plans
-               (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active)
-             VALUES ($1,$2,$3,$4,$5,$6,false,true) RETURNING *`,
-            [eqId, `Periyodik Bakım`, freq.frequency_type, freq.frequency_days, 3, startDate]
+               (equipment_id, title, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, is_active, target_month, target_day)
+             VALUES ($1,$2,$3,$4,$5,$6,false,true,$7,$8) RETURNING *`,
+            [eqId, `Periyodik Bakım`, freq.frequency_type, freq.frequency_days, 3, startDate, targetMonth, day]
           );
           await generateTasksForPlan(planRows[0], 365);
         }

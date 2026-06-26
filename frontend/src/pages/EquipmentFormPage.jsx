@@ -112,6 +112,7 @@ export default function EquipmentFormPage() {
     serial_number: '', location: '',
     status: 'active', notes: '', maintenance_period: '',
     maintenance_start_date: '',
+    maintenance_start_day: '',
   });
 
   // Yeni ekipman (çoklu birim) için
@@ -263,10 +264,11 @@ export default function EquipmentFormPage() {
     try {
       const period    = skipPlan ? null : (form.maintenance_period    || null);
       const startDate = skipPlan ? null : (form.maintenance_start_date || null);
+      const startDay  = skipPlan ? null : (form.maintenance_start_day  || null);
       if (quantity > 1) {
-        await api.post('/equipment', { name: form.name, supplier: form.supplier, maintenance_period: period, maintenance_start_date: startDate, units: unitList });
+        await api.post('/equipment', { name: form.name, supplier: form.supplier, maintenance_period: period, maintenance_start_date: startDate, maintenance_start_day: startDay, units: unitList });
       } else {
-        await api.post('/equipment', { ...form, maintenance_period: period, maintenance_start_date: startDate, quantity: 1 });
+        await api.post('/equipment', { ...form, maintenance_period: period, maintenance_start_date: startDate, maintenance_start_day: startDay, quantity: 1 });
       }
       toast?.success('Ekipman eklendi');
       navigate('/equipment');
@@ -396,7 +398,7 @@ export default function EquipmentFormPage() {
     setIsConfirmed(false);
   }
 
-  // Bakım başlangıç ayı seçici (Adım 2)
+  // Bakım başlangıç tarihi seçici (Adım 2) — gün + ay + yıl
   function renderStartMonth() {
     if (!form.maintenance_period) return null;
     const now = new Date();
@@ -405,6 +407,7 @@ export default function EquipmentFormPage() {
     const [selYear, selMonth] = form.maintenance_start_date
       ? form.maintenance_start_date.split('-').map(Number)
       : [0, 0];
+    const selDay = form.maintenance_start_day ? Number(form.maintenance_start_day) : 0;
     const years = [curYear, curYear + 1, curYear + 2];
     const cls = 'flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400';
     function updateDate(year, month) {
@@ -415,9 +418,15 @@ export default function EquipmentFormPage() {
       <div className="mt-4 space-y-1.5">
         <Label className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
           <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-          Bakım Başlangıç Ayı
+          Bakım Başlangıç Tarihi
         </Label>
         <div className="flex gap-2">
+          <select value={selDay || ''} onChange={e => setForm(f => ({ ...f, maintenance_start_day: e.target.value }))} className={cls}>
+            <option value="">Gün</option>
+            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
           <select value={selMonth || ''} onChange={e => updateDate(selYear || curYear, Number(e.target.value))} className={cls}>
             <option value="">Ay</option>
             {MONTH_NAMES.map((m, i) => {
@@ -430,7 +439,7 @@ export default function EquipmentFormPage() {
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
-        <p className="text-xs text-slate-400">Boş bırakılırsa bu aydan başlatılır</p>
+        <p className="text-xs text-slate-400">Boş bırakılırsa bugünden başlatılır</p>
       </div>
     );
   }
