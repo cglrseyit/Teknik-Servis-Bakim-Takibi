@@ -58,8 +58,12 @@ export default function PlanFormPage() {
         frequency_type: p.frequency_type || 'monthly',
         frequency_days: p.frequency_days || '',
         start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
-        target_month: p.target_month ? String(p.target_month) : '',
-        target_day: p.target_day ? String(p.target_day) : '',
+        target_day: p.is_one_time
+          ? (sd ? String(Number(sd.split('-')[2])) : '')
+          : (p.target_day ? String(p.target_day) : ''),
+        target_month: p.is_one_time
+          ? (sd ? String(Number(sd.split('-')[1])) : '')
+          : (p.target_month ? String(p.target_month) : ''),
         target_year: sd ? sd.slice(0, 4) : String(new Date().getFullYear()),
       });
       setOriginalForm({
@@ -90,13 +94,15 @@ export default function PlanFormPage() {
 
   function buildPayload(extra = {}) {
     const payload = { ...form, is_one_time: isOneTime, ...extra };
-    if (form.start_date && form.start_date.length === 7) {
-      payload.start_date = form.start_date + '-01';
-    }
     const usesTargetMonth = !isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type);
     payload.target_month = (usesTargetMonth && form.target_month) ? Number(form.target_month) : null;
     payload.target_day = (usesTargetMonth && form.target_day) ? Number(form.target_day) : null;
-    if (usesTargetMonth && form.target_month) {
+    if (isOneTime && form.target_month && form.target_day) {
+      const tm = Number(form.target_month);
+      const td = Number(form.target_day);
+      const year = Number(form.target_year) || new Date().getFullYear();
+      payload.start_date = `${year}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
+    } else if (usesTargetMonth && form.target_month) {
       const tm = Number(form.target_month);
       const td = Number(form.target_day) || 1;
       const year = Number(form.target_year) || new Date().getFullYear();
@@ -333,11 +339,35 @@ export default function PlanFormPage() {
 
           {isOneTime && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Görev Ayı *</label>
-              <input required type="month" value={form.start_date} onChange={set('start_date')}
-                min={(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })()}
-                className={fieldCls} />
-              <p className="text-xs text-gray-400 mt-1">Ay seçin — görev o ayın son gününe atanır</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Görev Tarihi *</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <select required value={form.target_day} onChange={set('target_day')} className={fieldCls}>
+                    <option value="">Gün</option>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Gün</p>
+                </div>
+                <div>
+                  <select required value={form.target_month} onChange={set('target_month')} className={fieldCls}>
+                    <option value="">Ay</option>
+                    {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
+                      <option key={i+1} value={i+1}>{m}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Ay</p>
+                </div>
+                <div>
+                  <select value={form.target_year} onChange={set('target_year')} className={fieldCls}>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Yıl</p>
+                </div>
+              </div>
             </div>
           )}
           <div className="flex gap-3 pt-2">
