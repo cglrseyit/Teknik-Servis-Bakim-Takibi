@@ -254,6 +254,8 @@ const AUTO_MIGRATIONS = [
   `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS power_unit VARCHAR(10)`,
   `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS annual_days INT`,
   `ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS lifespan_years INT`,
+  // Günü gününe bakım: bakım planına hedef gün ekle (1-31)
+  `ALTER TABLE maintenance_plans ADD COLUMN IF NOT EXISTS target_day INT`,
 ];
 AUTO_MIGRATIONS.forEach(sql => {
   pool.query(sql).catch(err => console.error('[migration] Hata:', sql.split(' ').slice(0, 6).join(' '), '→', err.message));

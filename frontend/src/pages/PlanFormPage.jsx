@@ -37,6 +37,7 @@ export default function PlanFormPage() {
     frequency_type: 'monthly', frequency_days: '',
     start_date: '',
     target_month: '',
+    target_day: '',
   });
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function PlanFormPage() {
         frequency_days: p.frequency_days || '',
         start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
         target_month: p.target_month ? String(p.target_month) : '',
+        target_day: p.target_day ? String(p.target_day) : '',
       });
       setOriginalForm({
         frequency_type: p.frequency_type || 'monthly',
@@ -91,11 +93,13 @@ export default function PlanFormPage() {
     }
     const usesTargetMonth = !isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type);
     payload.target_month = (usesTargetMonth && form.target_month) ? Number(form.target_month) : null;
+    payload.target_day = (usesTargetMonth && form.target_day) ? Number(form.target_day) : null;
     if (usesTargetMonth && form.target_month) {
       const tm = Number(form.target_month);
+      const td = Number(form.target_day) || 1;
       const now = new Date();
       const year = tm >= now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
-      payload.start_date = `${year}-${String(tm).padStart(2, '0')}-01`;
+      payload.start_date = `${year}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
     }
     return payload;
   }
@@ -284,21 +288,35 @@ export default function PlanFormPage() {
 
           {!isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Ayı {bakimAyiRequired ? '*' : ''}</label>
-              <select required={bakimAyiRequired} value={form.target_month} onChange={set('target_month')} className={fieldCls}>
-                <option value="">Seçin</option>
-                {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
-                  <option key={i+1} value={i+1}>{m}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Tarihi {bakimAyiRequired ? '*' : ''}</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <select required={bakimAyiRequired} value={form.target_day} onChange={set('target_day')} className={fieldCls}>
+                    <option value="">Gün seçin</option>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Gün</p>
+                </div>
+                <div>
+                  <select required={bakimAyiRequired} value={form.target_month} onChange={set('target_month')} className={fieldCls}>
+                    <option value="">Ay seçin</option>
+                    {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
+                      <option key={i+1} value={i+1}>{m}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Ay</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
                 {form.frequency_type === 'yearly'
-                  ? 'Her yıl bu ayın son gününe otomatik görev atanır'
+                  ? 'Her yıl bu tarihte bakım görevi oluşturulur'
                   : form.frequency_type === 'semiannual'
-                    ? 'İlk bakım bu ayda, sonraki 6 ay arayla devam eder'
+                    ? 'İlk bakım bu tarihte, sonraki 6 ay arayla devam eder'
                     : form.frequency_type === 'quarterly'
-                      ? 'İlk bakım bu ayda, sonraki 3 ay arayla devam eder'
-                      : 'Her ay bu aydan itibaren son güne otomatik görev atanır'}
+                      ? 'İlk bakım bu tarihte, sonraki 3 ay arayla devam eder'
+                      : 'Her ay bu günde bakım görevi oluşturulur'}
               </p>
             </div>
           )}

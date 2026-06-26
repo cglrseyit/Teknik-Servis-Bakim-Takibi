@@ -90,7 +90,7 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month, force } = req.body;
+  const { equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month, target_day, force } = req.body;
   if (!equipment_id || !title) {
     return res.status(400).json({ error: 'Ekipman ve başlık zorunlu' });
   }
@@ -150,9 +150,9 @@ async function create(req, res) {
       const created = [];
       for (const child of children) {
         const { rows } = await pool.query(
-          `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-          [child.id, title, description, frequency_type || 'monthly', frequency_days || null, advance_notice_days || 3, start_date, false, target_month || null]
+          `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month, target_day)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+          [child.id, title, description, frequency_type || 'monthly', frequency_days || null, advance_notice_days || 3, start_date, false, target_month || null, target_day || null]
         );
         await generateTasksForPlan(rows[0], 365);
         created.push(rows[0]);
@@ -183,9 +183,9 @@ async function create(req, res) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [equipment_id, title, description, frequency_type || 'monthly', frequency_days || null, advance_notice_days || 3, start_date, is_one_time || false, target_month || null]
+      `INSERT INTO maintenance_plans (equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, start_date, is_one_time, target_month, target_day)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [equipment_id, title, description, frequency_type || 'monthly', frequency_days || null, advance_notice_days || 3, start_date, is_one_time || false, target_month || null, target_day || null]
     );
     const plan = rows[0];
 
@@ -209,7 +209,7 @@ async function create(req, res) {
 
 async function update(req, res) {
   const { id } = req.params;
-  const { equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, is_active, start_date, target_month } = req.body;
+  const { equipment_id, title, description, frequency_type, frequency_days, advance_notice_days, is_active, start_date, target_month, target_day } = req.body;
   try {
     const { rows: oldRows } = await pool.query('SELECT * FROM maintenance_plans WHERE id=$1', [id]);
     if (!oldRows[0]) return res.status(404).json({ error: 'Bulunamadı' });
@@ -218,9 +218,9 @@ async function update(req, res) {
     const { rows } = await pool.query(
       `UPDATE maintenance_plans SET equipment_id=$1,title=$2,description=$3,
        frequency_type=$4,frequency_days=$5,advance_notice_days=$6,is_active=$7,
-       start_date=COALESCE($8::date, start_date), target_month=$9
-       WHERE id=$10 RETURNING *`,
-      [equipment_id, title, description, frequency_type, frequency_days || null, advance_notice_days || 3, is_active !== false, start_date || null, target_month || null, id]
+       start_date=COALESCE($8::date, start_date), target_month=$9, target_day=$10
+       WHERE id=$11 RETURNING *`,
+      [equipment_id, title, description, frequency_type, frequency_days || null, advance_notice_days || 3, is_active !== false, start_date || null, target_month || null, target_day || null, id]
     );
     const plan = rows[0];
 
@@ -263,11 +263,11 @@ async function update(req, res) {
           `UPDATE maintenance_plans
            SET title=$1, description=$2, frequency_type=$3, frequency_days=$4,
                advance_notice_days=$5, is_active=$6,
-               start_date=COALESCE($7::date, start_date), target_month=$8
-           WHERE id=$9 RETURNING *`,
+               start_date=COALESCE($7::date, start_date), target_month=$8, target_day=$9
+           WHERE id=$10 RETURNING *`,
           [title, description, frequency_type, frequency_days || null,
            advance_notice_days || 3, is_active !== false,
-           start_date || null, target_month || null, sib.id]
+           start_date || null, target_month || null, target_day || null, sib.id]
         );
         if (freqChanged || startChanged) {
           await pool.query(

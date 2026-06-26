@@ -269,11 +269,10 @@ export default function DashboardPage() {
     } finally { setUpdating(null); }
   }
 
-  function isFutureMonth(scheduledDate) {
+  function isFutureDay(scheduledDate) {
     if (!scheduledDate) return false;
-    const sd = new Date(scheduledDate);
-    const now = new Date();
-    return sd.getFullYear() * 12 + sd.getMonth() > now.getFullYear() * 12 + now.getMonth();
+    const today = new Date().toISOString().split('T')[0];
+    return scheduledDate > today;
   }
 
   function handleStart(e, task) {
@@ -323,7 +322,7 @@ export default function DashboardPage() {
         </td>
         <td className="px-6 py-4">
           {t.status === 'pending' && (
-            isFutureMonth(t.scheduled_date?.split('T')[0]) ? (
+            isFutureDay(t.scheduled_date?.split('T')[0]) ? (
               <span className="text-xs text-gray-400 italic">Zamanı gelmedi</span>
             ) : (
               <button
@@ -350,7 +349,7 @@ export default function DashboardPage() {
     const overdueCount    = row.tasks.filter(t => t.status === 'overdue').length;
     const inProgressCount = row.tasks.filter(t => t.status === 'in_progress').length;
     const completedCount  = row.tasks.filter(t => t.status === 'completed' || t.status === 'skipped').length;
-    const pendingCurrentCount = row.tasks.filter(t => t.status === 'pending' && !isFutureMonth(t.scheduled_date)).length;
+    const pendingCurrentCount = row.tasks.filter(t => t.status === 'pending' && !isFutureDay(t.scheduled_date)).length;
 
     // Zamanı gelmiş görevler (bu ay veya geçmiş + devam eden)
     const activeCount = inProgressCount + pendingCurrentCount;

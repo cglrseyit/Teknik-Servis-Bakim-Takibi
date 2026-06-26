@@ -115,14 +115,14 @@ async function updateStatus(req, res) {
       const cur = existing[0];
 
       if (cur.scheduled_date) {
-        // 1) Tarih kontrolü: scheduled_date gelecek bir aya aitse engelle
+        // 1) Tarih kontrolü: scheduled_date bugünden büyükse engelle
         const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
-        const sd = new Date(cur.scheduled_date);
-        const curYM = istanbulNow.getFullYear() * 12 + istanbulNow.getMonth();
-        const taskYM = sd.getFullYear() * 12 + sd.getMonth();
-        if (taskYM > curYM) {
+        const todayStr = `${istanbulNow.getFullYear()}-${String(istanbulNow.getMonth()+1).padStart(2,'0')}-${String(istanbulNow.getDate()).padStart(2,'0')}`;
+        const sdStr = new Date(cur.scheduled_date).toISOString().split('T')[0];
+        if (sdStr > todayStr) {
+          const fmtDate = new Date(sdStr + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
           return res.status(400).json({
-            error: 'Bu bakımın zamanı henüz gelmedi. İçinde bulunulan ay sonunda yapılabilir.'
+            error: `Bu bakımın zamanı henüz gelmedi. ${fmtDate} tarihinde yapılabilir.`
           });
         }
 
@@ -210,7 +210,8 @@ async function bulkComplete(req, res) {
   const completed_at = performed_date ? new Date(performed_date + 'T12:00:00') : new Date();
   const completed_by = req.user.id;
   const istanbulNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
-  const curYM = istanbulNow.getFullYear() * 12 + istanbulNow.getMonth();
+  const bulkTodayStr = `${istanbulNow.getFullYear()}-${String(istanbulNow.getMonth()+1).padStart(2,'0')}-${String(istanbulNow.getDate()).padStart(2,'0')}`;
+
 
   const completed = [];
   const skipped = [];
@@ -227,10 +228,10 @@ async function bulkComplete(req, res) {
       if (['completed', 'skipped'].includes(cur.status)) {
         skipped.push({ id, reason: 'Zaten tamamlanmış' }); continue;
       }
-      // Gelecek aya ait görev tamamlanamaz
+      // Bakım günü henüz gelmemişse tamamlanamaz
       if (cur.scheduled_date) {
-        const sd = new Date(cur.scheduled_date);
-        if (sd.getFullYear() * 12 + sd.getMonth() > curYM) {
+        const sdStr = new Date(cur.scheduled_date).toISOString().split('T')[0];
+        if (sdStr > bulkTodayStr) {
           skipped.push({ id, reason: 'Zamanı gelmedi' }); continue;
         }
       }
@@ -288,7 +289,7 @@ async function getMyTasks(req, res) {
        LEFT JOIN equipment ep ON ep.id = e.parent_id
        WHERE t.status IN ('pending','in_progress','overdue','postponed')
          AND (
-           DATE_TRUNC('month', t.scheduled_date) <= DATE_TRUNC('month', CURRENT_DATE)
+           t.scheduled_date <= CURRENT_DATE
            OR t.status IN ('overdue','in_progress','postponed')
          )
        ORDER BY

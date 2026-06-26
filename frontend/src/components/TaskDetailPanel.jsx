@@ -204,11 +204,10 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
   const isAlreadyDone = ['completed', 'skipped'].includes(task.status);
   const isPostponed = task.status === 'postponed';
 
-  const isFutureMonth = (() => {
+  const isFutureDay = (() => {
     if (!task.scheduled_date) return false;
-    const sd = new Date(task.scheduled_date);
-    const now = new Date();
-    return sd.getFullYear() * 12 + sd.getMonth() > now.getFullYear() * 12 + now.getMonth();
+    const today = new Date().toISOString().split('T')[0];
+    return task.scheduled_date.split('T')[0] > today;
   })();
 
   return (
@@ -240,7 +239,7 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
       {/* Tarih bilgileri */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-amber-50 rounded-xl p-4">
-          <p className="text-xs text-amber-400 font-medium mb-1">Vade (Ay Sonu)</p>
+          <p className="text-xs text-amber-400 font-medium mb-1">Bakım Tarihi</p>
           <p className="text-sm font-bold text-amber-700">{fmt(task.scheduled_date)}</p>
         </div>
         <div className="bg-gray-50 rounded-xl p-4">
@@ -256,10 +255,10 @@ export default function TaskDetailPanel({ taskId, onCompleted, groupTasks, onBul
         </div>
       )}
 
-      {isFutureMonth && !isAlreadyDone ? (
+      {isFutureDay && !isAlreadyDone ? (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
           <p className="text-blue-700 font-semibold text-sm mb-1">Bu bakımın zamanı henüz gelmedi</p>
-          <p className="text-blue-600 text-xs">Bakım, vadesinin geldiği ay içinde gerçekleştirilebilir.</p>
+          <p className="text-blue-600 text-xs">{fmt(task.scheduled_date)} tarihinde yapılabilir.</p>
         </div>
       ) : isAlreadyDone ? (
         <div className="bg-green-50 border border-green-200 rounded-xl p-5">

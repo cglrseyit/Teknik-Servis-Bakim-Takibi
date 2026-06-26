@@ -29,6 +29,22 @@ function getMonthEndDate(year, month) {
   return new Date(year, month, 0).toISOString().split('T')[0];
 }
 
+// Specific day of a year+month — clamps to last day if month is shorter
+function getTargetDayDate(year, month, targetDay) {
+  const lastDay = new Date(year, month, 0).getDate();
+  const day = Math.min(targetDay, lastDay);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+// Advance dateStr by `months` calendar months, land on targetDay
+function addMonthsDay(dateStr, months, targetDay) {
+  const d = new Date(dateStr);
+  const totalMonths = d.getMonth() + months;
+  const year = d.getFullYear() + Math.floor(totalMonths / 12);
+  const month = (totalMonths % 12) + 1;
+  return getTargetDayDate(year, month, targetDay);
+}
+
 // Returns calendar-month count for month-based frequencies, null for day-based
 function getFrequencyMonths(plan) {
   switch (plan.frequency_type) {
@@ -57,6 +73,7 @@ async function generateTasksForPlan(plan, daysAhead) {
   const freqMonths = getFrequencyMonths(plan);
   const intervalDays = getIntervalDays(plan);
   const window = daysAhead !== undefined ? daysAhead : 365;
+  const targetDay = plan.target_day || null;
 
   const client = await pool.connect();
   try {
@@ -69,32 +86,44 @@ async function generateTasksForPlan(plan, daysAhead) {
     );
 
     const lastDate = toDateStr(existing[0].last_date);
-    // target_month, ay-bazli (monthly, quarterly, semiannual, yearly) periyotlar icin baslangic ayini belirler
     const useTargetMonth = !!plan.target_month && !!freqMonths;
 
-    // Advance function: bir sonraki gerceklesme tarihine git (her zaman freqMonths kadar atla)
     function advanceNext(date) {
-      return freqMonths ? addMonthsEnd(date, freqMonths) : addDays(date, intervalDays);
+      if (freqMonths) {
+        return targetDay
+          ? addMonthsDay(date, freqMonths, targetDay)
+          : addMonthsEnd(date, freqMonths);
+      }
+      return addDays(date, intervalDays);
+    }
+
+    function getDateForYearMonth(year, month) {
+      return targetDay
+        ? getTargetDayDate(year, month, targetDay)
+        : getMonthEndDate(year, month);
     }
 
     let nextDate;
 
     if (lastDate) {
-      // Mevcut son gorevden sonrasini uret
       nextDate = advanceNext(lastDate);
       while (nextDate < today) nextDate = advanceNext(nextDate);
     } else if (useTargetMonth) {
-      // Plan icin hic gorev yok + target_month var — ilk gorevi target_month'a sabitle
       const sdYear = new Date(toDateStr(plan.start_date) || today).getFullYear();
-      let candidate = getMonthEndDate(sdYear, plan.target_month);
+      let candidate = getDateForYearMonth(sdYear, plan.target_month);
       while (candidate < today) candidate = advanceNext(candidate);
       nextDate = candidate;
     } else {
       const sd = toDateStr(plan.start_date) || today;
       if (freqMonths) {
-        const monthEnd = toMonthEnd(sd);
-        nextDate = monthEnd < today ? addMonthsEnd(monthEnd, freqMonths) : monthEnd;
-        while (nextDate < today) nextDate = addMonthsEnd(nextDate, freqMonths);
+        const firstDate = targetDay
+          ? (() => {
+              const d = new Date(sd);
+              return getTargetDayDate(d.getFullYear(), d.getMonth() + 1, targetDay);
+            })()
+          : toMonthEnd(sd);
+        nextDate = firstDate < today ? advanceNext(firstDate) : firstDate;
+        while (nextDate < today) nextDate = advanceNext(nextDate);
       } else {
         nextDate = sd < today ? today : sd;
       }
