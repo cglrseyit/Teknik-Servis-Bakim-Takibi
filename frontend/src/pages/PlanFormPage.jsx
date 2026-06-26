@@ -38,6 +38,7 @@ export default function PlanFormPage() {
     start_date: '',
     target_month: '',
     target_day: '',
+    target_year: String(new Date().getFullYear()),
   });
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function PlanFormPage() {
         start_date: p.frequency_type === 'custom' ? sd : sd.slice(0, 7),
         target_month: p.target_month ? String(p.target_month) : '',
         target_day: p.target_day ? String(p.target_day) : '',
+        target_year: sd ? sd.slice(0, 4) : String(new Date().getFullYear()),
       });
       setOriginalForm({
         frequency_type: p.frequency_type || 'monthly',
@@ -97,8 +99,7 @@ export default function PlanFormPage() {
     if (usesTargetMonth && form.target_month) {
       const tm = Number(form.target_month);
       const td = Number(form.target_day) || 1;
-      const now = new Date();
-      const year = tm >= now.getMonth() + 1 ? now.getFullYear() : now.getFullYear() + 1;
+      const year = Number(form.target_year) || new Date().getFullYear();
       payload.start_date = `${year}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
     }
     return payload;
@@ -289,10 +290,10 @@ export default function PlanFormPage() {
           {!isOneTime && MONTH_BASED_FREQS.includes(form.frequency_type) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bakım Tarihi {bakimAyiRequired ? '*' : ''}</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <select required={bakimAyiRequired} value={form.target_day} onChange={set('target_day')} className={fieldCls}>
-                    <option value="">Gün seçin</option>
+                    <option value="">Gün</option>
                     {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
                       <option key={d} value={d}>{d}</option>
                     ))}
@@ -301,12 +302,20 @@ export default function PlanFormPage() {
                 </div>
                 <div>
                   <select required={bakimAyiRequired} value={form.target_month} onChange={set('target_month')} className={fieldCls}>
-                    <option value="">Ay seçin</option>
+                    <option value="">Ay</option>
                     {['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map((m, i) => (
                       <option key={i+1} value={i+1}>{m}</option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-400 mt-1">Ay</p>
+                </div>
+                <div>
+                  <select value={form.target_year} onChange={set('target_year')} className={fieldCls}>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">Yıl</p>
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-2">
