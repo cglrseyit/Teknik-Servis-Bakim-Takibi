@@ -113,10 +113,10 @@ export default function LoginPage() {
           <div>
             <div className="w-7 h-[2px] bg-amber-500/50 mb-5 rounded-full" />
             <p className="text-slate-300 text-[17px] font-light leading-[1.6]">
-              Misafir gülümserken,
+              Kusursuz hizmet,
             </p>
             <p className="text-white text-[17px] font-semibold leading-[1.6]">
-              biz zaten hazır olmuştuk.
+              doğru yönetimle başlar.
             </p>
           </div>
         </div>
