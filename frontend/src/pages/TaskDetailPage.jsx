@@ -58,8 +58,12 @@ export default function TaskDetailPage() {
 
   if (!task) return <Layout><div className="text-gray-400 text-sm">Yükleniyor...</div></Layout>;
 
-  const today = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
   const isAlreadyDone = ['completed', 'skipped'].includes(task.status);
+  const isFutureDay = (() => {
+    if (!task.scheduled_date) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return task.scheduled_date.split('T')[0] > today;
+  })();
 
   return (
     <Layout>
@@ -77,7 +81,7 @@ export default function TaskDetailPage() {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-amber-50 rounded-xl p-4">
             <p className="text-xs text-amber-400 font-medium mb-1">Bakım Tarihi</p>
-            <p className="text-sm font-bold text-amber-700">{today}</p>
+            <p className="text-sm font-bold text-amber-700">{fmt(task.scheduled_date)}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-xs text-gray-400 font-medium mb-1">Sonraki Bakım</p>
@@ -91,7 +95,12 @@ export default function TaskDetailPage() {
           )}
         </div>
 
-        {isAlreadyDone ? (
+        {isFutureDay && !isAlreadyDone ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
+            <p className="text-blue-700 font-semibold text-sm mb-1">Bu bakımın zamanı henüz gelmedi</p>
+            <p className="text-blue-600 text-xs">{fmt(task.scheduled_date)} tarihinde yapılabilir.</p>
+          </div>
+        ) : isAlreadyDone ? (
           <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
             <p className="text-green-700 font-medium">Bu görev tamamlandı</p>
             {task.performed_work && (
