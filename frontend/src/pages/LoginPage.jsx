@@ -226,11 +226,6 @@ export default function LoginPage() {
               </div>
             </form>
 
-            {/* Alt not */}
-            <p className="text-center text-[11.5px] text-slate-400 mt-8">
-              Hesap erişimi için sistem yöneticinize başvurun.
-            </p>
-
             {/* Geliştirici imzası */}
             <p className="text-center text-[10.5px] text-slate-300 mt-6 tracking-wide">
               Tasarım & Geliştirme · <span className="text-slate-400 font-medium">Seyit Çağlar</span>
