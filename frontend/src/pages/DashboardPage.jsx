@@ -335,9 +335,6 @@ export default function DashboardPage() {
               </button>
             )
           )}
-          {t.status === 'overdue' && (
-            <span className="text-xs text-red-500 font-semibold">Tamamla →</span>
-          )}
           {t.status === 'in_progress' && (
             isFutureDay(t.scheduled_date?.split('T')[0]) ? (
               <span className="text-xs text-gray-400 italic">Zamanı gelmedi</span>
