@@ -57,8 +57,8 @@ async function sendMail({ to, subject, html }) {
   return { ok: true };
 }
 
-function fmtMonth(d) {
-  return new Date(d).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+function fmtDate(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function escapeHtml(s) {
@@ -84,7 +84,7 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
         <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;font-size:13px;line-height:1.4;">
           <strong style="color:#1e293b;font-weight:600;">${escapeHtml(t.title)}</strong><span style="color:#94a3b8;"> &middot; ${equipHtml}${locationPart}</span>
         </td>
-        <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;color:#64748b;font-size:12px;white-space:nowrap;text-align:right;">${fmtMonth(t.scheduled_date)}</td>
+        <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;color:#64748b;font-size:12px;white-space:nowrap;text-align:right;">${fmtDate(t.scheduled_date)}</td>
       </tr>`;
   };
 
@@ -103,16 +103,16 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(184,146,74,0.08);">
         <tr><td style="background:linear-gradient(135deg,#d97706,#b45309);padding:18px 24px;">
-          <h1 style="margin:0;color:#ffffff;font-size:17px;font-weight:700;">Aylık Bakım Hatırlatması</h1>
+          <h1 style="margin:0;color:#ffffff;font-size:17px;font-weight:700;">Yaklaşan Bakım Hatırlatması</h1>
           <p style="margin:3px 0 0;color:#fef3c7;font-size:12px;">Bellis Deluxe Hotel &middot; Teknik Servis</p>
         </td></tr>
         <tr><td style="padding:18px 24px;">
           <p style="margin:0 0 16px;color:#475569;font-size:13px;line-height:1.5;">
-            Merhaba <strong style="color:#1e293b;">${escapeHtml(userName)}</strong>, bu ay <strong style="color:#1e293b;">${total}</strong> bakım göreviniz var${overdue.length > 0 ? `, <strong style="color:#b91c1c;">${overdue.length} tanesi gecikmiş</strong>` : ''}.
+            Merhaba <strong style="color:#1e293b;">${escapeHtml(userName)}</strong>, önümüzdeki 14 gün içinde <strong style="color:#1e293b;">${total}</strong> bakım göreviniz var${overdue.length > 0 ? `, <strong style="color:#b91c1c;">${overdue.length} tanesi gecikmiş</strong>` : ''}.
           </p>
 
           ${section('Gecikmiş Görevler', '#b91c1c', '#fecaca', overdue)}
-          ${section('Bu Ay Yapılacak', '#b45309', '#fde68a', upcoming)}
+          ${section('Önümüzdeki 14 Günde Yapılacak', '#b45309', '#fde68a', upcoming)}
 
           ${process.env.CLIENT_URL ? `
             <div style="margin-top:4px;text-align:center;">
@@ -136,8 +136,8 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
 
   const total = overdue.length + upcoming.length;
   const subject = overdue.length > 0
-    ? `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} bu ay yapılacak bakım`
-    : `[Bellis] Bu ay ${total} bakım göreviniz var`;
+    ? `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} yaklaşan bakım görevi`
+    : `[Bellis] Önümüzdeki 14 günde ${total} bakım görevi`;
 
   const result = await sendMail({
     to,

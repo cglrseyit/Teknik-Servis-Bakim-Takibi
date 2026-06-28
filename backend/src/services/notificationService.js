@@ -36,17 +36,17 @@ async function generateNotifications() {
       }
     }
 
-    // Bu aydaki görevler — ayda bir kez bildirim
+    // Önümüzdeki 14 gündeki görevler — son 7 günde bildirim gönderilmediyse
     const { rows: upcoming } = await pool.query(`
       SELECT t.id, t.title, t.scheduled_date
       FROM maintenance_tasks t
       WHERE t.status IN ('pending', 'in_progress')
-        AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
         AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+        AND t.scheduled_date <= (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '14 days'
         AND NOT EXISTS (
           SELECT 1 FROM notifications n
           WHERE n.task_id = t.id AND n.type = 'reminder'
-            AND DATE_TRUNC('month', (n.sent_at AT TIME ZONE 'Europe/Istanbul')) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul'))
+            AND (n.sent_at AT TIME ZONE 'Europe/Istanbul') >= (NOW() AT TIME ZONE 'Europe/Istanbul') - INTERVAL '7 days'
         )
     `);
 
@@ -129,8 +129,8 @@ async function sendDailyDigestEmails() {
 
     const { rows: upcomingRaw } = await pool.query(taskQuery(
       `t.status IN ('pending','in_progress')
-       AND DATE_TRUNC('month', t.scheduled_date) = DATE_TRUNC('month', (NOW() AT TIME ZONE 'Europe/Istanbul')::date)
-       AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date`
+       AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+       AND t.scheduled_date <= (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '14 days'`
     ));
 
     if (overdueRaw.length === 0 && upcomingRaw.length === 0) {
