@@ -82,7 +82,7 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
     return `
       <tr>
         <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;font-size:13px;line-height:1.4;">
-          <strong style="color:#1e293b;font-weight:600;">${escapeHtml(t.title)}</strong><span style="color:#94a3b8;"> &middot; ${equipHtml}${locationPart}</span>
+          <strong style="color:#1e293b;font-weight:600;">${equipHtml}${locationPart}</strong><span style="color:#94a3b8;"> &middot; ${escapeHtml(t.title)}</span>
         </td>
         <td style="padding:6px 14px;border-bottom:1px solid #f3eedf;color:#64748b;font-size:12px;white-space:nowrap;text-align:right;">${fmtDate(t.scheduled_date)}</td>
       </tr>`;
