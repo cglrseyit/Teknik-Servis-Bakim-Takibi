@@ -206,4 +206,4 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
   return result.ok;
 }
 
-module.exports = { sendDigestEmail, buildDigestHtml, sendMail };
+module.exports = { sendDigestEmail, buildDigestHtml, sendMail, sendTodayEmail };
