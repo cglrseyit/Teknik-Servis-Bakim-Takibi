@@ -137,8 +137,8 @@ cron.schedule('0 8 * * 1', async () => {
   await generateNotifications();
 }, { timezone: 'Europe/Istanbul' });
 
-// Cron: Her sabah 07:00 Istanbul saatiyle bugunun gorevleri varsa hatirlat
-cron.schedule('0 7 * * *', async () => {
+// Cron: Her sabah 08:30 Istanbul saatiyle bugunun gorevleri varsa hatirlat
+cron.schedule('30 8 * * *', async () => {
   const { sendTodayReminderEmails } = require('./services/notificationService');
   await sendTodayReminderEmails();
 }, { timezone: 'Europe/Istanbul' });
