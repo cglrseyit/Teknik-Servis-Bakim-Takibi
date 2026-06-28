@@ -35,7 +35,7 @@ const STATUS_CONFIG = {
   pending:     { label: 'Bekliyor',    variant: 'secondary' },
   in_progress: { label: 'Devam Ediyor', variant: 'warning' },
   completed:   { label: 'Gerçekleşti', variant: 'danger' },
-  overdue:     { label: 'Gecikmiş',    variant: 'primary' },
+  overdue:     { label: 'Gecikmiş',    variant: 'danger' },
   skipped:     { label: 'Atlandı',     variant: 'secondary' },
   postponed:   { label: 'Ertelendi',   variant: 'primary' },
 };
@@ -361,7 +361,7 @@ export default function DashboardPage() {
 
     let badgeVariant, badgeLabel;
     if (overdueCount > 0) {
-      badgeVariant = 'primary'; badgeLabel = `${overdueCount} Gecikmiş`;
+      badgeVariant = 'danger'; badgeLabel = `${overdueCount} Gecikmiş`;
     } else if (completedCount === total) {
       badgeVariant = 'danger'; badgeLabel = `${completedCount} Gerçekleşti`;
     } else if (completedCount > 0) {
