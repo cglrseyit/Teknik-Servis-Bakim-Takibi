@@ -108,11 +108,11 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
         </td></tr>
         <tr><td style="padding:18px 24px;">
           <p style="margin:0 0 16px;color:#475569;font-size:13px;line-height:1.5;">
-            Merhaba <strong style="color:#1e293b;">${escapeHtml(userName)}</strong>, önümüzdeki 14 gün içinde <strong style="color:#1e293b;">${total}</strong> bakım göreviniz var${overdue.length > 0 ? `, <strong style="color:#b91c1c;">${overdue.length} tanesi gecikmiş</strong>` : ''}.
+            Merhaba <strong style="color:#1e293b;">${escapeHtml(userName)}</strong>, önümüzdeki 3 hafta içinde <strong style="color:#1e293b;">${total}</strong> bakım göreviniz var${overdue.length > 0 ? `, <strong style="color:#b91c1c;">${overdue.length} tanesi gecikmiş</strong>` : ''}.
           </p>
 
           ${section('Gecikmiş Görevler', '#b91c1c', '#fecaca', overdue)}
-          ${section('Önümüzdeki 14 Günde Yapılacak', '#b45309', '#fde68a', upcoming)}
+          ${section('Önümüzdeki 3 Haftada Yapılacak', '#b45309', '#fde68a', upcoming)}
 
           ${process.env.CLIENT_URL ? `
             <div style="margin-top:4px;text-align:center;">
@@ -196,7 +196,7 @@ async function sendDigestEmail({ to, userName, overdue, upcoming }) {
   const total = overdue.length + upcoming.length;
   const subject = overdue.length > 0
     ? `[Bellis] ${overdue.length} gecikmiş, ${upcoming.length} yaklaşan bakım görevi`
-    : `[Bellis] Önümüzdeki 14 günde ${total} bakım görevi`;
+    : `[Bellis] Önümüzdeki 3 haftada ${total} bakım görevi`;
 
   const result = await sendMail({
     to,

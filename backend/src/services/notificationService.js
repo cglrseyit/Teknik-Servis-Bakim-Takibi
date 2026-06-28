@@ -42,7 +42,7 @@ async function generateNotifications() {
       FROM maintenance_tasks t
       WHERE t.status IN ('pending', 'in_progress')
         AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-        AND t.scheduled_date <= (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '14 days'
+        AND t.scheduled_date <= (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '21 days'
         AND NOT EXISTS (
           SELECT 1 FROM notifications n
           WHERE n.task_id = t.id AND n.type = 'reminder'
@@ -130,7 +130,7 @@ async function sendDailyDigestEmails(toOverride) {
     const { rows: upcomingRaw } = await pool.query(taskQuery(
       `t.status IN ('pending','in_progress')
        AND t.scheduled_date >= (NOW() AT TIME ZONE 'Europe/Istanbul')::date
-       AND t.scheduled_date <= (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '14 days'`
+       AND t.scheduled_date <= (NOW() AT TIME ZONE 'Europe/Istanbul')::date + INTERVAL '21 days'`
     ));
 
     if (overdueRaw.length === 0 && upcomingRaw.length === 0) {
