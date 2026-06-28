@@ -321,7 +321,7 @@ export default function DashboardPage() {
           <Badge variant={sc.variant} appearance="light">{sc.label}</Badge>
         </td>
         <td className="px-6 py-4">
-          {(t.status === 'pending' || t.status === 'overdue') && (
+          {t.status === 'pending' && (
             isFutureDay(t.scheduled_date?.split('T')[0]) ? (
               <span className="text-xs text-gray-400 italic">Zamanı gelmedi</span>
             ) : (
@@ -334,6 +334,9 @@ export default function DashboardPage() {
                 Başla
               </button>
             )
+          )}
+          {t.status === 'overdue' && (
+            <span className="text-xs text-red-500 font-semibold">Tamamla →</span>
           )}
           {t.status === 'in_progress' && (
             isFutureDay(t.scheduled_date?.split('T')[0]) ? (
