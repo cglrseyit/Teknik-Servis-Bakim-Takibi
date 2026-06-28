@@ -131,6 +131,65 @@ function buildDigestHtml({ userName, overdue, upcoming }) {
 </body></html>`;
 }
 
+function buildTodayHtml({ userName, tasks }) {
+  const todayStr = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' });
+
+  const taskRow = (t) => {
+    const equipRaw = escapeHtml(t.equipment_name || '');
+    const equipHtml = equipRaw.replace(/(\(\d[^)]*\))/g, '<strong style="color:#475569;font-weight:700;">$1</strong>');
+    const locationPart = t.location ? ' &middot; ' + escapeHtml(t.location) : '';
+    return `
+      <tr>
+        <td style="padding:8px 14px;border-bottom:1px solid #f3eedf;font-size:13px;line-height:1.4;">
+          <strong style="color:#1e293b;font-weight:600;">${equipHtml}${locationPart}</strong>
+          <span style="color:#94a3b8;"> &middot; ${escapeHtml(t.title)}</span>
+        </td>
+      </tr>`;
+  };
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#faf7f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf7f0;padding:20px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(184,146,74,0.08);">
+        <tr><td style="background:linear-gradient(135deg,#d97706,#b45309);padding:18px 24px;">
+          <h1 style="margin:0;color:#ffffff;font-size:17px;font-weight:700;">Günlük Bakım Hatırlatması</h1>
+          <p style="margin:3px 0 0;color:#fef3c7;font-size:12px;">Bellis Deluxe Hotel &middot; ${escapeHtml(todayStr)}</p>
+        </td></tr>
+        <tr><td style="padding:18px 24px;">
+          <p style="margin:0 0 14px;color:#475569;font-size:13px;line-height:1.5;">
+            Merhaba <strong style="color:#1e293b;">${escapeHtml(userName)}</strong>, bugün tamamlanması gereken <strong style="color:#1e293b;">${tasks.length}</strong> bakım görevi var.
+          </p>
+          <p style="margin:0 0 6px;color:#b45309;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Bugünün Görevleri (${tasks.length})</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #fde68a;border-radius:8px;overflow:hidden;margin-bottom:18px;">
+            ${tasks.map(taskRow).join('')}
+          </table>
+          ${process.env.CLIENT_URL ? `
+            <div style="margin-top:4px;text-align:center;">
+              <a href="${process.env.CLIENT_URL}/dashboard" style="display:inline-block;background:#d97706;color:#ffffff;text-decoration:none;padding:9px 22px;border-radius:8px;font-size:13px;font-weight:600;">Panele Git</a>
+            </div>
+          ` : ''}
+        </td></tr>
+        <tr><td style="padding:14px 24px;background:#faf7f0;border-top:1px solid #fde68a;">
+          <p style="margin:0;color:#94a3b8;font-size:10px;text-align:center;">
+            Bu e-posta Bellis Deluxe Hotel Teknik Servis sisteminden otomatik gönderildi.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+async function sendTodayEmail({ to, userName, tasks }) {
+  if (tasks.length === 0) return false;
+  const todayStr = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', timeZone: 'Europe/Istanbul' });
+  const subject = `[Bellis] Bugün ${tasks.length} bakım görevi var — ${todayStr}`;
+  const result = await sendMail({ to, subject, html: buildTodayHtml({ userName, tasks }) });
+  return result.ok;
+}
+
 async function sendDigestEmail({ to, userName, overdue, upcoming }) {
   if (overdue.length === 0 && upcoming.length === 0) return false;
 

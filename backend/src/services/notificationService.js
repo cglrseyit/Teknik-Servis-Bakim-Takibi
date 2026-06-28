@@ -148,4 +148,38 @@ async function sendDailyDigestEmails(toOverride) {
   }
 }
 
-module.exports = { generateNotifications, sendDailyDigestEmails };
+async function sendTodayReminderEmails(toOverride) {
+  const to = toOverride || process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
+  try {
+    const { rows } = await pool.query(`
+      SELECT t.id, t.title, t.scheduled_date,
+             e.name AS equipment_name, e.location,
+             e.parent_id AS parent_equipment_id,
+             ep.name AS parent_equipment_name,
+             CASE WHEN e.parent_id IS NOT NULL
+               THEN (SELECT COUNT(*) FROM equipment WHERE parent_id = e.parent_id)
+               ELSE NULL
+             END AS sibling_count
+      FROM maintenance_tasks t
+      LEFT JOIN equipment e ON e.id = t.equipment_id
+      LEFT JOIN equipment ep ON ep.id = e.parent_id
+      WHERE t.status IN ('pending','in_progress')
+        AND t.scheduled_date = (NOW() AT TIME ZONE 'Europe/Istanbul')::date
+      ORDER BY t.title ASC
+    `);
+
+    if (rows.length === 0) {
+      console.log('[today-email] Bugün yapılacak görev yok, mail atılmadı');
+      return;
+    }
+
+    const tasks = groupTasksForEmail(rows);
+    const { sendTodayEmail } = require('./emailService');
+    const ok = await sendTodayEmail({ to, userName: 'Bellis Teknik Ekibi', tasks });
+    if (ok) console.log(`[today-email] Günlük hatırlatma ${to} adresine gönderildi (${tasks.length} görev)`);
+  } catch (err) {
+    console.error('[today-email] Hata:', err.message);
+  }
+}
+
+module.exports = { generateNotifications, sendDailyDigestEmails, sendTodayReminderEmails };
