@@ -101,9 +101,9 @@ function groupTasksForEmail(tasks) {
   });
 }
 
-async function sendDailyDigestEmails() {
+async function sendDailyDigestEmails(toOverride) {
   // Tek bir grup adresine gönder, dağıtımı mail sunucusu yapsın
-  const to = process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
+  const to = toOverride || process.env.NOTIFICATION_EMAIL || 'teknik@bellis.com.tr';
 
   // Parent ekipman adı + toplam birim sayısı için JOIN
   const taskQuery = (extraWhere) => `
